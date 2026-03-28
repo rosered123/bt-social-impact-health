@@ -1,268 +1,336 @@
 import React from 'react';
 import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-  SafeAreaView,
-  StatusBar,
+    SafeAreaView,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 
-// ─── Star Rating ───
-const StarRating = ({ rating, size = 14 }: { rating: number; size?: number }) => (
-  <View style={styles.starsRow}>
-    {[1, 2, 3, 4, 5].map(i => (
-      <Text key={i} style={[{ fontSize: size }, i <= rating ? styles.starFilled : styles.starEmpty]}>
-        ★
-      </Text>
-    ))}
-  </View>
-);
+type SavedEvent = {
+  id: string;
+  title: string;
+  business: string;
+  date: string;
+  address: string;
+};
 
-// ─── Review Item ───
-const ReviewItem = ({ name, date }: { name: string; date: string }) => (
-  <View style={styles.reviewItem}>
-    <View style={styles.reviewHeader}>
-      <View style={styles.reviewAvatar}>
-        <Text style={styles.reviewAvatarText}>{name[0]}</Text>
+type Review = {
+  id: string;
+  name: string;
+  date: string;
+};
+
+const SAVED_EVENTS: SavedEvent[] = [
+  {
+    id: '1',
+    title: 'Matcha Pop-up',
+    business: 'Business Name',
+    date: 'Thursday, 4 PM',
+    address: 'Address',
+  },
+  {
+    id: '2',
+    title: 'Matcha Pop-up',
+    business: 'Business Name',
+    date: 'Thursday, 4 PM',
+    address: 'Address',
+  },
+];
+
+const REVIEWS: Review[] = [
+  { id: '1', name: 'Name', date: 'mm-dd-yyyy' },
+  { id: '2', name: 'Name', date: 'mm-dd-yyyy' },
+  { id: '3', name: 'Name', date: 'mm-dd-yyyy' },
+];
+
+function SavedEventCard({ event }: { event: SavedEvent }) {
+  return (
+    <TouchableOpacity activeOpacity={0.85} style={styles.savedCard}>
+      <View style={styles.savedImageWrap}>
+        <View style={styles.savedImage} />
+        <Text style={styles.heart}>♥</Text>
       </View>
-      <View style={styles.reviewMeta}>
-        <Text style={styles.reviewName}>{name}</Text>
-        <Text style={styles.reviewDate}>{date}</Text>
+
+      <View style={styles.savedBody}>
+        <Text style={styles.savedTitle}>{event.title}</Text>
+        <Text style={styles.savedMeta}>{event.business}</Text>
+        <Text style={styles.savedMeta}>{event.date}</Text>
+        <Text style={styles.savedMeta}>{event.address}</Text>
       </View>
-    </View>
-    <View style={styles.reviewBody}>
-      <View style={styles.reviewLine} />
-      <View style={[styles.reviewLine, { width: '70%' }]} />
-    </View>
-    <TouchableOpacity style={styles.replyBtn}>
-      <Text style={styles.replyText}>Reply</Text>
     </TouchableOpacity>
-  </View>
-);
+  );
+}
 
-// ─── Main Screen ───
+function Stars() {
+  return (
+    <View style={styles.starsRow}>
+      {[1, 2, 3, 4, 5].map(star => (
+        <Text key={star} style={styles.starText}>
+          ★
+        </Text>
+      ))}
+    </View>
+  );
+}
+
+function ReviewCard({ review }: { review: Review }) {
+  return (
+    <View style={styles.reviewCard}>
+      <View style={styles.reviewTop}>
+        <View style={styles.reviewAvatar} />
+
+        <View style={styles.reviewMetaWrap}>
+          <Text style={styles.reviewName}>{review.name}</Text>
+          <Stars />
+        </View>
+
+        <Text style={styles.reviewDate}>{review.date}</Text>
+      </View>
+
+      <View style={styles.reviewLineOne} />
+      <View style={styles.reviewLineTwo} />
+
+      <TouchableOpacity activeOpacity={0.8} style={styles.replyButton}>
+        <Text style={styles.replyText}>↶ Reply</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
 export default function Profile() {
-  const vibeTags = ['vibe tag', 'vibe tag', 'vibe tag'];
-
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f5f5f5" />
-      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
+      <StatusBar barStyle="dark-content" backgroundColor="#f2f2f2" />
 
-        {/* ── Header ── */}
-        <Text style={styles.headerTitle}>My Profile</Text>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        style={styles.scroll}>
+        <View style={styles.headerRow}>
+          <View>
+            <Text style={styles.greeting}>Hello, Name!</Text>
 
-        {/* ── Profile Hero ── */}
-        <View style={styles.heroCard}>
-          <View style={styles.avatarLarge}>
-            <Text style={styles.avatarIcon}>📷</Text>
-          </View>
-          <Text style={styles.businessName}>Business Name</Text>
-
-          <View style={styles.ratingRow}>
-            <StarRating rating={5} size={16} />
-            <Text style={styles.ratingText}> 5.0</Text>
-            <Text style={styles.reviewCount}> (## reviews)</Text>
-          </View>
-
-          <Text style={styles.followersText}>#### followers</Text>
-
-          <View style={styles.tagsRow}>
-            {vibeTags.map((tag, i) => (
-              <View key={i} style={styles.vibeTag}>
-                <Text style={styles.vibeTagText}>{tag}</Text>
-              </View>
-            ))}
+            <View style={styles.locationRow}>
+              <Text style={styles.location}>Austin, Texas</Text>
+              <TouchableOpacity activeOpacity={0.8}>
+                <Text style={styles.editIcon}>✎</Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
-          <View style={styles.heroActions}>
-            <TouchableOpacity style={styles.outlineBtn}>
-              <Text style={styles.outlineBtnText}>Edit Profile</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.filledBtn}>
-              <Text style={styles.filledBtnText}>Share Profile</Text>
-            </TouchableOpacity>
-          </View>
+          <View style={styles.headerAvatar} />
         </View>
 
-        {/* ── About ── */}
-        <Text style={styles.sectionTitle}>About</Text>
-        <View style={styles.card}>
-          <Text style={styles.cardBody}>Short description about the business</Text>
-        </View>
+        <Text style={styles.sectionTitle}>Saved Events</Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.savedEventsRow}>
+          {SAVED_EVENTS.map(event => (
+            <SavedEventCard key={event.id} event={event} />
+          ))}
+        </ScrollView>
 
-        {/* ── Our Story ── */}
-        <Text style={styles.sectionTitle}>Our Story</Text>
-        <View style={styles.card}>
-          <Text style={styles.cardBody}>
-            The business history, its story, where it started, what is special about the business, etc.
-          </Text>
-        </View>
-
-        {/* ── Location & Contact ── */}
-        <Text style={styles.sectionTitle}>Location</Text>
-        <View style={styles.card}>
-          <Text style={styles.contactText}>(123) 456-789</Text>
-          <TouchableOpacity style={styles.linkRow}>
-            <Text style={styles.linkText}>Visit Website</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.linkRow}>
-            <Text style={styles.linkText}>Visit Website</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* ── Upcoming Events ── */}
-        <Text style={styles.sectionTitle}>Upcoming Events</Text>
-        <View style={styles.eventCard}>
-          <View style={styles.eventImagePlaceholder} />
-          <View style={styles.eventInfo}>
-            <Text style={styles.eventName}>Event name</Text>
-            <Text style={styles.eventDetail}>mm - dd - yyyy</Text>
-            <Text style={styles.eventDetail}>Location</Text>
+        <View style={styles.reviewsHeader}>
+          <Text style={styles.sectionTitle}>Your Reviews</Text>
+          <View style={styles.filterRow}>
+            <View style={styles.filterDot} />
+            <View style={styles.filterDot} />
+            <View style={styles.filterDot} />
           </View>
         </View>
 
-        {/* ── Recent Reviews ── */}
-        <Text style={styles.sectionTitle}>Recent Reviews</Text>
-        <View style={styles.ratingSummary}>
-          <StarRating rating={5} size={18} />
-          <Text style={styles.ratingSummaryText}> 5.0</Text>
-          <Text style={styles.ratingSummaryCount}> (##)</Text>
-        </View>
-
-        <ReviewItem name="Name" date="mm-dd-yyyy" />
-        <ReviewItem name="Name" date="mm-dd-yyyy" />
-
-        <View style={{ height: 32 }} />
+        {REVIEWS.map(review => (
+          <ReviewCard key={review.id} review={review} />
+        ))}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-// ─── Styles ───
-const CARD_BG = '#ebebeb';
-const RADIUS = 12;
+const BG = '#f2f2f2';
+const CARD = '#f8f8f8';
+const MID = '#d9d9d9';
+const DARK = '#6b6b6b';
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#f5f5f5' },
-  scroll: { flex: 1, paddingHorizontal: 16 },
-
-  // Header
-  headerTitle: { fontSize: 22, fontWeight: '800', color: '#111', paddingTop: 16, marginBottom: 16 },
-
-  // Hero
-  heroCard: {
-    backgroundColor: CARD_BG,
-    borderRadius: RADIUS,
-    padding: 20,
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  avatarLarge: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: '#ccc',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-  },
-  avatarIcon: { fontSize: 28 },
-  businessName: { fontSize: 20, fontWeight: '800', color: '#111', marginBottom: 4 },
-  ratingRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 2 },
-  ratingText: { fontSize: 14, fontWeight: '700', color: '#111' },
-  reviewCount: { fontSize: 13, color: '#777' },
-  followersText: { fontSize: 13, fontWeight: '600', color: '#555', marginTop: 2, marginBottom: 10 },
-  tagsRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
-  vibeTag: {
-    backgroundColor: '#333',
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-  },
-  vibeTagText: { color: '#fff', fontSize: 12, fontWeight: '600' },
-  heroActions: { flexDirection: 'row', gap: 10, width: '100%' },
-  outlineBtn: {
+  safe: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: '#bbb',
-    borderRadius: 8,
-    paddingVertical: 10,
+    backgroundColor: BG,
   },
-  outlineBtnText: { fontSize: 13, fontWeight: '700', color: '#333' },
-  filledBtn: {
+  scroll: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#333',
-    borderRadius: 8,
-    paddingVertical: 10,
   },
-  filledBtnText: { fontSize: 13, fontWeight: '700', color: '#fff' },
-
-  // Section
-  sectionTitle: { fontSize: 17, fontWeight: '800', color: '#111', marginBottom: 10 },
-
-  // Card
-  card: { backgroundColor: CARD_BG, borderRadius: RADIUS, padding: 14, marginBottom: 20 },
-  cardBody: { fontSize: 14, color: '#444', lineHeight: 20 },
-
-  // Contact
-  contactText: { fontSize: 14, fontWeight: '600', color: '#333', marginBottom: 10 },
-  linkRow: { marginBottom: 8 },
-  linkText: { fontSize: 14, fontWeight: '600', color: '#0a7ea4' },
-
-  // Events
-  eventCard: {
-    backgroundColor: CARD_BG,
-    borderRadius: RADIUS,
-    overflow: 'hidden',
-    marginBottom: 20,
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 24,
   },
-  eventImagePlaceholder: {
-    height: 120,
-    backgroundColor: '#ccc',
-  },
-  eventInfo: { padding: 14, gap: 4 },
-  eventName: { fontSize: 15, fontWeight: '700', color: '#111' },
-  eventDetail: { fontSize: 13, color: '#666' },
 
-  // Rating Summary
-  ratingSummary: {
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 22,
+  },
+  greeting: {
+    fontSize: 42,
+    fontWeight: '500',
+    color: '#111',
+    marginBottom: 4,
+  },
+  locationRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 14,
+    gap: 8,
   },
-  ratingSummaryText: { fontSize: 16, fontWeight: '800', color: '#111' },
-  ratingSummaryCount: { fontSize: 14, color: '#777' },
+  location: {
+    fontSize: 20,
+    color: '#222',
+  },
+  editIcon: {
+    fontSize: 16,
+    color: '#222',
+    padding: 4,
+  },
+  headerAvatar: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    backgroundColor: MID,
+    marginTop: 2,
+  },
 
-  // Stars
-  starsRow: { flexDirection: 'row', gap: 2 },
-  starFilled: { color: '#f59e0b' },
-  starEmpty: { color: '#ddd' },
+  sectionTitle: {
+    fontSize: 36,
+    fontWeight: '500',
+    color: '#111',
+    marginBottom: 12,
+  },
 
-  // Reviews
-  reviewItem: { backgroundColor: CARD_BG, borderRadius: RADIUS, padding: 14, marginBottom: 12 },
-  reviewHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
-  reviewAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#bbb',
+  savedEventsRow: {
+    gap: 14,
+    paddingBottom: 18,
+    paddingRight: 4,
+  },
+  savedCard: {
+    width: 260,
+    backgroundColor: MID,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  savedImageWrap: {
+    height: 138,
+    backgroundColor: '#adadad',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-end',
+    paddingRight: 12,
+    paddingTop: 10,
+  },
+  savedImage: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#adadad',
+  },
+  heart: {
+    fontSize: 24,
+    color: '#111',
+    zIndex: 1,
+  },
+  savedBody: {
+    paddingHorizontal: 14,
+    paddingTop: 10,
+    paddingBottom: 12,
+    gap: 3,
+  },
+  savedTitle: {
+    fontSize: 30,
+    fontWeight: '500',
+    color: '#111',
+    marginBottom: 2,
+  },
+  savedMeta: {
+    fontSize: 20,
+    color: '#1f1f1f',
+  },
+
+  reviewsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    justifyContent: 'center',
+    marginTop: 4,
+  },
+  filterRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  filterDot: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: MID,
+  },
+
+  reviewCard: {
+    backgroundColor: CARD,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+    marginBottom: 12,
+  },
+  reviewTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  reviewAvatar: {
+    width: 35,
+    height: 35,
+    borderRadius: 18,
+    backgroundColor: MID,
     marginRight: 10,
   },
-  reviewAvatarText: { fontWeight: '700', color: '#555', fontSize: 15 },
-  reviewMeta: { flex: 1 },
-  reviewName: { fontWeight: '700', fontSize: 14, color: '#111' },
-  reviewDate: { fontSize: 11, color: '#999' },
-  reviewBody: { gap: 6, marginBottom: 10 },
-  reviewLine: { height: 8, backgroundColor: '#ccc', borderRadius: 4, width: '100%' },
-  replyBtn: { alignSelf: 'flex-start' },
-  replyText: { fontSize: 13, color: '#555', fontWeight: '600' },
+  reviewMetaWrap: {
+    flex: 1,
+  },
+  reviewName: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#444',
+    marginBottom: 1,
+  },
+  reviewDate: {
+    fontSize: 10,
+    color: '#666',
+  },
+  starsRow: {
+    flexDirection: 'row',
+    gap: 1,
+  },
+  starText: {
+    fontSize: 11,
+    color: '#111',
+  },
+  reviewLineOne: {
+    height: 10,
+    width: '82%',
+    backgroundColor: DARK,
+    marginBottom: 5,
+  },
+  reviewLineTwo: {
+    height: 10,
+    width: '98%',
+    backgroundColor: DARK,
+    marginBottom: 9,
+  },
+  replyButton: {
+    alignSelf: 'flex-start',
+  },
+  replyText: {
+    fontSize: 10,
+    color: '#444',
+    fontWeight: '500',
+  },
 });
