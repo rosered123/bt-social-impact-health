@@ -87,7 +87,7 @@ export default function MyProfile() {
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
 
         {/* ── Header Title ── */}
-        <Text style={styles.pageTitle}>Business Profile</Text>
+        <Text style={styles.pageTitle}>My Profile</Text>
 
         {/* ── Cover + Avatar ── */}
         <View style={styles.coverSection}>

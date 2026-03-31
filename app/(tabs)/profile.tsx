@@ -170,6 +170,7 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
 
+  
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -177,8 +178,8 @@ const styles = StyleSheet.create({
     marginBottom: 22,
   },
   greeting: {
-    fontSize: 42,
-    fontWeight: '500',
+    fontSize: 22,
+    fontWeight: '800',
     color: '#111',
     marginBottom: 4,
   },
@@ -205,8 +206,8 @@ const styles = StyleSheet.create({
   },
 
   sectionTitle: {
-    fontSize: 36,
-    fontWeight: '500',
+    fontSize: 22,
+    fontWeight: '800',
     color: '#111',
     marginBottom: 12,
   },
