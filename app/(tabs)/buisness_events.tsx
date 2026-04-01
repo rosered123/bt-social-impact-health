@@ -168,7 +168,7 @@ export default function BusinessEventsUpcoming() {
                 <Text style={styles.draftIcon}>📄</Text>
               </View>
               <View style={styles.draftBtnContent}>
-                <Text style={styles.draftBtnTitle}>My draft</Text>
+                <Text style={styles.draftBtnTitle}>My drafts</Text>
                 <Text style={styles.draftBtnSub}>
                   {DRAFT_EVENTS.length} drafts waiting to be published
                 </Text>
