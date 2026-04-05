@@ -345,3 +345,89 @@ export async function unfollowBusiness(business_uid: string): Promise<void> {
 		throw error;
 	}
 }
+
+export async function isFollowing(business_uid: string): Promise<boolean> {
+	const follower_uid = await requireUserId();
+	const { data } = await supabase
+		.from('follows')
+		.select('follower_uid')
+		.eq('follower_uid', follower_uid)
+		.eq('business_uid', business_uid)
+		.maybeSingle();
+	return data !== null;
+}
+
+export async function getMyReviews(limit = 50): Promise<ReviewRow[]> {
+	const uid = await requireUserId();
+	const { data, error } = await supabase
+		.from('reviews')
+		.select('*')
+		.eq('reviewer_uid', uid)
+		.order('created_at', { ascending: false })
+		.limit(limit);
+	if (error) throw error;
+	return data;
+}
+
+export async function getFollowedBusinesses(): Promise<Business[]> {
+	const uid = await requireUserId();
+	const { data, error } = await supabase
+		.from('follows')
+		.select('businesses(*)')
+		.eq('follower_uid', uid);
+	if (error) throw error;
+	return ((data ?? []) as any[]).map((row) => row.businesses).filter(Boolean);
+}
+
+export type VibeTag = { id: number; name: string };
+
+export async function getAllTags(): Promise<VibeTag[]> {
+	const { data, error } = await supabase.from('vibe_tags').select('id, name').order('name');
+	if (error) throw error;
+	return data;
+}
+
+export async function getEventById(eventId: number): Promise<EventRow | null> {
+	const { data, error } = await supabase.from('events').select('*').eq('id', eventId).maybeSingle();
+	if (error) throw error;
+	return data;
+}
+
+export async function getBusinessEvents(hostUid: string, limit = 20): Promise<EventRow[]> {
+	const { data, error } = await supabase
+		.from('events')
+		.select('*')
+		.eq('host_uid', hostUid)
+		.eq('is_published', true)
+		.order('event_date', { ascending: true })
+		.limit(limit);
+	if (error) throw error;
+	return data;
+}
+
+export type InventoryItem = {
+	id: number;
+	event_id: number;
+	business_uid: string;
+	product_name: string;
+	availability: string;
+	custom_message: string | null;
+	updated_at: string;
+};
+
+export async function getInventory(eventId: number): Promise<InventoryItem[]> {
+	const { data, error } = await supabase.from('inventory_status').select('*').eq('event_id', eventId);
+	if (error) throw error;
+	return data;
+}
+
+export async function upsertInventoryItem(
+	eventId: number,
+	product: { product_name: string; availability: string; custom_message?: string | null },
+): Promise<void> {
+	const businessUid = await requireUserId();
+	const { error } = await supabase
+		.from('inventory_status')
+		.upsert({ event_id: eventId, business_uid: businessUid, ...product }, { onConflict: 'event_id,business_uid,product_name' });
+	if (error) throw error;
+}

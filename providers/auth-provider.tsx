@@ -51,9 +51,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const initialize = async () => {
       const {
         data: { session: initialSession },
+        error: sessionError,
       } = await supabase.auth.getSession();
 
       if (!mounted) {
+        return;
+      }
+
+      // Stale / invalid refresh token — clear it so the user is sent to sign-in
+      if (sessionError) {
+        await supabase.auth.signOut();
+        if (mounted) setLoading(false);
         return;
       }
 
@@ -75,7 +83,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      // Supabase fires this when a refresh token is invalid — clear local state
+      if (event === 'TOKEN_REFRESHED' && !nextSession) {
+        setSession(null);
+        setRole(null);
+        setLoading(false);
+        return;
+      }
+
       setSession(nextSession);
 
       if (!nextSession?.user) {
