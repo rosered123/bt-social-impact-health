@@ -1,13 +1,16 @@
+import { router } from 'expo-router';
 import React from 'react';
 import {
-    SafeAreaView,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
+
+import { useAuth } from '@/providers/auth-provider';
 
 type SavedEvent = {
   id: string;
@@ -101,6 +104,17 @@ function ReviewCard({ review }: { review: Review }) {
 }
 
 export default function Profile() {
+  const { signOut } = useAuth();
+
+  const onSignOut = async () => {
+    try {
+      await signOut();
+      router.replace('/auth');
+    } catch {
+      // Keep UX simple for now; auth provider already throws detailed errors.
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="dark-content" backgroundColor="#f2f2f2" />
@@ -146,6 +160,10 @@ export default function Profile() {
         {REVIEWS.map(review => (
           <ReviewCard key={review.id} review={review} />
         ))}
+
+        <TouchableOpacity activeOpacity={0.85} style={styles.signOutButton} onPress={onSignOut}>
+          <Text style={styles.signOutButtonText}>Sign Out</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -333,5 +351,20 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#444',
     fontWeight: '500',
+  },
+  signOutButton: {
+    marginTop: 12,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: '#111',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    backgroundColor: '#fff',
+  },
+  signOutButtonText: {
+    color: '#111',
+    fontWeight: '700',
+    fontSize: 14,
   },
 });

@@ -33,67 +33,119 @@ export default function TabLayout() {
         headerShown: false,
         tabBarButton: HapticTab,
       }}>
-      {isBusiness ? (
-        <>
-          <Tabs.Screen
-            name="dashboard"
-            options={{
-              title: 'Dashboard',
-              tabBarIcon: ({ color }) => <IconSymbol size={28} name="briefcase.fill" color={color} />,
-            }}
-          />
-          <Tabs.Screen
-            name="create_business_event"
-            options={{
-              title: 'Create Event',
-              tabBarIcon: ({ color }) => <IconSymbol size={28} name="pencil" color={color} />,
-            }}
-          />
-          <Tabs.Screen
-            name="update_status"
-            options={{
-              title: 'Status',
-              tabBarIcon: ({ color }) => <IconSymbol size={28} name="clock.fill" color={color} />,
-            }}
-          />
-          <Tabs.Screen
-            name="business_profile"
-            options={{
-              title: 'Profile',
-              tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.fill" color={color} />,
-            }}
-          />
-          <Tabs.Screen name="explore" options={{ href: null }} />
-          <Tabs.Screen name="profile" options={{ href: null }} />
-        </>
-      ) : (
-        <>
-          <Tabs.Screen
-            name="explore"
-            options={{
-              title: 'Explore',
-              tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
-            }}
-          />
-          <Tabs.Screen
-            name="profile"
-            options={{
-              title: 'Account',
-              tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.fill" color={color} />,
-            }}
-          />
-          <Tabs.Screen name="dashboard" options={{ href: null }} />
-          <Tabs.Screen name="create_business_event" options={{ href: null }} />
-          <Tabs.Screen name="update_status" options={{ href: null }} />
-          <Tabs.Screen name="business_profile" options={{ href: null }} />
-        </>
-      )}
+      <Tabs.Screen
+        name="dashboard"
+        options={
+          isBusiness
+            ? {
+                title: 'Dashboard',
+                tabBarIcon: ({ color }) => <IconSymbol size={28} name="briefcase.fill" color={color} />,
+              }
+            : { href: null }
+        }
+      />
+      <Tabs.Screen
+        name="create_business_event"
+        options={
+          isBusiness
+            ? {
+                title: 'Create Event',
+                tabBarIcon: ({ color }) => <IconSymbol size={28} name="pencil" color={color} />,
+              }
+            : { href: null }
+        }
+      />
+      <Tabs.Screen
+        name="update_status"
+        options={
+          isBusiness
+            ? {
+                title: 'Status',
+                tabBarIcon: ({ color }) => <IconSymbol size={28} name="clock.fill" color={color} />,
+              }
+            : { href: null }
+        }
+      />
+      <Tabs.Screen
+        name="business_profile"
+        options={
+          isBusiness
+            ? {
+                title: 'Profile',
+                tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.fill" color={color} />,
+              }
+            : { href: null }
+        }
+      />
+      <Tabs.Screen
+        name="edit_profile"
+        options={
+          isBusiness
+            ? {
+                title: 'Edit Profile',
+                tabBarIcon: ({ color }) => <IconSymbol size={28} name="pencil.circle.fill" color={color} />,
+              }
+            : { href: null }
+        }
+      />
+
+      <Tabs.Screen
+        name="explore"
+        options={
+          isBusiness
+            ? { href: null }
+            : {
+                title: 'Explore',
+                tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+              }
+        }
+      />
+      <Tabs.Screen
+        name="profile"
+        options={
+          isBusiness
+            ? { href: null }
+            : {
+                title: 'Account',
+                tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.fill" color={color} />,
+              }
+        }
+      />
+      <Tabs.Screen
+        name="add_review"
+        options={
+          isBusiness
+            ? { href: null }
+            : {
+                title: 'Write Review',
+                tabBarIcon: ({ color }) => <IconSymbol size={28} name="square.and.pencil" color={color} />,
+              }
+        }
+      />
+      <Tabs.Screen
+        name="view_event"
+        options={
+          isBusiness
+            ? { href: null }
+            : {
+                title: 'View Event',
+                tabBarIcon: ({ color }) => <IconSymbol size={28} name="calendar" color={color} />,
+              }
+        }
+      />
+      <Tabs.Screen
+        name="user_business_profile"
+        options={
+          isBusiness
+            ? { href: null }
+            : {
+                title: 'Business',
+                tabBarIcon: ({ color }) => <IconSymbol size={28} name="building.2.fill" color={color} />,
+              }
+        }
+      />
 
       <Tabs.Screen name="index" options={{ href: null }} />
-      <Tabs.Screen name="add_review" options={{ href: null }} />
-      <Tabs.Screen name="edit_profile" options={{ href: null }} />
-      <Tabs.Screen name="user_business_profile" options={{ href: null }} />
-      <Tabs.Screen name="view_event" options={{ href: null }} />
     </Tabs>
   );
 }
