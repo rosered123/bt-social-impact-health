@@ -1,22 +1,25 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  StyleSheet,
-  SafeAreaView,
-  StatusBar,
+  ActivityIndicator,
   Dimensions,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
+
+import { EventRow, listPublishedEvents } from '@/services/api';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_HALF = (SCREEN_WIDTH - 16 * 2 - 10) / 2;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface PopUpEvent {
-  id: string;
+  id: number;
   title: string;
   business: string;
   time: string;
@@ -92,36 +95,106 @@ const ListCard: React.FC<{ event: PopUpEvent; onToggleSave: () => void }> = ({
   </View>
 );
 
-// ─── Seed Data ────────────────────────────────────────────────────────────────
-const makeEvent = (id: string): PopUpEvent => ({
-  id,
-  title: 'Matcha Pop-up',
-  business: 'Business Name',
-  time: 'Thursday, 4 PM',
-  address: 'Address',
-  saved: false,
-});
+function formatEventTime(eventDate: string, startTime: string | null): string {
+  const date = new Date(eventDate);
+  if (Number.isNaN(date.getTime())) {
+    return eventDate;
+  }
+
+  const day = date.toLocaleDateString(undefined, { weekday: 'long' });
+  if (!startTime) {
+    return day;
+  }
+
+  const [hourPart, minutePart] = startTime.split(':');
+  const hour = Number(hourPart);
+  const minute = Number(minutePart);
+
+  if (Number.isNaN(hour) || Number.isNaN(minute)) {
+    return day;
+  }
+
+  const period = hour >= 12 ? 'PM' : 'AM';
+  const hour12 = hour % 12 === 0 ? 12 : hour % 12;
+  return `${day}, ${hour12}:${String(minute).padStart(2, '0')} ${period}`;
+}
+
+function mapDbEventToCard(event: EventRow): PopUpEvent {
+  return {
+    id: event.id,
+    title: event.event_name,
+    business: 'Pop-Up Business',
+    time: formatEventTime(event.event_date, event.start_time),
+    address: event.location ?? 'Location TBA',
+    saved: false,
+  };
+}
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function Explore() {
   const [search, setSearch] = useState('');
+  const [events, setEvents] = useState<PopUpEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [errorText, setErrorText] = useState<string | null>(null);
 
-  const [nearYou, setNearYou] = useState<PopUpEvent[]>([
-    makeEvent('n1'), makeEvent('n2'),
-  ]);
-  const [forYou, setForYou] = useState<PopUpEvent[]>([
-    makeEvent('f1'), makeEvent('f2'),
-  ]);
-  const [popular, setPopular] = useState<PopUpEvent[]>([
-    makeEvent('p1'), makeEvent('p2'), makeEvent('p3'),
-  ]);
+  useEffect(() => {
+    let mounted = true;
 
-  const toggleSave = (
-    list: PopUpEvent[],
-    setList: React.Dispatch<React.SetStateAction<PopUpEvent[]>>,
-    id: string,
-  ) => {
-    setList(prev => prev.map(e => e.id === id ? { ...e, saved: !e.saved } : e));
+    const loadEvents = async () => {
+      setLoading(true);
+      setErrorText(null);
+      try {
+        const rows = await listPublishedEvents(50);
+        if (mounted) {
+          setEvents(rows.map(mapDbEventToCard));
+        }
+      } catch (error: any) {
+        if (mounted) {
+          setErrorText(error?.message ?? 'Could not load events.');
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadEvents();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const filteredEvents = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) {
+      return events;
+    }
+
+    return events.filter(event =>
+      [event.title, event.business, event.time, event.address].some(value =>
+        value.toLowerCase().includes(q)
+      )
+    );
+  }, [events, search]);
+
+  const uniqueEvents = useMemo(() => {
+    const seen = new Set<number>();
+    return filteredEvents.filter(event => {
+      if (seen.has(event.id)) {
+        return false;
+      }
+      seen.add(event.id);
+      return true;
+    });
+  }, [filteredEvents]);
+
+  const nearYou = uniqueEvents.slice(0, 2);
+  const forYou = uniqueEvents.slice(2, 4);
+  const popular = uniqueEvents.slice(4);
+
+  const toggleSave = (id: number) => {
+    setEvents(prev => prev.map(e => (e.id === id ? { ...e, saved: !e.saved } : e)));
   };
 
   return (
@@ -146,45 +219,76 @@ export default function Explore() {
           />
         </View>
 
-        {/* ── Events Near You ── */}
-        <Text style={styles.sectionTitle}>Events near you</Text>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.gridScroll}
-        >
-          {nearYou.map(event => (
-            <GridCard
-              key={event.id}
-              event={event}
-              onToggleSave={() => toggleSave(nearYou, setNearYou, event.id)}
-            />
-          ))}
-        </ScrollView>
+        {loading ? (
+          <View style={styles.centerState}>
+            <ActivityIndicator />
+            <Text style={styles.stateText}>Loading events...</Text>
+          </View>
+        ) : null}
 
-        {/* ── We Think You'll Like ── */}
-        <Text style={styles.sectionTitle}>We think you'll like</Text>
-        {forYou.map(event => (
-          <FeatureCard
-            key={event.id}
-            event={event}
-            onToggleSave={() => toggleSave(forYou, setForYou, event.id)}
-          />
-        ))}
+        {errorText ? (
+          <View style={styles.centerState}>
+            <Text style={styles.errorText}>{errorText}</Text>
+          </View>
+        ) : null}
 
-        {/* ── Popular in Austin ── */}
-        <Text style={styles.sectionTitle}>Popular in Austin</Text>
-        <View style={styles.card}>
-          {popular.map((event, index) => (
-            <View key={event.id}>
-              <ListCard
+        {!loading && !errorText && filteredEvents.length === 0 ? (
+          <View style={styles.centerState}>
+            <Text style={styles.stateText}>No published events found.</Text>
+          </View>
+        ) : null}
+
+        {nearYou.length > 0 ? (
+          <>
+            {/* ── Events Near You ── */}
+            <Text style={styles.sectionTitle}>Events near you</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.gridScroll}
+            >
+              {nearYou.map(event => (
+                <GridCard
+                  key={event.id}
+                  event={event}
+                  onToggleSave={() => toggleSave(event.id)}
+                />
+              ))}
+            </ScrollView>
+          </>
+        ) : null}
+
+        {forYou.length > 0 ? (
+          <>
+            {/* ── We Think You'll Like ── */}
+            <Text style={styles.sectionTitle}>We think you'll like</Text>
+            {forYou.map(event => (
+              <FeatureCard
+                key={event.id}
                 event={event}
-                onToggleSave={() => toggleSave(popular, setPopular, event.id)}
+                onToggleSave={() => toggleSave(event.id)}
               />
-              {index < popular.length - 1 && <View style={styles.listDivider} />}
+            ))}
+          </>
+        ) : null}
+
+        {popular.length > 0 ? (
+          <>
+            {/* ── Popular in Austin ── */}
+            <Text style={styles.sectionTitle}>Popular in Austin</Text>
+            <View style={styles.card}>
+              {popular.map((event, index) => (
+                <View key={event.id}>
+                  <ListCard
+                    event={event}
+                    onToggleSave={() => toggleSave(event.id)}
+                  />
+                  {index < popular.length - 1 && <View style={styles.listDivider} />}
+                </View>
+              ))}
             </View>
-          ))}
-        </View>
+          </>
+        ) : null}
 
         <View style={{ height: 32 }} />
       </ScrollView>
@@ -216,6 +320,9 @@ const styles = StyleSheet.create({
 
   // Section title
   sectionTitle: { fontSize: 17, fontWeight: '800', color: '#111', marginBottom: 12 },
+  centerState: { alignItems: 'center', justifyContent: 'center', marginBottom: 18, gap: 8 },
+  stateText: { fontSize: 13, color: '#555' },
+  errorText: { fontSize: 13, color: '#b91c1c', fontWeight: '600' },
 
   // Grid (near you)
   gridScroll: { gap: 10, paddingRight: 4, marginBottom: 22 },
