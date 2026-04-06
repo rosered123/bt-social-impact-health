@@ -1,13 +1,17 @@
+import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
   SafeAreaView,
+  ScrollView,
   StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
+import MapView, { Marker } from 'react-native-maps';
+
+import { useAuth } from '@/providers/auth-provider';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Event {
@@ -80,6 +84,16 @@ const SAMPLE_REVIEWS: Review[] = [
 
 export default function MyProfile() {
   const [following, setFollowing] = useState(false);
+  const { signOut } = useAuth();
+
+  const onSignOut = async () => {
+    try {
+      await signOut();
+      router.replace('/auth');
+    } catch {
+      // Keep UX simple for now; auth provider already throws detailed errors.
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -154,6 +168,21 @@ export default function MyProfile() {
           <View style={styles.divider} />
 
           <InfoRow icon="📍" label="Location" />
+          <MapView
+            style={styles.locationMap}
+            initialRegion={{
+              latitude: 30.2672,
+              longitude: -97.7431,
+              latitudeDelta: 0.01,
+              longitudeDelta: 0.01,
+            }}
+            scrollEnabled={false}
+            zoomEnabled={false}
+            pitchEnabled={false}
+            rotateEnabled={false}
+          >
+            <Marker coordinate={{ latitude: 30.2672, longitude: -97.7431 }} />
+          </MapView>
           <InfoRow icon="📞" label="(123) 456-789" />
           <InfoRow icon="✉️" label="Visit Website" link />
           <InfoRow icon="🌐" label="Visit Website" link />
@@ -203,6 +232,10 @@ export default function MyProfile() {
         {SAMPLE_REVIEWS.map(review => (
           <ReviewItem key={review.id} review={review} />
         ))}
+
+        <TouchableOpacity style={styles.signOutButton} activeOpacity={0.85} onPress={onSignOut}>
+          <Text style={styles.signOutButtonText}>Sign Out</Text>
+        </TouchableOpacity>
 
         <View style={{ height: 32 }} />
       </ScrollView>
@@ -274,6 +307,7 @@ const styles = StyleSheet.create({
   divider: { height: 1, backgroundColor: '#ccc', marginVertical: 12 },
 
   // Info Rows
+  locationMap: { height: 140, borderRadius: 10, marginTop: 6, marginBottom: 6, overflow: 'hidden' },
   infoRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 5 },
   infoIcon: { fontSize: 15, width: 22 },
   infoLabel: { fontSize: 13, color: '#444' },
@@ -321,6 +355,17 @@ const styles = StyleSheet.create({
   reviewLine: { height: 8, backgroundColor: '#ccc', borderRadius: 4, width: '100%' },
   replyBtn: {},
   replyText: { fontSize: 13, color: '#555', fontWeight: '600' },
+  signOutButton: {
+    marginTop: 4,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: '#111',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    backgroundColor: '#fff',
+  },
+  signOutButtonText: { color: '#111', fontWeight: '700', fontSize: 14 },
 
   // Stars
   starsRow: { flexDirection: 'row', gap: 1, marginTop: 2 },
