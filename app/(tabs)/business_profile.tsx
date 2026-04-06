@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import MapView, { Marker } from 'react-native-maps';
 
 import { useAuth } from '@/providers/auth-provider';
 
@@ -167,6 +168,21 @@ export default function MyProfile() {
           <View style={styles.divider} />
 
           <InfoRow icon="📍" label="Location" />
+          <MapView
+            style={styles.locationMap}
+            initialRegion={{
+              latitude: 30.2672,
+              longitude: -97.7431,
+              latitudeDelta: 0.01,
+              longitudeDelta: 0.01,
+            }}
+            scrollEnabled={false}
+            zoomEnabled={false}
+            pitchEnabled={false}
+            rotateEnabled={false}
+          >
+            <Marker coordinate={{ latitude: 30.2672, longitude: -97.7431 }} />
+          </MapView>
           <InfoRow icon="📞" label="(123) 456-789" />
           <InfoRow icon="✉️" label="Visit Website" link />
           <InfoRow icon="🌐" label="Visit Website" link />
@@ -291,6 +307,7 @@ const styles = StyleSheet.create({
   divider: { height: 1, backgroundColor: '#ccc', marginVertical: 12 },
 
   // Info Rows
+  locationMap: { height: 140, borderRadius: 10, marginTop: 6, marginBottom: 6, overflow: 'hidden' },
   infoRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 5 },
   infoIcon: { fontSize: 15, width: 22 },
   infoLabel: { fontSize: 13, color: '#444' },
