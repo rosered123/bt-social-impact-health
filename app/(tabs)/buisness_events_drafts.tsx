@@ -8,6 +8,7 @@ import {
   SafeAreaView,
   StatusBar,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface DraftEvent {
@@ -67,12 +68,22 @@ const DRAFT_EVENTS: DraftEvent[] = [
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function BusinessEventsDrafts() {
+  const router = useRouter();
+
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="dark-content" backgroundColor="#f5f5f5" />
 
       {/* ── Header ── */}
       <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.backBtn}
+          activeOpacity={0.75}
+          onPress={() => router.replace('/buisness_events')}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Text style={styles.backIcon}>←</Text>
+        </TouchableOpacity>
         <Text style={styles.headerTitle}>Events Draft</Text>
       </View>
 
@@ -99,9 +110,19 @@ const styles = StyleSheet.create({
 
   // Header
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 4,
+  },
+  backBtn: {
+    marginRight: 12,
+  },
+  backIcon: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#111',
   },
   headerTitle: { fontSize: 22, fontWeight: '800', color: '#111' },
 

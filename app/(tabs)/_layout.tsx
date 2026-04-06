@@ -52,6 +52,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="pencil" color={color} />,
         }}
       />
+      <Tabs.Screen name="buisness_events_drafts" options={{ href: null }} />
     </Tabs>
   );
 }

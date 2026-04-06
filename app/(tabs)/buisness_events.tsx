@@ -8,6 +8,7 @@ import {
   SafeAreaView,
   StatusBar,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface DraftEvent {
@@ -128,6 +129,7 @@ const PAST_EVENTS: DraftEvent[] = [
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function BusinessEventsUpcoming() {
   const [activeTab, setActiveTab] = useState<Tab>('Upcoming');
+  const router = useRouter();
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -163,7 +165,11 @@ export default function BusinessEventsUpcoming() {
         {activeTab === 'Upcoming' && (
           <>
             {/* ── My Draft Button ── */}
-            <TouchableOpacity style={styles.draftBtn} activeOpacity={0.75}>
+            <TouchableOpacity
+              style={styles.draftBtn}
+              activeOpacity={0.75}
+              onPress={() => router.push('/buisness_events_drafts')}
+            >
               <View style={styles.draftIconBox}>
                 <Text style={styles.draftIcon}>📄</Text>
               </View>
