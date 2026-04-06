@@ -387,6 +387,34 @@ export async function getAllTags(): Promise<VibeTag[]> {
 	return data;
 }
 
+export async function setMyUserInterests(tagIds: number[]): Promise<void> {
+	const user_uid = await requireUserId();
+	const { error: deleteError } = await supabase.from('user_interests').delete().eq('user_uid', user_uid);
+	if (deleteError) throw deleteError;
+
+	if (tagIds.length === 0) {
+		return;
+	}
+
+	const rows = tagIds.map((tag_id) => ({ user_uid, tag_id }));
+	const { error: insertError } = await supabase.from('user_interests').insert(rows);
+	if (insertError) throw insertError;
+}
+
+export async function setMyBusinessTags(tagIds: number[]): Promise<void> {
+	const business_uid = await requireUserId();
+	const { error: deleteError } = await supabase.from('business_tags').delete().eq('business_uid', business_uid);
+	if (deleteError) throw deleteError;
+
+	if (tagIds.length === 0) {
+		return;
+	}
+
+	const rows = tagIds.map((tag_id) => ({ business_uid, tag_id }));
+	const { error: insertError } = await supabase.from('business_tags').insert(rows);
+	if (insertError) throw insertError;
+}
+
 export async function getEventById(eventId: number): Promise<EventRow | null> {
 	const { data, error } = await supabase.from('events').select('*').eq('id', eventId).maybeSingle();
 	if (error) throw error;
