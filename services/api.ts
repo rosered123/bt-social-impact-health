@@ -415,6 +415,26 @@ export async function setMyBusinessTags(tagIds: number[]): Promise<void> {
 	if (insertError) throw insertError;
 }
 
+export type EventWithBusiness = EventRow & { business_name: string };
+
+export async function listMappableEvents(limit = 100): Promise<EventWithBusiness[]> {
+	const { data, error } = await supabase
+		.from('events')
+		.select('*, businesses!host_uid(business_name)')
+		.eq('is_published', true)
+		.not('latitude', 'is', null)
+		.not('longitude', 'is', null)
+		.order('event_date', { ascending: true })
+		.limit(limit);
+
+	if (error) throw error;
+
+	return ((data ?? []) as any[]).map((row) => ({
+		...row,
+		business_name: row.businesses?.business_name ?? 'Pop-Up Business',
+	}));
+}
+
 export async function getEventById(eventId: number): Promise<EventRow | null> {
 	const { data, error } = await supabase.from('events').select('*').eq('id', eventId).maybeSingle();
 	if (error) throw error;

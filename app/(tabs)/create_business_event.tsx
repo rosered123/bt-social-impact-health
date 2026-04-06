@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import * as Location from 'expo-location';
 import React, { useState } from 'react';
 import {
   View,
@@ -44,6 +45,9 @@ export default function CreateEvent() {
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [location, setLocation] = useState('');
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+  const [geocoding, setGeocoding] = useState(false);
   const [customTag, setCustomTag] = useState('');
   const [vibeTags, setVibeTags] = useState<VibeTag[]>([]);
   const [notifications, setNotifications] = useState<Record<string, boolean>>({
@@ -52,6 +56,22 @@ export default function CreateEvent() {
     'Generate sharable event': true,
   });
   const [submitting, setSubmitting] = useState(false);
+
+  const geocodeLocation = async (address: string) => {
+    if (!address.trim()) return;
+    setGeocoding(true);
+    try {
+      const results = await Location.geocodeAsync(address.trim());
+      if (results.length > 0) {
+        setLatitude(results[0].latitude);
+        setLongitude(results[0].longitude);
+      }
+    } catch {
+      // Silently fail — event will save without coordinates
+    } finally {
+      setGeocoding(false);
+    }
+  };
 
   const removeTag = (id: string) => setVibeTags(prev => prev.filter(t => t.id !== id));
 
@@ -88,6 +108,8 @@ export default function CreateEvent() {
         start_time: startTime.trim() || null,
         end_time: endTime.trim() || null,
         location: location.trim(),
+        latitude,
+        longitude,
         status: 'upcoming',
         is_published: publish,
       });
@@ -157,10 +179,26 @@ export default function CreateEvent() {
         </SectionCard>
 
         <SectionCard>
-          <Text style={styles.fieldLabel}>Location <Text style={styles.required}>*</Text></Text>
+          <View style={styles.locationLabelRow}>
+            <Text style={[styles.fieldLabel, { marginBottom: 0 }]}>Location <Text style={styles.required}>*</Text></Text>
+            {geocoding && <Text style={styles.geocodingText}>Finding coordinates…</Text>}
+            {!geocoding && latitude !== null && <Text style={styles.geocodedText}>📌 Located</Text>}
+          </View>
           <View style={styles.locationRow}>
             <Text style={styles.locationIcon}>📍</Text>
-            <TextInput style={styles.locationInput} placeholder="Enter venue or address..." placeholderTextColor="#aaa" value={location} onChangeText={setLocation} />
+            <TextInput
+              style={styles.locationInput}
+              placeholder="Enter venue or address..."
+              placeholderTextColor="#aaa"
+              value={location}
+              onChangeText={(text) => {
+                setLocation(text);
+                setLatitude(null);
+                setLongitude(null);
+              }}
+              onBlur={() => geocodeLocation(location)}
+              returnKeyType="done"
+            />
           </View>
         </SectionCard>
 
@@ -236,6 +274,9 @@ const styles = StyleSheet.create({
   timeInputRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 8, borderWidth: 1.5, borderColor: '#d0d0d0', paddingHorizontal: 8, paddingVertical: 8 },
   timeIcon: { fontSize: 13, marginRight: 4 },
   timeInput: { flex: 1, fontSize: 12, color: '#333' },
+  locationLabelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+  geocodingText: { fontSize: 11, color: '#888', fontStyle: 'italic' },
+  geocodedText: { fontSize: 11, color: '#22c55e', fontWeight: '600' },
   locationRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 8, borderWidth: 1.5, borderColor: '#d0d0d0', paddingHorizontal: 10, paddingVertical: 10 },
   locationIcon: { fontSize: 15, marginRight: 6 },
   locationInput: { flex: 1, fontSize: 13, color: '#333' },
