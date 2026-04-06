@@ -78,17 +78,7 @@ export default function TabLayout() {
             : { href: null }
         }
       />
-      <Tabs.Screen
-        name="edit_profile"
-        options={
-          isBusiness
-            ? {
-                title: 'Edit Profile',
-                tabBarIcon: ({ color }) => <IconSymbol size={28} name="pencil.circle.fill" color={color} />,
-              }
-            : { href: null }
-        }
-      />
+      <Tabs.Screen name="edit_profile" options={{ href: null }} />
 
       <Tabs.Screen
         name="explore"

@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { router, useLocalSearchParams } from 'expo-router';
 
 import {
   getAllTags,
@@ -22,6 +23,16 @@ import {
 } from '@/services/api';
 
 export default function EditProfile() {
+  const { from } = useLocalSearchParams<{ from?: string }>();
+  const goBack = () => {
+    if (from === 'profile') {
+      router.replace('/business_profile');
+    } else if (from === 'dashboard') {
+      router.replace('/dashboard');
+    } else {
+      router.back();
+    }
+  };
   const [businessName, setBusinessName] = useState('');
   const [shortDescription, setShortDescription] = useState('');
   const [location, setLocation] = useState('');
@@ -121,7 +132,17 @@ export default function EditProfile() {
       <StatusBar barStyle="dark-content" backgroundColor="#f5f5f5" />
 
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Edit Business Profile</Text>
+        <View style={styles.headerLeft}>
+          <TouchableOpacity
+            style={styles.backBtn}
+            onPress={goBack}
+            activeOpacity={0.75}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Text style={styles.backIcon}>←</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Edit Business Profile</Text>
+        </View>
         <TouchableOpacity style={[styles.saveHeaderBtn, saving && styles.saveBtnDisabled]} onPress={handleSave} disabled={saving}>
           <Text style={styles.saveHeaderText}>{saving ? 'Saving…' : 'Save'}</Text>
         </TouchableOpacity>
@@ -208,7 +229,10 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#f5f5f5' },
   scroll: { flex: 1, paddingHorizontal: 16 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12, backgroundColor: '#f5f5f5' },
-  headerTitle: { fontSize: 22, fontWeight: '800', color: '#111' },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', flexShrink: 1 },
+  backBtn: { marginRight: 10 },
+  backIcon: { fontSize: 24, fontWeight: '700', color: '#111' },
+  headerTitle: { fontSize: 22, fontWeight: '800', color: '#111', flexShrink: 1 },
   saveHeaderBtn: { backgroundColor: '#333', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8 },
   saveHeaderText: { color: '#fff', fontWeight: '700', fontSize: 14 },
   saveBtnDisabled: { opacity: 0.5 },

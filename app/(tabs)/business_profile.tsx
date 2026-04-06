@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import React, { useState } from 'react';
+import React from 'react';
 import {
   SafeAreaView,
   ScrollView,
@@ -83,7 +83,6 @@ const SAMPLE_REVIEWS: Review[] = [
 ];
 
 export default function MyProfile() {
-  const [following, setFollowing] = useState(false);
   const { signOut } = useAuth();
 
   const onSignOut = async () => {
@@ -139,13 +138,11 @@ export default function MyProfile() {
           {/* Action Buttons */}
           <View style={styles.actionRow}>
             <TouchableOpacity
-              style={[styles.followBtn, following && styles.followingBtn]}
-              onPress={() => setFollowing(f => !f)}
+              style={styles.followBtn}
+              onPress={() => router.push('/edit_profile?from=profile')}
               activeOpacity={0.8}
             >
-              <Text style={[styles.followBtnText, following && styles.followingBtnText]}>
-                {following ? 'Following' : 'Follow'}
-              </Text>
+              <Text style={styles.followBtnText}>Edit Profile</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.shareBtn} activeOpacity={0.8}>
               <Text style={styles.shareBtnText}>Share Profile</Text>
@@ -294,11 +291,10 @@ const styles = StyleSheet.create({
   followBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
   followingBtnText: { color: '#333' },
   shareBtn: {
-    flex: 1, backgroundColor: '#f0f0f0', borderRadius: 10,
+    flex: 1, backgroundColor: '#555', borderRadius: 10,
     paddingVertical: 10, alignItems: 'center',
-    borderWidth: 1.5, borderColor: '#ccc',
   },
-  shareBtnText: { color: '#333', fontWeight: '700', fontSize: 14 },
+  shareBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
 
   // Card
   card: { backgroundColor: CARD_BG, borderRadius: RADIUS, padding: 16, marginBottom: 20 },

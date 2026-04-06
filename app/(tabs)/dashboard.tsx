@@ -167,7 +167,7 @@ export default function BusinessDashboard() {
               <Icon name="eye" size={14} color="#333" />
               <Text style={styles.outlineBtnText}> View Public Profile</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.filledBtn} onPress={() => router.push('/(tabs)/edit_profile')}>
+            <TouchableOpacity style={styles.filledBtn} onPress={() => router.push('/(tabs)/edit_profile?from=dashboard')}>
               <Icon name="edit" size={14} color="#fff" />
               <Text style={styles.filledBtnText}> Edit Profile</Text>
             </TouchableOpacity>
