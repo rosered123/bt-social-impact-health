@@ -161,7 +161,6 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#888',
     marginTop: 8,
     marginBottom: 10,
   },

@@ -185,7 +185,7 @@ export default function BusinessDashboard() {
         {/* ── More Actions ── */}
         <Text style={styles.sectionTitle}>More Actions</Text>
         <View style={styles.grid}>
-          <ActionCard icon="calendar" label="Create Event" sub="New pop-up" onPress={() => router.push('/(tabs)/create_business_event')} />
+          <ActionCard icon="calendar" label="Create Event" sub="New pop-up" onPress={() => router.push('/(tabs)/create_business_event?from=dashboard')} />
           <ActionCard icon="handshake" label="Collaborate" sub="Partner up" />
           <ActionCard icon="offer" label="Create Offer" sub="Special deals" />
           <ActionCard icon="analytics" label="View Analytics" sub="Insights & data" />

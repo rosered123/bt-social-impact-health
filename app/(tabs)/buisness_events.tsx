@@ -138,7 +138,11 @@ export default function BusinessEventsUpcoming() {
       {/* ── Header ── */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>My Events</Text>
-        <TouchableOpacity style={styles.createBtn} activeOpacity={0.85}>
+        <TouchableOpacity
+          style={styles.createBtn}
+          activeOpacity={0.85}
+          onPress={() => router.push('/create_business_event?from=events')}
+        >
           <Text style={styles.createBtnText}>Create +</Text>
         </TouchableOpacity>
       </View>

@@ -44,13 +44,14 @@ export default function TabLayout() {
             : { href: null }
         }
       />
+      <Tabs.Screen name="create_business_event" options={{ href: null }} />
       <Tabs.Screen
-        name="create_business_event"
+        name="buisness_events"
         options={
           isBusiness
             ? {
-                title: 'Create Event',
-                tabBarIcon: ({ color }) => <IconSymbol size={28} name="pencil" color={color} />,
+                title: 'Events',
+                tabBarIcon: ({ color }) => <IconSymbol size={28} name="calendar" color={color} />,
               }
             : { href: null }
         }
