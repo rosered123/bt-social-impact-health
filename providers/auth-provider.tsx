@@ -65,6 +65,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
+      if (!initialSession) {
+        if (mounted) setLoading(false);
+        return;
+      }
+
+      // Validate the session is still accepted by the server (catches stale refresh tokens)
+      const { error: userError } = await supabase.auth.getUser();
+      if (userError) {
+        await supabase.auth.signOut();
+        if (mounted) setLoading(false);
+        return;
+      }
+
       setSession(initialSession);
 
       if (initialSession?.user?.id) {
