@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
   SafeAreaView,
   ScrollView,
   StatusBar,
@@ -25,7 +26,9 @@ function FollowedBusinessCard({ biz }: { biz: Business }) {
   return (
     <TouchableOpacity activeOpacity={0.85} style={styles.savedCard}>
       <View style={styles.savedImageWrap}>
-        <View style={styles.savedImage} />
+        {biz.logo_url ? (
+          <Image source={{ uri: biz.logo_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+        ) : null}
         <Text style={styles.heart}>♥</Text>
       </View>
       <View style={styles.savedBody}>
@@ -129,7 +132,11 @@ export default function Profile() {
               </TouchableOpacity>
             </View>
           </View>
-          <View style={styles.headerAvatar} />
+          {profile?.avatar_url ? (
+            <Image source={{ uri: profile.avatar_url }} style={styles.headerAvatar} resizeMode="cover" />
+          ) : (
+            <View style={styles.headerAvatar} />
+          )}
         </View>
 
         <Text style={styles.sectionTitle}>Following</Text>
