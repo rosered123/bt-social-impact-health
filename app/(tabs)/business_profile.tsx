@@ -1,6 +1,8 @@
 import { router } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
+  Image,
   SafeAreaView,
   ScrollView,
   StatusBar,
@@ -12,21 +14,15 @@ import {
 import MapView, { Marker } from 'react-native-maps';
 
 import { useAuth } from '@/providers/auth-provider';
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-interface Event {
-  id: string;
-  name: string;
-  date: string;
-  location: string;
-}
-
-interface Review {
-  id: string;
-  name: string;
-  date: string;
-  rating: number;
-}
+import {
+  getBusinessByUid,
+  getBusinessEvents,
+  getMyProfile,
+  listReviewsForBusiness,
+  type Business,
+  type EventRow,
+  type ReviewRow,
+} from '@/services/api';
 
 // ─── Star Rating ──────────────────────────────────────────────────────────────
 const StarRating: React.FC<{ rating: number; size?: number }> = ({ rating, size = 13 }) => (
@@ -40,113 +36,136 @@ const StarRating: React.FC<{ rating: number; size?: number }> = ({ rating, size 
 );
 
 // ─── Review Item ──────────────────────────────────────────────────────────────
-const ReviewItem: React.FC<{ review: Review }> = ({ review }) => (
-  <View style={styles.reviewItem}>
-    <View style={styles.reviewHeader}>
-      <View style={styles.reviewAvatar}>
-        <Text style={styles.reviewAvatarText}>{review.name[0]}</Text>
+const ReviewItem: React.FC<{ review: ReviewRow }> = ({ review }) => {
+  const initial = review.reviewer_uid.slice(0, 1).toUpperCase();
+  const date = new Date(review.created_at).toLocaleDateString();
+  return (
+    <View style={styles.reviewItem}>
+      <View style={styles.reviewHeader}>
+        <View style={styles.reviewAvatar}>
+          <Text style={styles.reviewAvatarText}>{initial}</Text>
+        </View>
+        <View style={styles.reviewMeta}>
+          <Text style={styles.reviewName}>Customer</Text>
+          <StarRating rating={review.rating} />
+        </View>
+        <Text style={styles.reviewDate}>{date}</Text>
       </View>
-      <View style={styles.reviewMeta}>
-        <Text style={styles.reviewName}>{review.name}</Text>
-        <StarRating rating={review.rating} />
-      </View>
-      <Text style={styles.reviewDate}>{review.date}</Text>
+      {review.body ? (
+        <Text style={styles.reviewBody}>{review.body}</Text>
+      ) : (
+        <View style={styles.reviewLines}>
+          <View style={styles.reviewLine} />
+          <View style={[styles.reviewLine, { width: '65%' }]} />
+        </View>
+      )}
+      <TouchableOpacity style={styles.replyBtn}>
+        <Text style={styles.replyText}>↩  Reply</Text>
+      </TouchableOpacity>
     </View>
-    <View style={styles.reviewLines}>
-      <View style={styles.reviewLine} />
-      <View style={[styles.reviewLine, { width: '65%' }]} />
-    </View>
-    <TouchableOpacity style={styles.replyBtn}>
-      <Text style={styles.replyText}>↩  Reply</Text>
-    </TouchableOpacity>
+  );
+};
+
+// ─── Info Row ─────────────────────────────────────────────────────────────────
+const InfoRow: React.FC<{ icon: string; label: string; link?: boolean }> = ({ icon, label, link }) => (
+  <View style={styles.infoRow}>
+    <Text style={styles.infoIcon}>{icon}</Text>
+    <Text style={[styles.infoLabel, link && styles.infoLabelLink]}>{label}</Text>
   </View>
 );
 
-// ─── Info Row ─────────────────────────────────────────────────────────────────
-const InfoRow: React.FC<{ icon: string; label: string; onPress?: () => void; link?: boolean }> = ({
-  icon, label, onPress, link,
-}) => (
-  <TouchableOpacity style={styles.infoRow} onPress={onPress} activeOpacity={onPress ? 0.7 : 1}>
-    <Text style={styles.infoIcon}>{icon}</Text>
-    <Text style={[styles.infoLabel, link && styles.infoLabelLink]}>{label}</Text>
-  </TouchableOpacity>
-);
-
 // ─── Main Screen ──────────────────────────────────────────────────────────────
-const SAMPLE_EVENTS: Event[] = [
-  { id: '1', name: 'Event name', date: 'mm - dd - yyyy', location: 'Location' },
-];
-
-const SAMPLE_REVIEWS: Review[] = [
-  { id: '1', name: 'Name', date: 'mm-dd-yyyy', rating: 5 },
-  { id: '2', name: 'Name', date: 'mm-dd-yyyy', rating: 3 },
-];
-
 export default function MyProfile() {
-  const [following, setFollowing] = useState(false);
   const { signOut } = useAuth();
+  const [business, setBusiness] = useState<Business | null>(null);
+  const [events, setEvents] = useState<EventRow[]>([]);
+  const [reviews, setReviews] = useState<ReviewRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const profile = await getMyProfile();
+        if (!profile || cancelled) return;
+        const [biz, evts, revs] = await Promise.all([
+          getBusinessByUid(profile.uid),
+          getBusinessEvents(profile.uid, 5),
+          listReviewsForBusiness(profile.uid, 5),
+        ]);
+        if (cancelled) return;
+        setBusiness(biz);
+        setEvents(evts);
+        setReviews(revs);
+      } catch {
+        // silently fail — show empty state
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const onSignOut = async () => {
     try {
       await signOut();
       router.replace('/auth');
     } catch {
-      // Keep UX simple for now; auth provider already throws detailed errors.
+      // keep UX simple
     }
   };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.safe, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color="#333" />
+      </SafeAreaView>
+    );
+  }
+
+  const reviewCount = reviews.length;
+  const avgRating = business?.avg_rating ?? 0;
 
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="dark-content" backgroundColor="#f5f5f5" />
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
 
-        {/* ── Header Title ── */}
         <Text style={styles.pageTitle}>My Profile</Text>
 
         {/* ── Cover + Avatar ── */}
         <View style={styles.coverSection}>
           <View style={styles.coverPhoto}>
-            <Text style={styles.coverPhotoIcon}>🖼</Text>
+            {business?.logo_url ? (
+              <Image source={{ uri: business.logo_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+            ) : (
+              <Text style={styles.coverPhotoIcon}>🖼</Text>
+            )}
           </View>
           <View style={styles.avatarWrapper}>
             <View style={styles.avatar}>
-              <Text style={styles.avatarIcon}>🖼</Text>
+              {business?.logo_url ? (
+                <Image source={{ uri: business.logo_url }} style={styles.avatarImage} resizeMode="cover" />
+              ) : (
+                <Text style={styles.avatarIcon}>🖼</Text>
+              )}
             </View>
           </View>
         </View>
 
         {/* ── Business Info ── */}
         <View style={styles.profileInfo}>
-          <Text style={styles.businessName}>Business Name</Text>
+          <Text style={styles.businessName}>{business?.business_name ?? 'No Business Set Up'}</Text>
 
           <View style={styles.statsRow}>
             <View style={styles.ratingBadge}>
               <Text style={styles.starFilled}>★</Text>
-              <Text style={styles.ratingText}> 5.0 (## reviews)</Text>
+              <Text style={styles.ratingText}> {Number(avgRating).toFixed(1)} ({reviewCount} review{reviewCount !== 1 ? 's' : ''})</Text>
             </View>
-            <Text style={styles.followersText}>#### followers</Text>
+            <Text style={styles.followersText}>{business?.follower_count ?? 0} followers</Text>
           </View>
 
-          {/* Vibe Tags */}
-          <View style={styles.tagsRow}>
-            {['vibe tag', 'vibe tag', 'vibe tag'].map((tag, i) => (
-              <View key={i} style={styles.tag}>
-                <Text style={styles.tagText}>{tag}</Text>
-              </View>
-            ))}
-          </View>
-
-          {/* Action Buttons */}
           <View style={styles.actionRow}>
-            <TouchableOpacity
-              style={[styles.followBtn, following && styles.followingBtn]}
-              onPress={() => setFollowing(f => !f)}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.followBtnText, following && styles.followingBtnText]}>
-                {following ? 'Following' : 'Follow'}
-              </Text>
-            </TouchableOpacity>
             <TouchableOpacity style={styles.shareBtn} activeOpacity={0.8}>
               <Text style={styles.shareBtnText}>Share Profile</Text>
             </TouchableOpacity>
@@ -156,82 +175,76 @@ export default function MyProfile() {
         {/* ── About ── */}
         <View style={styles.card}>
           <Text style={styles.cardSectionTitle}>About</Text>
-          <Text style={styles.cardBody}>Short description about the business</Text>
+          <Text style={styles.cardBody}>{business?.short_description ?? 'No description yet.'}</Text>
+
+          {business?.story ? (
+            <>
+              <View style={styles.divider} />
+              <Text style={styles.cardSectionTitle}>Our Story</Text>
+              <Text style={styles.cardBody}>{business.story}</Text>
+            </>
+          ) : null}
 
           <View style={styles.divider} />
 
-          <Text style={styles.cardSectionTitle}>Our Story</Text>
-          <Text style={styles.cardBody}>
-            The business history, its story, where it started, what is special about the business, etc.
-          </Text>
-
-          <View style={styles.divider} />
-
-          <InfoRow icon="📍" label="Location" />
           <MapView
             style={styles.locationMap}
-            initialRegion={{
-              latitude: 30.2672,
-              longitude: -97.7431,
-              latitudeDelta: 0.01,
-              longitudeDelta: 0.01,
-            }}
-            scrollEnabled={false}
-            zoomEnabled={false}
-            pitchEnabled={false}
-            rotateEnabled={false}
+            initialRegion={{ latitude: 30.2672, longitude: -97.7431, latitudeDelta: 0.01, longitudeDelta: 0.01 }}
+            scrollEnabled={false} zoomEnabled={false} pitchEnabled={false} rotateEnabled={false}
           >
             <Marker coordinate={{ latitude: 30.2672, longitude: -97.7431 }} />
           </MapView>
-          <InfoRow icon="📞" label="(123) 456-789" />
-          <InfoRow icon="✉️" label="Visit Website" link />
-          <InfoRow icon="🌐" label="Visit Website" link />
 
-          {/* Social Icons */}
-          <View style={styles.socialRow}>
-            <TouchableOpacity style={styles.socialIcon}>
-              <Text style={styles.socialIconText}>𝕀</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.socialIcon}>
-              <Text style={styles.socialIconText}>f</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.socialIcon}>
-              <Text style={styles.socialIconText}>♪</Text>
-            </TouchableOpacity>
-          </View>
+          {business?.phone ? <InfoRow icon="📞" label={business.phone} /> : null}
+          {business?.email ? <InfoRow icon="✉️" label={business.email} /> : null}
+          {business?.website ? <InfoRow icon="🌐" label={business.website} link /> : null}
         </View>
 
         {/* ── Upcoming Events ── */}
         <Text style={styles.sectionTitle}>Upcoming Events</Text>
-        {SAMPLE_EVENTS.map(event => (
-          <TouchableOpacity key={event.id} style={styles.eventCard} activeOpacity={0.8}>
-            <View style={styles.eventThumb} />
-            <View style={styles.eventInfo}>
-              <Text style={styles.eventName}>{event.name}</Text>
-              <View style={styles.eventMetaRow}>
-                <Text style={styles.eventMetaIcon}>📅</Text>
-                <Text style={styles.eventMetaText}>{event.date}</Text>
+        {events.length === 0 ? (
+          <Text style={styles.emptyText}>No upcoming events.</Text>
+        ) : (
+          events.map(event => (
+            <TouchableOpacity key={event.id} style={styles.eventCard} activeOpacity={0.8}>
+              <View style={styles.eventThumb}>
+                {event.cover_url ? (
+                  <Image source={{ uri: event.cover_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+                ) : null}
               </View>
-              <View style={styles.eventMetaRow}>
-                <Text style={styles.eventMetaIcon}>📍</Text>
-                <Text style={styles.eventMetaText}>{event.location}</Text>
+              <View style={styles.eventInfo}>
+                <Text style={styles.eventName}>{event.event_name}</Text>
+                <View style={styles.eventMetaRow}>
+                  <Text style={styles.eventMetaIcon}>📅</Text>
+                  <Text style={styles.eventMetaText}>{event.event_date}</Text>
+                </View>
+                {event.location ? (
+                  <View style={styles.eventMetaRow}>
+                    <Text style={styles.eventMetaIcon}>📍</Text>
+                    <Text style={styles.eventMetaText}>{event.location}</Text>
+                  </View>
+                ) : null}
               </View>
-            </View>
-          </TouchableOpacity>
-        ))}
+            </TouchableOpacity>
+          ))
+        )}
 
         {/* ── Recent Reviews ── */}
         <View style={styles.reviewsHeader}>
           <Text style={styles.sectionTitle}>Recent Reviews</Text>
           <View style={styles.reviewsRating}>
             <Text style={styles.starFilled}>★</Text>
-            <Text style={styles.reviewsRatingText}> 5.0 (##)</Text>
+            <Text style={styles.reviewsRatingText}> {Number(avgRating).toFixed(1)} ({reviewCount})</Text>
           </View>
         </View>
 
-        {SAMPLE_REVIEWS.map(review => (
-          <ReviewItem key={review.id} review={review} />
-        ))}
+        {reviews.length === 0 ? (
+          <Text style={styles.emptyText}>No reviews yet.</Text>
+        ) : (
+          reviews.map(review => (
+            <ReviewItem key={review.id} review={review} />
+          ))
+        )}
 
         <TouchableOpacity style={styles.signOutButton} activeOpacity={0.85} onPress={onSignOut}>
           <Text style={styles.signOutButtonText}>Sign Out</Text>
@@ -250,10 +263,10 @@ const RADIUS = 12;
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#f5f5f5' },
   scroll: { flex: 1, paddingHorizontal: 16 },
+  emptyText: { fontSize: 13, color: '#888', marginBottom: 16 },
 
   pageTitle: { fontSize: 24, fontWeight: '900', color: '#111', marginTop: 16, marginBottom: 14 },
 
-  // Cover + Avatar
   coverSection: { marginBottom: 0 },
   coverPhoto: {
     height: 150, backgroundColor: CARD_BG, borderRadius: RADIUS,
@@ -268,7 +281,6 @@ const styles = StyleSheet.create({
   },
   avatarIcon: { fontSize: 22, opacity: 0.5 },
 
-  // Profile Info
   profileInfo: { paddingTop: 8, marginBottom: 16 },
   businessName: { fontSize: 22, fontWeight: '900', color: '#111', marginBottom: 6 },
   statsRow: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 10 },
@@ -276,23 +288,7 @@ const styles = StyleSheet.create({
   ratingText: { fontSize: 13, color: '#444', fontWeight: '500' },
   followersText: { fontSize: 13, color: '#444', fontWeight: '600' },
 
-  // Tags
-  tagsRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 14 },
-  tag: {
-    borderWidth: 1.5, borderColor: '#bbb', borderRadius: 20,
-    paddingHorizontal: 12, paddingVertical: 5, backgroundColor: '#f0f0f0',
-  },
-  tagText: { fontSize: 12, color: '#444' },
-
-  // Action Buttons
   actionRow: { flexDirection: 'row', gap: 10 },
-  followBtn: {
-    flex: 1, backgroundColor: '#555', borderRadius: 10,
-    paddingVertical: 10, alignItems: 'center',
-  },
-  followingBtn: { backgroundColor: '#f0f0f0', borderWidth: 1.5, borderColor: '#bbb' },
-  followBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
-  followingBtnText: { color: '#333' },
   shareBtn: {
     flex: 1, backgroundColor: '#f0f0f0', borderRadius: 10,
     paddingVertical: 10, alignItems: 'center',
@@ -300,43 +296,31 @@ const styles = StyleSheet.create({
   },
   shareBtnText: { color: '#333', fontWeight: '700', fontSize: 14 },
 
-  // Card
   card: { backgroundColor: CARD_BG, borderRadius: RADIUS, padding: 16, marginBottom: 20 },
   cardSectionTitle: { fontSize: 15, fontWeight: '800', color: '#111', marginBottom: 4 },
   cardBody: { fontSize: 13, color: '#555', lineHeight: 19, marginBottom: 4 },
   divider: { height: 1, backgroundColor: '#ccc', marginVertical: 12 },
 
-  // Info Rows
   locationMap: { height: 140, borderRadius: 10, marginTop: 6, marginBottom: 6, overflow: 'hidden' },
   infoRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 5 },
   infoIcon: { fontSize: 15, width: 22 },
   infoLabel: { fontSize: 13, color: '#444' },
   infoLabelLink: { color: '#4f7df0', fontWeight: '500' },
 
-  // Social
-  socialRow: { flexDirection: 'row', gap: 10, marginTop: 10 },
-  socialIcon: {
-    width: 32, height: 32, borderRadius: 8, backgroundColor: '#ccc',
-    alignItems: 'center', justifyContent: 'center',
-  },
-  socialIconText: { fontSize: 16, fontWeight: '700', color: '#333' },
-
-  // Section titles
   sectionTitle: { fontSize: 18, fontWeight: '900', color: '#111', marginBottom: 12 },
 
-  // Events
   eventCard: {
     flexDirection: 'row', backgroundColor: CARD_BG, borderRadius: RADIUS,
     padding: 12, marginBottom: 14, gap: 12, alignItems: 'center',
   },
-  eventThumb: { width: 64, height: 64, borderRadius: 10, backgroundColor: '#c8c8c8' },
+  eventThumb: { width: 64, height: 64, borderRadius: 10, backgroundColor: '#c8c8c8', overflow: 'hidden' },
+  avatarImage: { width: '100%', height: '100%', borderRadius: 36 },
   eventInfo: { flex: 1, gap: 4 },
   eventName: { fontSize: 14, fontWeight: '800', color: '#111' },
   eventMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   eventMetaIcon: { fontSize: 12 },
   eventMetaText: { fontSize: 12, color: '#666' },
 
-  // Reviews
   reviewsHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
   reviewsRating: { flexDirection: 'row', alignItems: 'center' },
   reviewsRatingText: { fontSize: 14, fontWeight: '700', color: '#333' },
@@ -351,23 +335,19 @@ const styles = StyleSheet.create({
   reviewMeta: { flex: 1 },
   reviewName: { fontWeight: '700', fontSize: 14, color: '#111' },
   reviewDate: { fontSize: 11, color: '#999' },
+  reviewBody: { fontSize: 13, color: '#444', lineHeight: 18, marginBottom: 10 },
   reviewLines: { gap: 6, marginBottom: 10 },
   reviewLine: { height: 8, backgroundColor: '#ccc', borderRadius: 4, width: '100%' },
   replyBtn: {},
   replyText: { fontSize: 13, color: '#555', fontWeight: '600' },
+
   signOutButton: {
-    marginTop: 4,
-    alignSelf: 'flex-start',
-    borderWidth: 1,
-    borderColor: '#111',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    backgroundColor: '#fff',
+    marginTop: 4, alignSelf: 'flex-start',
+    borderWidth: 1, borderColor: '#111', borderRadius: 10,
+    paddingHorizontal: 14, paddingVertical: 10, backgroundColor: '#fff',
   },
   signOutButtonText: { color: '#111', fontWeight: '700', fontSize: 14 },
 
-  // Stars
   starsRow: { flexDirection: 'row', gap: 1, marginTop: 2 },
   starFilled: { color: '#f59e0b', fontSize: 13 },
   starEmpty: { color: '#ddd', fontSize: 13 },
