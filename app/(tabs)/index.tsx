@@ -2,7 +2,7 @@ import { Redirect } from 'expo-router';
 
 import { useAuth } from '@/providers/auth-provider';
 
-export default function HomeScreen() {
-    const { role } = useAuth();
-    return <Redirect href={role === 'business' ? '/dashboard' : '/explore'} />;
+export default function Index() {
+  const { role } = useAuth();
+  return <Redirect href={role === 'business' ? '/dashboard' : '/explore'} />;
 }

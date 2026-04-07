@@ -182,7 +182,7 @@ export async function upsertMyBusiness(input: {
 	return data;
 }
 
-export async function listPublishedEvents(limit = 30): Promise<EventRow[]> {
+export async function listPublishedEvents(limit = 30): Promise<EventWithBusiness[]> {
 	const { data, error } = await supabase
 		.from('events')
 		.select('*')
@@ -190,11 +190,21 @@ export async function listPublishedEvents(limit = 30): Promise<EventRow[]> {
 		.order('event_date', { ascending: true })
 		.limit(limit);
 
-	if (error) {
-		throw error;
+	if (error) throw error;
+	if (!data || data.length === 0) return [];
+
+	const hostUids = [...new Set(data.map((e) => e.host_uid))];
+	const { data: bizData } = await supabase
+		.from('businesses')
+		.select('uid, business_name')
+		.in('uid', hostUids);
+
+	const bizMap: Record<string, string> = {};
+	for (const b of bizData ?? []) {
+		bizMap[b.uid] = b.business_name;
 	}
 
-	return data;
+	return data.map((row) => ({ ...row, business_name: bizMap[row.host_uid] ?? 'Pop-Up Business' }));
 }
 
 export async function listMyEvents(limit = 50): Promise<EventRow[]> {
@@ -420,7 +430,7 @@ export type EventWithBusiness = EventRow & { business_name: string };
 export async function listMappableEvents(limit = 100): Promise<EventWithBusiness[]> {
 	const { data, error } = await supabase
 		.from('events')
-		.select('*, businesses!host_uid(business_name)')
+		.select('*')
 		.eq('is_published', true)
 		.not('latitude', 'is', null)
 		.not('longitude', 'is', null)
@@ -428,11 +438,20 @@ export async function listMappableEvents(limit = 100): Promise<EventWithBusiness
 		.limit(limit);
 
 	if (error) throw error;
+	if (!data || data.length === 0) return [];
 
-	return ((data ?? []) as any[]).map((row) => ({
-		...row,
-		business_name: row.businesses?.business_name ?? 'Pop-Up Business',
-	}));
+	const hostUids = [...new Set(data.map((e) => e.host_uid))];
+	const { data: bizData } = await supabase
+		.from('businesses')
+		.select('uid, business_name')
+		.in('uid', hostUids);
+
+	const bizMap: Record<string, string> = {};
+	for (const b of bizData ?? []) {
+		bizMap[b.uid] = b.business_name;
+	}
+
+	return data.map((row) => ({ ...row, business_name: bizMap[row.host_uid] ?? 'Pop-Up Business' }));
 }
 
 export async function getEventById(eventId: number): Promise<EventRow | null> {

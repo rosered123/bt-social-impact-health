@@ -14,11 +14,13 @@ import {
 import { router } from 'expo-router';
 
 import {
+  getInventory,
   listMyEvents,
   updateMyEvent,
   upsertInventoryItem,
   type EventRow,
   type EventStatus,
+  type InventoryItem,
 } from '@/services/api';
 
 type OverallStatus = 'Open' | 'Closing soon' | 'Sold Out' | 'Paused/Break';
@@ -105,6 +107,20 @@ const AVAILABILITY_OPTIONS: ProductAvailability[] = [
   'Closed for today',
 ];
 
+type ProductState = {
+  product_name: string;
+  availability: ProductAvailability;
+  custom_message: string;
+};
+
+const AVAIL_REVERSE: Record<string, ProductAvailability> = {
+  full_stock: 'Available - Full stock',
+  low_stock: 'Available - Low stock',
+  limited_menu: 'Available - Limited menu',
+  closing_early: 'Available - Closing early',
+  closed_today: 'Closed for today',
+};
+
 export default function UpdateStatus() {
   const [event, setEvent] = useState<EventRow | null>(null);
   const [loading, setLoading] = useState(true);
@@ -113,9 +129,11 @@ export default function UpdateStatus() {
   const [openTime, setOpenTime] = useState('11:00 AM');
   const [closeTime, setCloseTime] = useState('9:00 PM');
   const [overallStatus, setOverallStatus] = useState<OverallStatus>('Open');
-  const [availability, setAvailability] = useState<ProductAvailability>('Available - Full stock');
-  const [customMessage, setCustomMessage] = useState('');
   const [location, setLocation] = useState('');
+  const [products, setProducts] = useState<ProductState[]>([
+    { product_name: 'General', availability: 'Available - Full stock', custom_message: '' },
+  ]);
+  const [newProductName, setNewProductName] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -126,6 +144,14 @@ export default function UpdateStatus() {
         if (events[0]) {
           setEvent(events[0]);
           setLocation(events[0].location ?? '');
+          const inventory = await getInventory(events[0].id);
+          if (!cancelled && inventory.length > 0) {
+            setProducts(inventory.map((item: InventoryItem) => ({
+              product_name: item.product_name,
+              availability: AVAIL_REVERSE[item.availability] ?? 'Available - Full stock',
+              custom_message: item.custom_message ?? '',
+            })));
+          }
         }
       } catch {
         // show form without event info
@@ -136,6 +162,18 @@ export default function UpdateStatus() {
     return () => { cancelled = true; };
   }, []);
 
+  const updateProduct = (index: number, patch: Partial<ProductState>) => {
+    setProducts(prev => prev.map((p, i) => i === index ? { ...p, ...patch } : p));
+  };
+
+  const addProduct = () => {
+    const name = newProductName.trim();
+    if (!name) return;
+    if (products.some(p => p.product_name === name)) return;
+    setProducts(prev => [...prev, { product_name: name, availability: 'Available - Full stock', custom_message: '' }]);
+    setNewProductName('');
+  };
+
   const handleUpdate = async () => {
     if (!event) {
       Alert.alert('No Event', 'Create an event first before updating its status.');
@@ -143,19 +181,19 @@ export default function UpdateStatus() {
     }
     setSubmitting(true);
     try {
-      await Promise.all([
-        updateMyEvent(event.id, {
-          status: STATUS_MAP[overallStatus],
-          start_time: openTime,
-          end_time: closeTime,
-          location: location.trim() || undefined,
-        }),
+      await updateMyEvent(event.id, {
+        status: STATUS_MAP[overallStatus],
+        start_time: openTime,
+        end_time: closeTime,
+        location: location.trim() || undefined,
+      });
+      await Promise.all(products.map(p =>
         upsertInventoryItem(event.id, {
-          product_name: 'General',
-          availability: AVAIL_MAP[availability],
-          custom_message: customMessage.trim() || null,
-        }),
-      ]);
+          product_name: p.product_name,
+          availability: AVAIL_MAP[p.availability],
+          custom_message: p.custom_message.trim() || null,
+        })
+      ));
       Alert.alert('Updated', 'Status has been updated.');
     } catch (e: any) {
       Alert.alert('Error', e.message ?? 'Failed to update status.');
@@ -225,18 +263,41 @@ export default function UpdateStatus() {
             <Text style={styles.clockIcon}>📦</Text>
             <Text style={styles.sectionTitle}>Product Availability</Text>
           </View>
-          {AVAILABILITY_OPTIONS.map(opt => (
-            <AvailabilityOption key={opt} label={opt} selected={availability === opt} onPress={() => setAvailability(opt)} />
+          {products.map((product, index) => (
+            <View key={product.product_name} style={styles.productBlock}>
+              <Text style={styles.productName}>{product.product_name}</Text>
+              {AVAILABILITY_OPTIONS.map(opt => (
+                <AvailabilityOption
+                  key={opt}
+                  label={opt}
+                  selected={product.availability === opt}
+                  onPress={() => updateProduct(index, { availability: opt })}
+                />
+              ))}
+              <Text style={styles.customMsgLabel}>Custom Message</Text>
+              <TextInput
+                style={styles.customMsgInput}
+                placeholder={'e.g. "Just restocked! ☕"'}
+                placeholderTextColor="#aaa"
+                value={product.custom_message}
+                onChangeText={val => updateProduct(index, { custom_message: val })}
+                multiline
+              />
+              {index < products.length - 1 && <View style={styles.productDivider} />}
+            </View>
           ))}
-          <Text style={styles.customMsgLabel}>Custom Status Message</Text>
-          <TextInput
-            style={styles.customMsgInput}
-            placeholder={'e.g. "Just restocked matcha lattes! Come grab one ☕"'}
-            placeholderTextColor="#aaa"
-            value={customMessage}
-            onChangeText={setCustomMessage}
-            multiline
-          />
+          <View style={styles.addProductRow}>
+            <TextInput
+              style={styles.addProductInput}
+              placeholder="Add product name..."
+              placeholderTextColor="#aaa"
+              value={newProductName}
+              onChangeText={setNewProductName}
+            />
+            <TouchableOpacity style={styles.addProductBtn} onPress={addProduct}>
+              <Text style={styles.addProductBtnText}>+ Add</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         <View style={styles.sectionHeaderRow}>
@@ -305,4 +366,11 @@ const styles = StyleSheet.create({
   locationInput: { borderWidth: 1.5, borderColor: '#d0d0d0', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, color: '#333', backgroundColor: '#fff', marginBottom: 8 },
   updateStatusBtn: { backgroundColor: '#222', borderRadius: RADIUS, paddingVertical: 16, alignItems: 'center', marginTop: 4, marginBottom: 8 },
   updateStatusBtnText: { color: '#fff', fontSize: 16, fontWeight: '800' },
+  productBlock: { marginBottom: 8 },
+  productName: { fontSize: 14, fontWeight: '800', color: '#111', marginBottom: 8 },
+  productDivider: { height: 1, backgroundColor: '#d0d0d0', marginVertical: 12 },
+  addProductRow: { flexDirection: 'row', gap: 8, marginTop: 12, alignItems: 'center' },
+  addProductInput: { flex: 1, borderWidth: 1.5, borderColor: '#d0d0d0', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, fontSize: 13, color: '#333', backgroundColor: '#fff' },
+  addProductBtn: { backgroundColor: '#222', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 9 },
+  addProductBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
 });
