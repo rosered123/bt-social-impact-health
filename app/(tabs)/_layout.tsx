@@ -152,7 +152,19 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="map.fill" color={color} />,
         }}
       />
+      <Tabs.Screen
+        name="buisness_events"
+        options={
+          isBusiness
+            ? {
+                title: 'My Events',
+                tabBarIcon: ({ color }) => <IconSymbol size={28} name="list.bullet" color={color} />,
+              }
+            : { href: null }
+        }
+      />
       <Tabs.Screen name="buisness_events_drafts" options={{ href: null }} />
+      <Tabs.Screen name="index" options={{ href: null }} />
     </Tabs>
   );
 }
