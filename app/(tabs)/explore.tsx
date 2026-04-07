@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
+  Image,
   SafeAreaView,
   ScrollView,
   StatusBar,
@@ -12,7 +13,7 @@ import {
   View,
 } from 'react-native';
 
-import { EventRow, listPublishedEvents } from '@/services/api';
+import { EventWithBusiness, listPublishedEvents } from '@/services/api';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_HALF = (SCREEN_WIDTH - 16 * 2 - 10) / 2;
@@ -24,6 +25,7 @@ interface PopUpEvent {
   business: string;
   time: string;
   address: string;
+  cover_url: string | null;
   saved: boolean;
 }
 
@@ -46,6 +48,9 @@ const GridCard: React.FC<{ event: PopUpEvent; onToggleSave: () => void }> = ({
 }) => (
   <View style={styles.gridCard}>
     <View style={styles.gridCardImage}>
+      {event.cover_url ? (
+        <Image source={{ uri: event.cover_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+      ) : null}
       <SaveBtn saved={event.saved} onToggle={onToggleSave} />
     </View>
     <View style={styles.gridCardBody}>
@@ -62,7 +67,11 @@ const FeatureCard: React.FC<{ event: PopUpEvent; onToggleSave: () => void }> = (
   event, onToggleSave,
 }) => (
   <View style={styles.featureCard}>
-    <View style={styles.featureCardImage} />
+    <View style={styles.featureCardImage}>
+      {event.cover_url ? (
+        <Image source={{ uri: event.cover_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+      ) : null}
+    </View>
     <View style={styles.featureCardBody}>
       <View style={styles.featureCardRow}>
         <View style={{ flex: 1 }}>
@@ -83,7 +92,11 @@ const ListCard: React.FC<{ event: PopUpEvent; onToggleSave: () => void }> = ({
   event, onToggleSave,
 }) => (
   <View style={styles.listCard}>
-    <View style={styles.listCardImage} />
+    <View style={styles.listCardImage}>
+      {event.cover_url ? (
+        <Image source={{ uri: event.cover_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+      ) : null}
+    </View>
     <View style={styles.listCardBody}>
       <Text style={styles.listCardTitle} numberOfLines={1}>{event.title}</Text>
       <Text style={styles.listCardSub} numberOfLines={1}>{event.business}</Text>
@@ -119,13 +132,14 @@ function formatEventTime(eventDate: string, startTime: string | null): string {
   return `${day}, ${hour12}:${String(minute).padStart(2, '0')} ${period}`;
 }
 
-function mapDbEventToCard(event: EventRow): PopUpEvent {
+function mapDbEventToCard(event: EventWithBusiness): PopUpEvent {
   return {
     id: event.id,
     title: event.event_name,
-    business: 'Pop-Up Business',
+    business: event.business_name,
     time: formatEventTime(event.event_date, event.start_time),
     address: event.location ?? 'Location TBA',
+    cover_url: event.cover_url,
     saved: false,
   };
 }
@@ -356,7 +370,7 @@ const styles = StyleSheet.create({
   // List card (popular)
   card: { backgroundColor: CARD_BG, borderRadius: RADIUS, padding: 12, marginBottom: 20 },
   listCard: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 6 },
-  listCardImage: { width: 60, height: 60, borderRadius: 10, backgroundColor: '#bbb' },
+  listCardImage: { width: 60, height: 60, borderRadius: 10, backgroundColor: '#bbb', overflow: 'hidden' },
   listCardBody: { flex: 1, gap: 2 },
   listCardTitle: { fontSize: 13, fontWeight: '800', color: '#111' },
   listCardSub: { fontSize: 11, color: '#666' },
