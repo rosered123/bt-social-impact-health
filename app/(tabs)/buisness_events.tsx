@@ -9,6 +9,7 @@ import {
   StatusBar,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { LIVE_EVENTS } from '@/constants/sample-events';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface DraftEvent {
@@ -27,48 +28,62 @@ const TABS = ['Upcoming', 'Live now', 'Past'] as const;
 type Tab = (typeof TABS)[number];
 
 // ─── Event Card ───────────────────────────────────────────────────────────────
-const EventCard: React.FC<{ event: DraftEvent }> = ({ event }) => (
-  <View style={styles.eventCard}>
-    {/* Image placeholder */}
-    <View style={styles.eventImageTop}>
-      {event.isLive && (
-        <View style={styles.liveBadge}>
-          <View style={styles.liveDot} />
-          <Text style={styles.liveText}>LIVE NOW</Text>
-        </View>
-      )}
-    </View>
-    <View style={styles.eventImageBar} />
-
-    {/* Details */}
-    <View style={styles.eventBody}>
-      <Text style={styles.eventName}>{event.name}</Text>
-      <View style={styles.eventDetailRow}>
-        <Text style={styles.detailIcon}>📅</Text>
-        <Text style={styles.eventDetail}>{event.date}  |  {event.time}</Text>
-      </View>
-      <View style={styles.eventDetailRow}>
-        <Text style={styles.detailIcon}>📍</Text>
-        <Text style={styles.eventDetail}>{event.location}</Text>
-      </View>
-
-      {/* Divider */}
-      <View style={styles.divider} />
-
-      {/* Stats */}
-      <View style={styles.statsRow}>
-        <View style={styles.statItem}>
-          <Text style={styles.statIcon}>👥</Text>
-          <Text style={styles.statText}>{event.rsvps} RSVPs</Text>
-        </View>
-        <View style={styles.statItem}>
-          <Text style={styles.statIcon}>👁</Text>
-          <Text style={styles.statText}>{event.views} Views</Text>
-        </View>
+const EventCard: React.FC<{ event: DraftEvent }> = ({ event }) => {
+  const router = useRouter();
+  return (
+    <View style={styles.eventCard}>
+      {/* Image placeholder */}
+      <View style={styles.eventImageTop}>
+        {event.isLive && (
+          <View style={styles.liveBadge}>
+            <View style={styles.liveDot} />
+            <Text style={styles.liveText}>LIVE NOW</Text>
           </View>
+        )}
+      </View>
+      <View style={styles.eventImageBar} />
+
+      {/* Details */}
+      <View style={styles.eventBody}>
+        <View style={styles.eventBodyHeader}>
+          <Text style={styles.eventName}>{event.name}</Text>
+          {event.isLive && (
+            <TouchableOpacity
+              style={styles.updateBtn}
+              activeOpacity={0.85}
+              onPress={() => router.push('/update_status')}
+            >
+              <Text style={styles.updateBtnText}>Update</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+        <View style={styles.eventDetailRow}>
+          <Text style={styles.detailIcon}>📅</Text>
+          <Text style={styles.eventDetail}>{event.date}  |  {event.time}</Text>
+        </View>
+        <View style={styles.eventDetailRow}>
+          <Text style={styles.detailIcon}>📍</Text>
+          <Text style={styles.eventDetail}>{event.location}</Text>
+        </View>
+
+        {/* Divider */}
+        <View style={styles.divider} />
+
+        {/* Stats */}
+        <View style={styles.statsRow}>
+          <View style={styles.statItem}>
+            <Text style={styles.statIcon}>👥</Text>
+            <Text style={styles.statText}>{event.rsvps} RSVPs</Text>
+          </View>
+          <View style={styles.statItem}>
+            <Text style={styles.statIcon}>👁</Text>
+            <Text style={styles.statText}>{event.views} Views</Text>
+          </View>
+        </View>
+      </View>
     </View>
-  </View>
-);
+  );
+};
 
 // ─── Seed Data ────────────────────────────────────────────────────────────────
 const DRAFT_EVENTS: DraftEvent[] = [
@@ -89,19 +104,6 @@ const DRAFT_EVENTS: DraftEvent[] = [
     location: 'Location',
     rsvps: 0,
     views: 0,
-  },
-];
-
-const LIVE_EVENTS: DraftEvent[] = [
-  {
-    id: '1',
-    name: 'Event name',
-    date: 'mm - dd - yyyy',
-    time: '1 PM–4 PM',
-    location: 'Location',
-    rsvps: 0,
-    views: 0,
-    isLive: true,
   },
 ];
 
@@ -332,7 +334,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
-  eventName: { fontSize: 18, fontWeight: '700', color: '#000', marginBottom: 8 },
+  eventBodyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  eventName: { fontSize: 18, fontWeight: '700', color: '#000', flexShrink: 1 },
   eventDetailRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
   detailIcon: { fontSize: 16 },
   eventDetail: { fontSize: 15, fontWeight: '400', color: '#454545' },
@@ -349,5 +357,19 @@ const styles = StyleSheet.create({
   statItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   statIcon: { fontSize: 16 },
   statText: { fontSize: 15, fontWeight: '700', color: '#000' },
+
+  // Update Button (live events)
+  updateBtn: {
+    backgroundColor: '#222',
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginLeft: 8,
+  },
+  updateBtnText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 12,
+  },
 
 });

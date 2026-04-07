@@ -56,17 +56,7 @@ export default function TabLayout() {
             : { href: null }
         }
       />
-      <Tabs.Screen
-        name="update_status"
-        options={
-          isBusiness
-            ? {
-                title: 'Status',
-                tabBarIcon: ({ color }) => <IconSymbol size={28} name="clock.fill" color={color} />,
-              }
-            : { href: null }
-        }
-      />
+      <Tabs.Screen name="update_status" options={{ href: null }} />
       <Tabs.Screen
         name="business_profile"
         options={
@@ -144,6 +134,7 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen name="buisness_events_drafts" options={{ href: null }} />
+      <Tabs.Screen name="index" options={{ href: null }} />
     </Tabs>
   );
 }

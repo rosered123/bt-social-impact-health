@@ -11,6 +11,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import { router } from 'expo-router';
 
 import {
   listMyEvents,
@@ -176,7 +177,14 @@ export default function UpdateStatus() {
       <StatusBar barStyle="dark-content" backgroundColor="#f5f5f5" />
 
       <View style={styles.navbar}>
-        <View style={styles.backBtn} />
+        <TouchableOpacity
+          style={styles.backBtn}
+          onPress={() => router.back()}
+          activeOpacity={0.75}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Text style={styles.backIcon}>←</Text>
+        </TouchableOpacity>
         <Text style={styles.navTitle}>Update Status</Text>
         <TouchableOpacity style={[styles.navUpdateBtn, submitting && { opacity: 0.5 }]} onPress={handleUpdate} disabled={submitting}>
           <Text style={styles.navUpdateText}>{submitting ? '…' : 'Update'}</Text>
@@ -256,7 +264,8 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#f5f5f5' },
   scroll: { flex: 1, paddingHorizontal: 16 },
   navbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#f5f5f5' },
-  backBtn: { width: 36, height: 36 },
+  backBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
+  backIcon: { fontSize: 24, fontWeight: '700', color: '#111' },
   navTitle: { fontSize: 18, fontWeight: '800', color: '#111' },
   navUpdateBtn: { backgroundColor: '#222', borderRadius: 10, paddingHorizontal: 18, paddingVertical: 8 },
   navUpdateText: { color: '#fff', fontWeight: '700', fontSize: 14 },
