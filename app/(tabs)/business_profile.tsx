@@ -166,6 +166,13 @@ export default function MyProfile() {
           </View>
 
           <View style={styles.actionRow}>
+            <TouchableOpacity
+              style={styles.followBtn}
+              onPress={() => router.push('/edit_profile?from=profile')}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.followBtnText}>Edit Profile</Text>
+            </TouchableOpacity>
             <TouchableOpacity style={styles.shareBtn} activeOpacity={0.8}>
               <Text style={styles.shareBtnText}>Share Profile</Text>
             </TouchableOpacity>
@@ -289,12 +296,16 @@ const styles = StyleSheet.create({
   followersText: { fontSize: 13, color: '#444', fontWeight: '600' },
 
   actionRow: { flexDirection: 'row', gap: 10 },
-  shareBtn: {
-    flex: 1, backgroundColor: '#f0f0f0', borderRadius: 10,
+  followBtn: {
+    flex: 1, backgroundColor: '#555', borderRadius: 10,
     paddingVertical: 10, alignItems: 'center',
-    borderWidth: 1.5, borderColor: '#ccc',
   },
-  shareBtnText: { color: '#333', fontWeight: '700', fontSize: 14 },
+  followBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  shareBtn: {
+    flex: 1, backgroundColor: '#555', borderRadius: 10,
+    paddingVertical: 10, alignItems: 'center',
+  },
+  shareBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
 
   card: { backgroundColor: CARD_BG, borderRadius: RADIUS, padding: 16, marginBottom: 20 },
   cardSectionTitle: { fontSize: 15, fontWeight: '800', color: '#111', marginBottom: 4 },
