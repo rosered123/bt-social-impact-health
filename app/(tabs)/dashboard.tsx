@@ -20,6 +20,7 @@ import {
   type Business,
   type ReviewRow,
 } from '@/services/api';
+import { LIVE_EVENT } from '@/constants/sample-events';
 
 // ─── Icon placeholders ───────────────────────────────────────────────────────
 const Icon = ({ name, size = 20, color = '#222' }: { name: string; size?: number; color?: string }) => {
@@ -167,11 +168,31 @@ export default function BusinessDashboard() {
               <Icon name="eye" size={14} color="#333" />
               <Text style={styles.outlineBtnText}> View Public Profile</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.filledBtn} onPress={() => router.push('/(tabs)/edit_profile')}>
+            <TouchableOpacity style={styles.filledBtn} onPress={() => router.push('/(tabs)/edit_profile?from=dashboard')}>
               <Icon name="edit" size={14} color="#fff" />
               <Text style={styles.filledBtnText}> Edit Profile</Text>
             </TouchableOpacity>
           </View>
+        </View>
+
+        {/* ── Right Now ── */}
+        <Text style={styles.sectionTitle}>Right Now</Text>
+        <View style={styles.rightNowCard}>
+          <View style={styles.rightNowTopRow}>
+            <Text style={styles.rightNowLabel}>CURRENT STATUS</Text>
+            <TouchableOpacity
+              style={styles.updateBtn}
+              activeOpacity={0.85}
+              onPress={() => router.push('/(tabs)/update_status')}
+            >
+              <Text style={styles.updateBtnText}>Update</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.liveBadgeRow}>
+            <View style={styles.liveDot} />
+            <Text style={styles.liveText}>LIVE NOW</Text>
+          </View>
+          <Text style={styles.rightNowDetail}>{LIVE_EVENT.name}  |  {LIVE_EVENT.location}</Text>
         </View>
 
         {/* ── Today's Activity ── */}
@@ -185,7 +206,7 @@ export default function BusinessDashboard() {
         {/* ── More Actions ── */}
         <Text style={styles.sectionTitle}>More Actions</Text>
         <View style={styles.grid}>
-          <ActionCard icon="calendar" label="Create Event" sub="New pop-up" onPress={() => router.push('/(tabs)/create_business_event')} />
+          <ActionCard icon="calendar" label="Create Event" sub="New pop-up" onPress={() => router.push('/(tabs)/create_business_event?from=dashboard')} />
           <ActionCard icon="handshake" label="Collaborate" sub="Partner up" />
           <ActionCard icon="offer" label="Create Offer" sub="Special deals" />
           <ActionCard icon="analytics" label="View Analytics" sub="Insights & data" />
@@ -231,6 +252,15 @@ const styles = StyleSheet.create({
   filledBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#333', borderRadius: 8, paddingVertical: 8 },
   filledBtnText: { fontSize: 12, fontWeight: '600', color: '#fff' },
   sectionTitle: { fontSize: 17, fontWeight: '800', color: '#111', marginBottom: 10 },
+  rightNowCard: { backgroundColor: CARD_BG, borderRadius: RADIUS, padding: 14, marginBottom: 20 },
+  rightNowTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+  rightNowLabel: { fontSize: 11, fontWeight: '800', color: '#666', letterSpacing: 0.8 },
+  updateBtn: { backgroundColor: '#222', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 7 },
+  updateBtnText: { color: '#fff', fontWeight: '700', fontSize: 12 },
+  liveBadgeRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
+  liveDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#22c55e' },
+  liveText: { fontSize: 14, fontWeight: '800', color: '#111', letterSpacing: 0.5 },
+  rightNowDetail: { fontSize: 13, color: '#555', fontWeight: '500' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 },
   statCard: { width: '47.5%', backgroundColor: CARD_BG, borderRadius: RADIUS, padding: 14, gap: 3 },
   statValue: { fontSize: 22, fontWeight: '900', color: '#111', marginTop: 4 },

@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import * as Location from 'expo-location';
 import React, { useState } from 'react';
 import {
@@ -39,6 +39,16 @@ const NOTIFICATION_OPTIONS = [
 ];
 
 export default function CreateEvent() {
+  const { from } = useLocalSearchParams<{ from?: string }>();
+  const goBack = () => {
+    if (from === 'events') {
+      router.replace('/buisness_events');
+    } else if (from === 'dashboard') {
+      router.replace('/dashboard');
+    } else {
+      router.back();
+    }
+  };
   const [eventName, setEventName] = useState('');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState('');
@@ -128,7 +138,7 @@ export default function CreateEvent() {
       <StatusBar barStyle="dark-content" backgroundColor="#f5f5f5" />
 
       <View style={styles.navbar}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.backBtn} onPress={goBack}>
           <Text style={styles.backIcon}>←</Text>
         </TouchableOpacity>
         <Text style={styles.navTitle}>Create Event</Text>

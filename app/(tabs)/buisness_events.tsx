@@ -18,6 +18,7 @@ type Tab = (typeof TABS)[number];
 
 // ─── Event Card ───────────────────────────────────────────────────────────────
 const EventCard: React.FC<{ event: EventRow }> = ({ event }) => {
+  const router = useRouter();
   const isLive = event.status === 'open';
   return (
     <View style={styles.eventCard}>
@@ -31,7 +32,18 @@ const EventCard: React.FC<{ event: EventRow }> = ({ event }) => {
       </View>
       <View style={styles.eventImageBar} />
       <View style={styles.eventBody}>
-        <Text style={styles.eventName}>{event.event_name}</Text>
+        <View style={styles.eventBodyHeader}>
+          <Text style={styles.eventName}>{event.event_name}</Text>
+          {isLive && (
+            <TouchableOpacity
+              style={styles.updateBtn}
+              activeOpacity={0.85}
+              onPress={() => router.push('/update_status')}
+            >
+              <Text style={styles.updateBtnText}>Update</Text>
+            </TouchableOpacity>
+          )}
+        </View>
         <View style={styles.eventDetailRow}>
           <Text style={styles.detailIcon}>📅</Text>
           <Text style={styles.eventDetail}>
@@ -95,7 +107,7 @@ export default function BusinessEventsUpcoming() {
         <TouchableOpacity
           style={styles.createBtn}
           activeOpacity={0.85}
-          onPress={() => router.push('/create_business_event')}
+          onPress={() => router.push('/create_business_event?from=events')}
         >
           <Text style={styles.createBtnText}>Create +</Text>
         </TouchableOpacity>
@@ -264,7 +276,13 @@ const styles = StyleSheet.create({
   },
   eventImageBar: { height: 37, backgroundColor: '#ADADAD' },
   eventBody: { paddingHorizontal: 14, paddingVertical: 10 },
-  eventName: { fontSize: 18, fontWeight: '700', color: '#000', marginBottom: 8 },
+  eventBodyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  eventName: { fontSize: 18, fontWeight: '700', color: '#000', flexShrink: 1 },
   eventDetailRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
   detailIcon: { fontSize: 16 },
   eventDetail: { fontSize: 15, fontWeight: '400', color: '#454545' },
@@ -273,4 +291,18 @@ const styles = StyleSheet.create({
   statItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   statIcon: { fontSize: 16 },
   statText: { fontSize: 15, fontWeight: '700', color: '#000', textTransform: 'capitalize' },
+
+  // Update Button (live events)
+  updateBtn: {
+    backgroundColor: '#222',
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginLeft: 8,
+  },
+  updateBtnText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 12,
+  },
 });

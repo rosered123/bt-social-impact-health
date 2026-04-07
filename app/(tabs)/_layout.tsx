@@ -44,28 +44,19 @@ export default function TabLayout() {
             : { href: null }
         }
       />
+      <Tabs.Screen name="create_business_event" options={{ href: null }} />
       <Tabs.Screen
-        name="create_business_event"
+        name="buisness_events"
         options={
           isBusiness
             ? {
-                title: 'Create Event',
-                tabBarIcon: ({ color }) => <IconSymbol size={28} name="pencil" color={color} />,
+                title: 'Events',
+                tabBarIcon: ({ color }) => <IconSymbol size={28} name="calendar" color={color} />,
               }
             : { href: null }
         }
       />
-      <Tabs.Screen
-        name="update_status"
-        options={
-          isBusiness
-            ? {
-                title: 'Status',
-                tabBarIcon: ({ color }) => <IconSymbol size={28} name="clock.fill" color={color} />,
-              }
-            : { href: null }
-        }
-      />
+      <Tabs.Screen name="update_status" options={{ href: null }} />
       <Tabs.Screen
         name="business_profile"
         options={
@@ -77,17 +68,7 @@ export default function TabLayout() {
             : { href: null }
         }
       />
-      <Tabs.Screen
-        name="edit_profile"
-        options={
-          isBusiness
-            ? {
-                title: 'Edit Profile',
-                tabBarIcon: ({ color }) => <IconSymbol size={28} name="pencil.circle.fill" color={color} />,
-              }
-            : { href: null }
-        }
-      />
+      <Tabs.Screen name="edit_profile" options={{ href: null }} />
 
       <Tabs.Screen
         name="explore"
@@ -151,17 +132,6 @@ export default function TabLayout() {
           title: 'Map',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="map.fill" color={color} />,
         }}
-      />
-      <Tabs.Screen
-        name="buisness_events"
-        options={
-          isBusiness
-            ? {
-                title: 'My Events',
-                tabBarIcon: ({ color }) => <IconSymbol size={28} name="list.bullet" color={color} />,
-              }
-            : { href: null }
-        }
       />
       <Tabs.Screen name="buisness_events_drafts" options={{ href: null }} />
       <Tabs.Screen name="index" options={{ href: null }} />
