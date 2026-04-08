@@ -67,15 +67,16 @@ const StarRating: React.FC<{ rating: number; size?: number }> = ({ rating, size 
 );
 
 const ReviewItem: React.FC<{ review: ReviewRow }> = ({ review }) => {
+  const initial = review.reviewer_uid.slice(0, 1).toUpperCase();
   const date = new Date(review.created_at).toLocaleDateString();
   return (
     <View style={styles.reviewItem}>
       <View style={styles.reviewHeader}>
         <View style={styles.reviewAvatar}>
-          <Text style={styles.reviewAvatarText}>U</Text>
+          <Text style={styles.reviewAvatarText}>{initial}</Text>
         </View>
         <View style={styles.reviewMeta}>
-          <Text style={styles.reviewName}>Name</Text>
+          <Text style={styles.reviewName}>Customer</Text>
           <Text style={styles.reviewDate}>{date}</Text>
         </View>
         <StarRating rating={review.rating} />
@@ -280,7 +281,15 @@ export default function PublicBusinessProfile() {
             return (
               <View key={event.id} style={styles.eventCard}>
                 <View style={styles.eventThumb}>
-                  <Text style={styles.eventThumbIcon}>🖼</Text>
+                  {event.cover_url ? (
+                    <Image
+                      source={{ uri: event.cover_url }}
+                      style={StyleSheet.absoluteFill}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <Text style={styles.eventThumbIcon}>🖼</Text>
+                  )}
                 </View>
                 <View style={styles.eventInfo}>
                   <Text style={styles.eventName}>{event.event_name}</Text>
@@ -433,6 +442,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#c8c8c8',
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
   eventThumbIcon: { fontSize: 20, opacity: 0.5 },
   eventInfo: { flex: 1, gap: 3 },

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -9,11 +9,12 @@ import {
   StatusBar,
   ActivityIndicator,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { listMyEvents, type EventRow } from '@/services/api';
+import { onEventsChanged } from '@/services/refresh-bus';
 
 // ─── Draft Card ───────────────────────────────────────────────────────────────
-const DraftCard: React.FC<{ event: EventRow }> = ({ event }) => (
+const DraftCard: React.FC<{ event: EventRow; onEdit: () => void }> = ({ event, onEdit }) => (
   <View style={styles.card}>
     <View style={styles.cardImage} />
     <View style={styles.cardBody}>
@@ -33,7 +34,7 @@ const DraftCard: React.FC<{ event: EventRow }> = ({ event }) => (
         </View>
       ) : null}
       <Text style={styles.statusText}>Draft • Not Published</Text>
-      <TouchableOpacity style={styles.editBtn} activeOpacity={0.75}>
+      <TouchableOpacity style={styles.editBtn} activeOpacity={0.75} onPress={onEdit}>
         <Text style={styles.editBtnText}>Continue Editing →</Text>
       </TouchableOpacity>
     </View>
@@ -46,20 +47,32 @@ export default function BusinessEventsDrafts() {
   const [drafts, setDrafts] = useState<EventRow[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const events = await listMyEvents(100);
-        if (!cancelled) setDrafts(events.filter(e => !e.is_published));
-      } catch {
-        // silently fail
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
+  const fetchDrafts = useCallback(async () => {
+    try {
+      const events = await listMyEvents(100);
+      setDrafts(events.filter(e => !e.is_published));
+    } catch {
+      // silently fail
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  // Refetch whenever the screen regains focus (works when it does fire).
+  useFocusEffect(
+    useCallback(() => {
+      fetchDrafts();
+    }, [fetchDrafts]),
+  );
+
+  // Also refetch whenever the create/edit screen signals that events changed.
+  // This is the reliable path for hidden tab screens where useFocusEffect may
+  // not fire between navigations.
+  useEffect(() => {
+    return onEventsChanged(() => {
+      fetchDrafts();
+    });
+  }, [fetchDrafts]);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -91,7 +104,16 @@ export default function BusinessEventsDrafts() {
               <Text style={styles.emptyText}>No drafts yet.</Text>
             ) : (
               drafts.map(event => (
-                <DraftCard key={event.id} event={event} />
+                <DraftCard
+                  key={event.id}
+                  event={event}
+                  onEdit={() =>
+                    router.push({
+                      pathname: '/create_business_event',
+                      params: { from: 'drafts', eventId: String(event.id) },
+                    })
+                  }
+                />
               ))
             )}
             <View style={{ height: 32 }} />

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -9,8 +9,9 @@ import {
   StatusBar,
   ActivityIndicator,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { listMyEvents, type EventRow } from '@/services/api';
+import { onEventsChanged } from '@/services/refresh-bus';
 
 // ─── Filter Tabs ──────────────────────────────────────────────────────────────
 const TABS = ['Upcoming', 'Live now', 'Past'] as const;
@@ -77,20 +78,30 @@ export default function BusinessEventsUpcoming() {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const events = await listMyEvents(100);
-        if (!cancelled) setAllEvents(events);
-      } catch {
-        // silently fail — show empty state
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
+  const fetchEvents = useCallback(async () => {
+    try {
+      const events = await listMyEvents(100);
+      setAllEvents(events);
+    } catch {
+      // silently fail — show empty state
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  // Refetch when the screen gains focus (may not always fire for hidden tab
+  // screens — refresh-bus subscription below is the reliable path).
+  useFocusEffect(
+    useCallback(() => {
+      fetchEvents();
+    }, [fetchEvents]),
+  );
+
+  useEffect(() => {
+    return onEventsChanged(() => {
+      fetchEvents();
+    });
+  }, [fetchEvents]);
 
   const drafts = allEvents.filter(e => !e.is_published);
   const upcomingEvents = allEvents.filter(e => e.is_published && e.status !== 'closed' && e.status !== 'cancelled');

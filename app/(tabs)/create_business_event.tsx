@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import * as Location from 'expo-location';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -11,9 +11,11 @@ import {
   SafeAreaView,
   StatusBar,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 
-import { createMyEvent } from '@/services/api';
+import { createMyEvent, getEventById, updateMyEvent } from '@/services/api';
+import { notifyEventsChanged } from '@/services/refresh-bus';
 
 interface VibeTag { id: string; label: string }
 
@@ -39,12 +41,29 @@ const NOTIFICATION_OPTIONS = [
 ];
 
 export default function CreateEvent() {
-  const { from } = useLocalSearchParams<{ from?: string }>();
+  const { from, eventId } = useLocalSearchParams<{ from?: string; eventId?: string }>();
+  const editingId = eventId ? Number(eventId) : null;
+  const isEditing = editingId !== null && !Number.isNaN(editingId);
+
   const goBack = () => {
+    // When editing an existing event, always pop back so the previous screen's
+    // useFocusEffect re-runs and shows the updated data.
+    if (isEditing) {
+      if (router.canGoBack()) {
+        router.back();
+      } else if (from === 'drafts') {
+        router.replace('/buisness_events_drafts');
+      } else {
+        router.replace('/buisness_events');
+      }
+      return;
+    }
     if (from === 'events') {
       router.replace('/buisness_events');
     } else if (from === 'dashboard') {
       router.replace('/dashboard');
+    } else if (from === 'drafts') {
+      router.replace('/buisness_events_drafts');
     } else {
       router.back();
     }
@@ -66,6 +85,31 @@ export default function CreateEvent() {
     'Generate sharable event': true,
   });
   const [submitting, setSubmitting] = useState(false);
+  const [loadingEvent, setLoadingEvent] = useState(isEditing);
+
+  useEffect(() => {
+    if (!isEditing || editingId === null) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const evt = await getEventById(editingId);
+        if (cancelled || !evt) return;
+        setEventName(evt.event_name ?? '');
+        setDescription(evt.description ?? '');
+        setDate(evt.event_date ?? '');
+        setStartTime(evt.start_time ?? '');
+        setEndTime(evt.end_time ?? '');
+        setLocation(evt.location ?? '');
+        setLatitude(evt.latitude);
+        setLongitude(evt.longitude);
+      } catch (e: any) {
+        if (!cancelled) Alert.alert('Error', e.message ?? 'Failed to load event.');
+      } finally {
+        if (!cancelled) setLoadingEvent(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [isEditing, editingId]);
 
   const geocodeLocation = async (address: string) => {
     if (!address.trim()) return;
@@ -111,27 +155,70 @@ export default function CreateEvent() {
     }
     setSubmitting(true);
     try {
-      await createMyEvent({
-        event_name: eventName.trim(),
-        description: description.trim() || null,
-        event_date: date.trim(),
-        start_time: startTime.trim() || null,
-        end_time: endTime.trim() || null,
-        location: location.trim(),
-        latitude,
-        longitude,
-        status: 'upcoming',
-        is_published: publish,
-      });
-      Alert.alert('Success', publish ? 'Event created!' : 'Draft saved!', [
-        { text: 'OK', onPress: () => router.back() },
+      if (isEditing && editingId !== null) {
+        // When editing, only update fields the user can actually change.
+        // Don't overwrite status — keep whatever the event already has.
+        const updatePayload = {
+          event_name: eventName.trim(),
+          description: description.trim() || null,
+          event_date: date.trim(),
+          start_time: startTime.trim() || null,
+          end_time: endTime.trim() || null,
+          location: location.trim(),
+          latitude,
+          longitude,
+          is_published: publish,
+        };
+        await updateMyEvent(editingId, updatePayload);
+      } else {
+        await createMyEvent({
+          event_name: eventName.trim(),
+          description: description.trim() || null,
+          event_date: date.trim(),
+          start_time: startTime.trim() || null,
+          end_time: endTime.trim() || null,
+          location: location.trim(),
+          latitude,
+          longitude,
+          status: 'upcoming',
+          is_published: publish,
+        });
+      }
+      // Notify any listening screens (drafts list, events list, dashboard) that
+      // events have changed so they refetch next time they render.
+      notifyEventsChanged();
+      setSubmitting(false);
+      const successMsg = isEditing
+        ? publish ? 'Event published!' : 'Draft updated!'
+        : publish ? 'Event created!' : 'Draft saved!';
+      // Save Draft always routes to the drafts list. Publish uses the normal
+      // back behavior so the user returns to wherever they came from.
+      const afterSubmit = () => {
+        if (!publish) {
+          router.replace('/buisness_events_drafts');
+        } else {
+          goBack();
+        }
+      };
+      Alert.alert('Success', successMsg, [
+        // setTimeout 0 ensures the Alert is fully dismissed before we navigate,
+        // which avoids iOS timing quirks that can swallow the navigation call.
+        { text: 'OK', onPress: () => setTimeout(afterSubmit, 0) },
       ]);
+      return;
     } catch (e: any) {
-      Alert.alert('Error', e.message ?? 'Failed to create event.');
-    } finally {
+      Alert.alert('Error', e.message ?? (isEditing ? 'Failed to update event.' : 'Failed to create event.'));
       setSubmitting(false);
     }
   };
+
+  if (loadingEvent) {
+    return (
+      <SafeAreaView style={[styles.safe, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color="#333" />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -141,7 +228,7 @@ export default function CreateEvent() {
         <TouchableOpacity style={styles.backBtn} onPress={goBack}>
           <Text style={styles.backIcon}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.navTitle}>Create Event</Text>
+        <Text style={styles.navTitle}>{isEditing ? 'Edit Event' : 'Create Event'}</Text>
         <TouchableOpacity style={[styles.saveDraftBtn, submitting && { opacity: 0.5 }]} onPress={() => submit(false)} disabled={submitting}>
           <Text style={styles.saveDraftText}>Save Draft</Text>
         </TouchableOpacity>
@@ -246,7 +333,11 @@ export default function CreateEvent() {
         </SectionCard>
 
         <TouchableOpacity style={[styles.createBtn, submitting && { opacity: 0.5 }]} onPress={() => submit(true)} activeOpacity={0.85} disabled={submitting}>
-          <Text style={styles.createBtnText}>{submitting ? 'Creating…' : 'Create event'}</Text>
+          <Text style={styles.createBtnText}>
+            {submitting
+              ? isEditing ? 'Saving…' : 'Creating…'
+              : isEditing ? 'Publish event' : 'Create event'}
+          </Text>
         </TouchableOpacity>
 
         <View style={{ height: 32 }} />

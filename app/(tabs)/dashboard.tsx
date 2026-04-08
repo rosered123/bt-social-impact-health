@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -21,6 +21,7 @@ import {
   type ReviewRow,
   type EventRow,
 } from '@/services/api';
+import { onEventsChanged } from '@/services/refresh-bus';
 
 // ─── Icon placeholders ───────────────────────────────────────────────────────
 const Icon = ({ name, size = 20, color = '#222' }: { name: string; size?: number; color?: string }) => {
@@ -93,32 +94,38 @@ export default function BusinessDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const p = await getMyProfile();
-        if (!p || cancelled) return;
-        setProfile(p);
-        const [biz, events, revs] = await Promise.all([
-          getBusinessByUid(p.uid),
-          listMyEvents(100),
-          listReviewsForBusiness(p.uid),
-        ]);
-        if (cancelled) return;
-        setBusiness(biz);
-        setEventCount(events.length);
-        const live = events.find(e => e.is_published && e.status === 'open') ?? null;
-        setLiveEvent(live);
-        setReviews(revs.slice(0, 3));
-      } catch (e: any) {
-        if (!cancelled) setError(e.message ?? 'Failed to load dashboard');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
+  const loadDashboard = useCallback(async () => {
+    try {
+      const p = await getMyProfile();
+      if (!p) return;
+      setProfile(p);
+      const [biz, events, revs] = await Promise.all([
+        getBusinessByUid(p.uid),
+        listMyEvents(100),
+        listReviewsForBusiness(p.uid),
+      ]);
+      setBusiness(biz);
+      setEventCount(events.length);
+      const live = events.find(e => e.is_published && e.status === 'open') ?? null;
+      setLiveEvent(live);
+      setReviews(revs.slice(0, 3));
+    } catch (e: any) {
+      setError(e.message ?? 'Failed to load dashboard');
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadDashboard();
+  }, [loadDashboard]);
+
+  // Refetch when any screen notifies that events changed.
+  useEffect(() => {
+    return onEventsChanged(() => {
+      loadDashboard();
+    });
+  }, [loadDashboard]);
 
   if (loading) {
     return (
@@ -223,7 +230,12 @@ export default function BusinessDashboard() {
           <ActionCard icon="calendar" label="Create Event" sub="New pop-up" onPress={() => router.push('/(tabs)/create_business_event?from=dashboard')} />
           <ActionCard icon="handshake" label="Collaborate" sub="Partner up" />
           <ActionCard icon="offer" label="Create Offer" sub="Special deals" />
-          <ActionCard icon="analytics" label="View Analytics" sub="Insights & data" />
+          <ActionCard
+            icon="analytics"
+            label="View Analytics"
+            sub="Insights & data"
+            onPress={() => router.push('/(tabs)/business_insights')}
+          />
         </View>
 
         {/* ── Recent Reviews ── */}
