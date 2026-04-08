@@ -69,6 +69,7 @@ export default function TabLayout() {
         }
       />
       <Tabs.Screen name="edit_profile" options={{ href: null }} />
+      <Tabs.Screen name="public_business_profile" options={{ href: null }} />
 
       <Tabs.Screen
         name="explore"

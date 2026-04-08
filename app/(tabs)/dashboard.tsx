@@ -19,8 +19,8 @@ import {
   type Profile,
   type Business,
   type ReviewRow,
+  type EventRow,
 } from '@/services/api';
-import { LIVE_EVENT } from '@/constants/sample-events';
 
 // ─── Icon placeholders ───────────────────────────────────────────────────────
 const Icon = ({ name, size = 20, color = '#222' }: { name: string; size?: number; color?: string }) => {
@@ -88,6 +88,7 @@ export default function BusinessDashboard() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [business, setBusiness] = useState<Business | null>(null);
   const [eventCount, setEventCount] = useState(0);
+  const [liveEvent, setLiveEvent] = useState<EventRow | null>(null);
   const [reviews, setReviews] = useState<ReviewRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -107,6 +108,8 @@ export default function BusinessDashboard() {
         if (cancelled) return;
         setBusiness(biz);
         setEventCount(events.length);
+        const live = events.find(e => e.is_published && e.status === 'open') ?? null;
+        setLiveEvent(live);
         setReviews(revs.slice(0, 3));
       } catch (e: any) {
         if (!cancelled) setError(e.message ?? 'Failed to load dashboard');
@@ -164,7 +167,10 @@ export default function BusinessDashboard() {
             </View>
           </View>
           <View style={styles.profileActions}>
-            <TouchableOpacity style={styles.outlineBtn}>
+            <TouchableOpacity
+              style={styles.outlineBtn}
+              onPress={() => router.push('/(tabs)/public_business_profile')}
+            >
               <Icon name="eye" size={14} color="#333" />
               <Text style={styles.outlineBtnText}> View Public Profile</Text>
             </TouchableOpacity>
@@ -188,11 +194,19 @@ export default function BusinessDashboard() {
               <Text style={styles.updateBtnText}>Update</Text>
             </TouchableOpacity>
           </View>
-          <View style={styles.liveBadgeRow}>
-            <View style={styles.liveDot} />
-            <Text style={styles.liveText}>LIVE NOW</Text>
-          </View>
-          <Text style={styles.rightNowDetail}>{LIVE_EVENT.name}  |  {LIVE_EVENT.location}</Text>
+          {liveEvent ? (
+            <>
+              <View style={styles.liveBadgeRow}>
+                <View style={styles.liveDot} />
+                <Text style={styles.liveText}>LIVE NOW</Text>
+              </View>
+              <Text style={styles.rightNowDetail}>
+                {liveEvent.event_name}{liveEvent.location ? `  |  ${liveEvent.location}` : ''}
+              </Text>
+            </>
+          ) : (
+            <Text style={styles.rightNowDetail}>No events right now</Text>
+          )}
         </View>
 
         {/* ── Today's Activity ── */}
