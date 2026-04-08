@@ -18,6 +18,7 @@ import {
   getBusinessByUid,
   getBusinessEvents,
   getMyProfile,
+  isActiveEventStatus,
   listReviewsForBusiness,
   type Business,
   type EventRow,
@@ -87,13 +88,21 @@ export default function MyProfile() {
     try {
       const profile = await getMyProfile();
       if (!profile) return;
+      // Fetch more than we display so we can filter out currently-live,
+      // closed, or cancelled events and still have 5 upcoming ones left.
       const [biz, evts, revs] = await Promise.all([
         getBusinessByUid(profile.uid),
-        getBusinessEvents(profile.uid, 5),
+        getBusinessEvents(profile.uid, 20),
         listReviewsForBusiness(profile.uid, 5),
       ]);
       setBusiness(biz);
-      setEvents(evts);
+      // Only show events that are actually upcoming — exclude ones that are
+      // currently live (open / closing_soon / sold_out / paused), closed, or
+      // cancelled.
+      const upcoming = evts
+        .filter(e => !isActiveEventStatus(e.status) && e.status !== 'closed' && e.status !== 'cancelled')
+        .slice(0, 5);
+      setEvents(upcoming);
       setReviews(revs);
     } catch {
       // silently fail — show empty state

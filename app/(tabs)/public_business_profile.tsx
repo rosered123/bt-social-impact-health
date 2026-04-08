@@ -16,6 +16,7 @@ import {
   getBusinessByUid,
   getBusinessEvents,
   getMyProfile,
+  isActiveEventStatus,
   listReviewsForBusiness,
   type Business,
   type EventRow,
@@ -128,7 +129,13 @@ export default function PublicBusinessProfile() {
         listReviewsForBusiness(p.uid),
       ]);
       setBusiness(biz);
-      setEvents(evts);
+      // Only show events that are actually upcoming — exclude ones that are
+      // currently live (open / closing_soon / sold_out / paused), closed, or
+      // cancelled.
+      const upcoming = evts.filter(
+        e => !isActiveEventStatus(e.status) && e.status !== 'closed' && e.status !== 'cancelled',
+      );
+      setEvents(upcoming);
       setReviews(revs);
     } catch (e: any) {
       setError(e.message ?? 'Failed to load profile.');
