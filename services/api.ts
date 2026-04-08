@@ -37,6 +37,18 @@ export type EventStatus =
 	| 'closed'
 	| 'cancelled';
 
+// An event is "active" (currently happening, should appear in Right Now /
+// Live now) whenever its status is one of these. Upcoming/closed/cancelled
+// are not active.
+export function isActiveEventStatus(status: EventStatus): boolean {
+	return (
+		status === 'open' ||
+		status === 'closing_soon' ||
+		status === 'sold_out' ||
+		status === 'paused'
+	);
+}
+
 export type EventRow = {
 	id: number;
 	host_uid: string;

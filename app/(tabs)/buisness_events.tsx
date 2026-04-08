@@ -8,10 +8,27 @@ import {
   SafeAreaView,
   StatusBar,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { listMyEvents, type EventRow } from '@/services/api';
-import { onEventsChanged } from '@/services/refresh-bus';
+import { listMyEvents, updateMyEvent, isActiveEventStatus, type EventRow, type EventStatus } from '@/services/api';
+import { notifyEventsChanged, onEventsChanged } from '@/services/refresh-bus';
+
+// Label + dot color for the live badge based on the current event status.
+function getLiveDisplay(status: EventStatus): { label: string; color: string } {
+  switch (status) {
+    case 'open':
+      return { label: 'LIVE NOW', color: '#22c55e' };
+    case 'closing_soon':
+      return { label: 'CLOSING SOON', color: '#f59e0b' };
+    case 'sold_out':
+      return { label: 'SOLD OUT', color: '#ef4444' };
+    case 'paused':
+      return { label: 'ON BREAK', color: '#9ca3af' };
+    default:
+      return { label: 'LIVE NOW', color: '#22c55e' };
+  }
+}
 
 // ─── Filter Tabs ──────────────────────────────────────────────────────────────
 const TABS = ['Upcoming', 'Live now', 'Past'] as const;
@@ -20,14 +37,43 @@ type Tab = (typeof TABS)[number];
 // ─── Event Card ───────────────────────────────────────────────────────────────
 const EventCard: React.FC<{ event: EventRow }> = ({ event }) => {
   const router = useRouter();
-  const isLive = event.status === 'open';
+  const [busy, setBusy] = useState(false);
+  const isLive = isActiveEventStatus(event.status);
+  const canGoLive =
+    !isLive && event.status !== 'closed' && event.status !== 'cancelled';
+  const liveDisplay = getLiveDisplay(event.status);
+
+  const handleSetLive = () => {
+    Alert.alert(
+      'Set this event as live?',
+      `"${event.event_name}" will move to the Live now tab.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Set Live',
+          onPress: async () => {
+            setBusy(true);
+            try {
+              await updateMyEvent(event.id, { status: 'open' });
+              notifyEventsChanged();
+            } catch (e: any) {
+              Alert.alert('Error', e.message ?? 'Failed to update event.');
+            } finally {
+              setBusy(false);
+            }
+          },
+        },
+      ],
+    );
+  };
+
   return (
     <View style={styles.eventCard}>
       <View style={styles.eventImageTop}>
         {isLive && (
           <View style={styles.liveBadge}>
-            <View style={styles.liveDot} />
-            <Text style={styles.liveText}>LIVE NOW</Text>
+            <View style={[styles.liveDot, { backgroundColor: liveDisplay.color }]} />
+            <Text style={styles.liveText}>{liveDisplay.label}</Text>
           </View>
         )}
       </View>
@@ -35,15 +81,29 @@ const EventCard: React.FC<{ event: EventRow }> = ({ event }) => {
       <View style={styles.eventBody}>
         <View style={styles.eventBodyHeader}>
           <Text style={styles.eventName}>{event.event_name}</Text>
-          {isLive && (
+          {isLive ? (
             <TouchableOpacity
               style={styles.updateBtn}
               activeOpacity={0.85}
-              onPress={() => router.push('/update_status')}
+              onPress={() =>
+                router.push({
+                  pathname: '/update_status',
+                  params: { eventId: String(event.id) },
+                })
+              }
             >
               <Text style={styles.updateBtnText}>Update</Text>
             </TouchableOpacity>
-          )}
+          ) : canGoLive ? (
+            <TouchableOpacity
+              style={[styles.updateBtn, busy && { opacity: 0.5 }]}
+              activeOpacity={0.85}
+              disabled={busy}
+              onPress={handleSetLive}
+            >
+              <Text style={styles.updateBtnText}>{busy ? '…' : 'Set Live'}</Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
         <View style={styles.eventDetailRow}>
           <Text style={styles.detailIcon}>📅</Text>
@@ -104,8 +164,10 @@ export default function BusinessEventsUpcoming() {
   }, [fetchEvents]);
 
   const drafts = allEvents.filter(e => !e.is_published);
-  const upcomingEvents = allEvents.filter(e => e.is_published && e.status !== 'closed' && e.status !== 'cancelled');
-  const liveEvents = allEvents.filter(e => e.is_published && e.status === 'open');
+  const upcomingEvents = allEvents.filter(
+    e => e.is_published && !isActiveEventStatus(e.status) && e.status !== 'closed' && e.status !== 'cancelled',
+  );
+  const liveEvents = allEvents.filter(e => e.is_published && isActiveEventStatus(e.status));
   const pastEvents = allEvents.filter(e => e.status === 'closed' || e.status === 'cancelled');
 
   return (

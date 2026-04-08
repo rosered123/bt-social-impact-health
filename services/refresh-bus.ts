@@ -4,21 +4,37 @@
 
 type Listener = () => void;
 
-const listeners = new Set<Listener>();
+const eventsListeners = new Set<Listener>();
+const profileListeners = new Set<Listener>();
 
-export function onEventsChanged(listener: Listener): () => void {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
-}
-
-export function notifyEventsChanged(): void {
-  listeners.forEach((l) => {
+function fire(set: Set<Listener>) {
+  set.forEach((l) => {
     try {
       l();
     } catch {
       // ignore listener errors
     }
   });
+}
+
+export function onEventsChanged(listener: Listener): () => void {
+  eventsListeners.add(listener);
+  return () => {
+    eventsListeners.delete(listener);
+  };
+}
+
+export function notifyEventsChanged(): void {
+  fire(eventsListeners);
+}
+
+export function onProfileChanged(listener: Listener): () => void {
+  profileListeners.add(listener);
+  return () => {
+    profileListeners.delete(listener);
+  };
+}
+
+export function notifyProfileChanged(): void {
+  fire(profileListeners);
 }

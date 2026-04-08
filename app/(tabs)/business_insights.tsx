@@ -187,37 +187,36 @@ export default function BusinessInsights() {
 
         {/* ── Header ── */}
         <View style={styles.headerRow}>
-          <TouchableOpacity
-            style={styles.headerBackBtn}
-            activeOpacity={0.75}
-            onPress={() => router.back()}
-          >
-            <Text style={styles.headerBackIcon}>‹</Text>
-          </TouchableOpacity>
-          <Text style={styles.pageTitle}>Insights</Text>
-          <View style={styles.headerBackBtn} />
-        </View>
-
-        {/* ── Period Tabs ── */}
-        <View style={styles.periodTabs}>
-          <TouchableOpacity
-            style={[styles.periodTab, period === '7d' && styles.periodTabActive]}
-            onPress={() => setPeriod('7d')}
-            activeOpacity={0.75}
-          >
-            <Text style={[styles.periodTabText, period === '7d' && styles.periodTabTextActive]}>
-              7 d
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.periodTab, period === '30d' && styles.periodTabActive]}
-            onPress={() => setPeriod('30d')}
-            activeOpacity={0.75}
-          >
-            <Text style={[styles.periodTabText, period === '30d' && styles.periodTabTextActive]}>
-              30 d
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.headerLeft}>
+            <TouchableOpacity
+              style={styles.headerBackBtn}
+              activeOpacity={0.75}
+              onPress={() => router.back()}
+            >
+              <Text style={styles.headerBackIcon}>‹</Text>
+            </TouchableOpacity>
+            <Text style={styles.pageTitle}>Insights</Text>
+          </View>
+          <View style={styles.periodTabs}>
+            <TouchableOpacity
+              style={[styles.periodTab, period === '7d' && styles.periodTabActive]}
+              onPress={() => setPeriod('7d')}
+              activeOpacity={0.75}
+            >
+              <Text style={[styles.periodTabText, period === '7d' && styles.periodTabTextActive]}>
+                7 d
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.periodTab, period === '30d' && styles.periodTabActive]}
+              onPress={() => setPeriod('30d')}
+              activeOpacity={0.75}
+            >
+              <Text style={[styles.periodTabText, period === '30d' && styles.periodTabTextActive]}>
+                30 d
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* ── Profile Performance ── */}
@@ -309,7 +308,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingTop: 16,
-    marginBottom: 14,
+    marginBottom: 20,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flexShrink: 1,
   },
   headerBackBtn: {
     width: 36,
@@ -326,14 +331,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: '#e0e0e0',
     borderRadius: 10,
-    padding: 4,
-    marginBottom: 20,
-    alignSelf: 'flex-start',
-    gap: 4,
+    padding: 3,
+    gap: 2,
   },
   periodTab: {
-    paddingHorizontal: 20,
-    paddingVertical: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 8,
   },
   periodTabActive: {

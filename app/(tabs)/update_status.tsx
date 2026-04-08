@@ -11,9 +11,10 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 
 import {
+  getEventById,
   getInventory,
   listMyEvents,
   updateMyEvent,
@@ -22,6 +23,7 @@ import {
   type EventStatus,
   type InventoryItem,
 } from '@/services/api';
+import { notifyEventsChanged } from '@/services/refresh-bus';
 
 type OverallStatus = 'Open' | 'Closing soon' | 'Sold Out' | 'Paused/Break';
 type ProductAvailability =
@@ -121,11 +123,46 @@ const AVAIL_REVERSE: Record<string, ProductAvailability> = {
   closed_today: 'Closed for today',
 };
 
+// Reverse of STATUS_MAP. 'upcoming'/'closed'/'cancelled' default to 'Open'
+// since entering the Update Status screen implies the owner is about to go live.
+const STATUS_REVERSE: Partial<Record<EventStatus, OverallStatus>> = {
+  open: 'Open',
+  closing_soon: 'Closing soon',
+  sold_out: 'Sold Out',
+  paused: 'Paused/Break',
+};
+
+// Convert a DB time value like "11:00:00" or "11:00" into the picker format "11:00 AM".
+function dbTimeToPicker(dbTime: string | null | undefined): string | null {
+  if (!dbTime) return null;
+  const [hStr, mStr] = dbTime.split(':');
+  const h = parseInt(hStr, 10);
+  const m = parseInt(mStr ?? '0', 10);
+  if (Number.isNaN(h)) return null;
+  const period = h >= 12 ? 'PM' : 'AM';
+  const hr = ((h + 11) % 12) + 1;
+  return `${hr}:${String(m).padStart(2, '0')} ${period}`;
+}
+
+// Convert picker format "11:00 AM" back into DB time "11:00".
+function pickerTimeToDb(pickerTime: string): string | null {
+  const match = pickerTime.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (!match) return null;
+  let h = parseInt(match[1], 10);
+  const m = match[2];
+  const period = match[3].toUpperCase();
+  if (period === 'PM' && h !== 12) h += 12;
+  if (period === 'AM' && h === 12) h = 0;
+  return `${String(h).padStart(2, '0')}:${m}`;
+}
+
 export default function UpdateStatus() {
+  const { eventId } = useLocalSearchParams<{ eventId?: string }>();
   const [event, setEvent] = useState<EventRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
+  const [ending, setEnding] = useState(false);
   const [openTime, setOpenTime] = useState('11:00 AM');
   const [closeTime, setCloseTime] = useState('9:00 PM');
   const [overallStatus, setOverallStatus] = useState<OverallStatus>('Open');
@@ -139,19 +176,37 @@ export default function UpdateStatus() {
     let cancelled = false;
     (async () => {
       try {
-        const events = await listMyEvents(1);
-        if (cancelled) return;
-        if (events[0]) {
-          setEvent(events[0]);
-          setLocation(events[0].location ?? '');
-          const inventory = await getInventory(events[0].id);
-          if (!cancelled && inventory.length > 0) {
-            setProducts(inventory.map((item: InventoryItem) => ({
-              product_name: item.product_name,
-              availability: AVAIL_REVERSE[item.availability] ?? 'Available - Full stock',
-              custom_message: item.custom_message ?? '',
-            })));
-          }
+        // Resolve which event to edit:
+        // 1. If eventId was passed as a route param, load that specific event.
+        // 2. Otherwise, prefer a currently-live event (status === 'open').
+        // 3. Fall back to the most recent event.
+        let target: EventRow | null = null;
+        const parsedId = eventId ? Number(eventId) : null;
+        if (parsedId !== null && !Number.isNaN(parsedId)) {
+          target = await getEventById(parsedId);
+        }
+        if (!target) {
+          const events = await listMyEvents(50);
+          target = events.find(e => e.status === 'open') ?? events[0] ?? null;
+        }
+        if (cancelled || !target) return;
+
+        setEvent(target);
+        setLocation(target.location ?? '');
+        const openFromDb = dbTimeToPicker(target.start_time);
+        if (openFromDb) setOpenTime(openFromDb);
+        const closeFromDb = dbTimeToPicker(target.end_time);
+        if (closeFromDb) setCloseTime(closeFromDb);
+        const mappedStatus = STATUS_REVERSE[target.status];
+        if (mappedStatus) setOverallStatus(mappedStatus);
+
+        const inventory = await getInventory(target.id);
+        if (!cancelled && inventory.length > 0) {
+          setProducts(inventory.map((item: InventoryItem) => ({
+            product_name: item.product_name,
+            availability: AVAIL_REVERSE[item.availability] ?? 'Available - Full stock',
+            custom_message: item.custom_message ?? '',
+          })));
         }
       } catch {
         // show form without event info
@@ -160,7 +215,7 @@ export default function UpdateStatus() {
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [eventId]);
 
   const updateProduct = (index: number, patch: Partial<ProductState>) => {
     setProducts(prev => prev.map((p, i) => i === index ? { ...p, ...patch } : p));
@@ -183,9 +238,9 @@ export default function UpdateStatus() {
     try {
       await updateMyEvent(event.id, {
         status: STATUS_MAP[overallStatus],
-        start_time: openTime,
-        end_time: closeTime,
-        location: location.trim() || undefined,
+        start_time: pickerTimeToDb(openTime),
+        end_time: pickerTimeToDb(closeTime),
+        location: location.trim() || null,
       });
       await Promise.all(products.map(p =>
         upsertInventoryItem(event.id, {
@@ -194,12 +249,50 @@ export default function UpdateStatus() {
           custom_message: p.custom_message.trim() || null,
         })
       ));
-      Alert.alert('Updated', 'Status has been updated.');
+      // Tell every subscribed screen to refetch so the event card reflects
+      // the new status/times/location/products.
+      notifyEventsChanged();
+      setSubmitting(false);
+      Alert.alert('Updated', 'Status has been updated.', [
+        // setTimeout 0 so the Alert fully dismisses before we navigate,
+        // avoiding iOS timing quirks that can swallow the navigation call.
+        { text: 'OK', onPress: () => setTimeout(() => router.back(), 0) },
+      ]);
+      return;
     } catch (e: any) {
       Alert.alert('Error', e.message ?? 'Failed to update status.');
-    } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleEndEvent = () => {
+    if (!event) return;
+    Alert.alert(
+      'End this event?',
+      `"${event.event_name}" will be moved to the Past tab. This cannot be undone from here.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'End Event',
+          style: 'destructive',
+          onPress: async () => {
+            setEnding(true);
+            try {
+              await updateMyEvent(event.id, { status: 'closed' });
+              notifyEventsChanged();
+              setEnding(false);
+              Alert.alert('Event Ended', 'Your event has been moved to Past.', [
+                // setTimeout 0 so the Alert fully dismisses before we navigate.
+                { text: 'OK', onPress: () => setTimeout(() => router.back(), 0) },
+              ]);
+            } catch (e: any) {
+              Alert.alert('Error', e.message ?? 'Failed to end event.');
+              setEnding(false);
+            }
+          },
+        },
+      ],
+    );
   };
 
   if (loading) {
@@ -312,6 +405,17 @@ export default function UpdateStatus() {
           <Text style={styles.updateStatusBtnText}>{submitting ? 'Updating…' : 'Update Status'}</Text>
         </TouchableOpacity>
 
+        {event ? (
+          <TouchableOpacity
+            style={[styles.endEventBtn, ending && { opacity: 0.5 }]}
+            onPress={handleEndEvent}
+            activeOpacity={0.85}
+            disabled={ending || submitting}
+          >
+            <Text style={styles.endEventBtnText}>{ending ? 'Ending…' : 'End Event'}</Text>
+          </TouchableOpacity>
+        ) : null}
+
         <View style={{ height: 32 }} />
       </ScrollView>
     </SafeAreaView>
@@ -366,6 +470,8 @@ const styles = StyleSheet.create({
   locationInput: { borderWidth: 1.5, borderColor: '#d0d0d0', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, color: '#333', backgroundColor: '#fff', marginBottom: 8 },
   updateStatusBtn: { backgroundColor: '#222', borderRadius: RADIUS, paddingVertical: 16, alignItems: 'center', marginTop: 4, marginBottom: 8 },
   updateStatusBtnText: { color: '#fff', fontSize: 16, fontWeight: '800' },
+  endEventBtn: { backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#ef4444', borderRadius: RADIUS, paddingVertical: 14, alignItems: 'center', marginTop: 8, marginBottom: 8 },
+  endEventBtnText: { color: '#ef4444', fontSize: 15, fontWeight: '800' },
   productBlock: { marginBottom: 8 },
   productName: { fontSize: 14, fontWeight: '800', color: '#111', marginBottom: 8 },
   productDivider: { height: 1, backgroundColor: '#d0d0d0', marginVertical: 12 },

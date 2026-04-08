@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -22,6 +22,7 @@ import {
   type Profile,
   type ReviewRow,
 } from '@/services/api';
+import { onEventsChanged, onProfileChanged } from '@/services/refresh-bus';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 const formatEventDate = (dateStr: string): string => {
@@ -116,32 +117,38 @@ export default function PublicBusinessProfile() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const p = await getMyProfile();
-        if (!p || cancelled) return;
-        setProfile(p);
-        const [biz, evts, revs] = await Promise.all([
-          getBusinessByUid(p.uid),
-          getBusinessEvents(p.uid),
-          listReviewsForBusiness(p.uid),
-        ]);
-        if (cancelled) return;
-        setBusiness(biz);
-        setEvents(evts);
-        setReviews(revs);
-      } catch (e: any) {
-        if (!cancelled) setError(e.message ?? 'Failed to load profile.');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+  const loadPublicProfile = useCallback(async () => {
+    try {
+      const p = await getMyProfile();
+      if (!p) return;
+      setProfile(p);
+      const [biz, evts, revs] = await Promise.all([
+        getBusinessByUid(p.uid),
+        getBusinessEvents(p.uid),
+        listReviewsForBusiness(p.uid),
+      ]);
+      setBusiness(biz);
+      setEvents(evts);
+      setReviews(revs);
+    } catch (e: any) {
+      setError(e.message ?? 'Failed to load profile.');
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadPublicProfile();
+  }, [loadPublicProfile]);
+
+  useEffect(() => {
+    const offProfile = onProfileChanged(loadPublicProfile);
+    const offEvents = onEventsChanged(loadPublicProfile);
+    return () => {
+      offProfile();
+      offEvents();
+    };
+  }, [loadPublicProfile]);
 
   if (loading) {
     return (

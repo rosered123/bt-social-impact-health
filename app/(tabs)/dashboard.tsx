@@ -16,12 +16,30 @@ import {
   getBusinessByUid,
   listMyEvents,
   listReviewsForBusiness,
+  isActiveEventStatus,
   type Profile,
   type Business,
   type ReviewRow,
   type EventRow,
+  type EventStatus,
 } from '@/services/api';
-import { onEventsChanged } from '@/services/refresh-bus';
+import { onEventsChanged, onProfileChanged } from '@/services/refresh-bus';
+
+// Label + dot color for the Right Now card based on the current event status.
+function getRightNowDisplay(status: EventStatus): { label: string; color: string } {
+  switch (status) {
+    case 'open':
+      return { label: 'LIVE NOW', color: '#22c55e' };
+    case 'closing_soon':
+      return { label: 'CLOSING SOON', color: '#f59e0b' };
+    case 'sold_out':
+      return { label: 'SOLD OUT', color: '#ef4444' };
+    case 'paused':
+      return { label: 'ON BREAK', color: '#9ca3af' };
+    default:
+      return { label: 'LIVE NOW', color: '#22c55e' };
+  }
+}
 
 // ─── Icon placeholders ───────────────────────────────────────────────────────
 const Icon = ({ name, size = 20, color = '#222' }: { name: string; size?: number; color?: string }) => {
@@ -106,7 +124,7 @@ export default function BusinessDashboard() {
       ]);
       setBusiness(biz);
       setEventCount(events.length);
-      const live = events.find(e => e.is_published && e.status === 'open') ?? null;
+      const live = events.find(e => e.is_published && isActiveEventStatus(e.status)) ?? null;
       setLiveEvent(live);
       setReviews(revs.slice(0, 3));
     } catch (e: any) {
@@ -120,11 +138,14 @@ export default function BusinessDashboard() {
     loadDashboard();
   }, [loadDashboard]);
 
-  // Refetch when any screen notifies that events changed.
+  // Refetch when any screen notifies that events or profile data changed.
   useEffect(() => {
-    return onEventsChanged(() => {
-      loadDashboard();
-    });
+    const offEvents = onEventsChanged(loadDashboard);
+    const offProfile = onProfileChanged(loadDashboard);
+    return () => {
+      offEvents();
+      offProfile();
+    };
   }, [loadDashboard]);
 
   if (loading) {
@@ -193,19 +214,26 @@ export default function BusinessDashboard() {
         <View style={styles.rightNowCard}>
           <View style={styles.rightNowTopRow}>
             <Text style={styles.rightNowLabel}>CURRENT STATUS</Text>
-            <TouchableOpacity
-              style={styles.updateBtn}
-              activeOpacity={0.85}
-              onPress={() => router.push('/(tabs)/update_status')}
-            >
-              <Text style={styles.updateBtnText}>Update</Text>
-            </TouchableOpacity>
+            {liveEvent ? (
+              <TouchableOpacity
+                style={styles.updateBtn}
+                activeOpacity={0.85}
+                onPress={() =>
+                  router.push({
+                    pathname: '/(tabs)/update_status',
+                    params: { eventId: String(liveEvent.id) },
+                  })
+                }
+              >
+                <Text style={styles.updateBtnText}>Update</Text>
+              </TouchableOpacity>
+            ) : null}
           </View>
           {liveEvent ? (
             <>
               <View style={styles.liveBadgeRow}>
-                <View style={styles.liveDot} />
-                <Text style={styles.liveText}>LIVE NOW</Text>
+                <View style={[styles.liveDot, { backgroundColor: getRightNowDisplay(liveEvent.status).color }]} />
+                <Text style={styles.liveText}>{getRightNowDisplay(liveEvent.status).label}</Text>
               </View>
               <Text style={styles.rightNowDetail}>
                 {liveEvent.event_name}{liveEvent.location ? `  |  ${liveEvent.location}` : ''}

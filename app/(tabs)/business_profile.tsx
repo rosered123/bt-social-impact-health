@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -23,6 +23,7 @@ import {
   type EventRow,
   type ReviewRow,
 } from '@/services/api';
+import { onEventsChanged, onProfileChanged } from '@/services/refresh-bus';
 
 // ─── Star Rating ──────────────────────────────────────────────────────────────
 const StarRating: React.FC<{ rating: number; size?: number }> = ({ rating, size = 13 }) => (
@@ -82,29 +83,38 @@ export default function MyProfile() {
   const [reviews, setReviews] = useState<ReviewRow[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const profile = await getMyProfile();
-        if (!profile || cancelled) return;
-        const [biz, evts, revs] = await Promise.all([
-          getBusinessByUid(profile.uid),
-          getBusinessEvents(profile.uid, 5),
-          listReviewsForBusiness(profile.uid, 5),
-        ]);
-        if (cancelled) return;
-        setBusiness(biz);
-        setEvents(evts);
-        setReviews(revs);
-      } catch {
-        // silently fail — show empty state
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
+  const loadProfile = useCallback(async () => {
+    try {
+      const profile = await getMyProfile();
+      if (!profile) return;
+      const [biz, evts, revs] = await Promise.all([
+        getBusinessByUid(profile.uid),
+        getBusinessEvents(profile.uid, 5),
+        listReviewsForBusiness(profile.uid, 5),
+      ]);
+      setBusiness(biz);
+      setEvents(evts);
+      setReviews(revs);
+    } catch {
+      // silently fail — show empty state
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadProfile();
+  }, [loadProfile]);
+
+  // Refetch when profile or events are edited elsewhere.
+  useEffect(() => {
+    const offProfile = onProfileChanged(loadProfile);
+    const offEvents = onEventsChanged(loadProfile);
+    return () => {
+      offProfile();
+      offEvents();
+    };
+  }, [loadProfile]);
 
   const onSignOut = async () => {
     try {
