@@ -510,3 +510,18 @@ export async function upsertInventoryItem(
 		.upsert({ event_id: eventId, business_uid: businessUid, ...product }, { onConflict: 'event_id,business_uid,product_name' });
 	if (error) throw error;
 }
+
+// ─── Collaborate ────────────────────────────────────────────────────────────
+// Lists all other businesses (excluding the caller) for the Collaborate
+// Discover tab.
+export async function listBusinessesForCollaborate(limit = 100): Promise<Business[]> {
+	const uid = await requireUserId();
+	const { data, error } = await supabase
+		.from('businesses')
+		.select('*')
+		.neq('uid', uid)
+		.order('follower_count', { ascending: false, nullsFirst: false })
+		.limit(limit);
+	if (error) throw error;
+	return data ?? [];
+}

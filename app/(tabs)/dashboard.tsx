@@ -79,11 +79,12 @@ const ActionCard = ({ icon, label, sub, onPress }: { icon: string; label: string
 
 const ReviewItem = ({ review }: { review: ReviewRow }) => {
   const date = new Date(review.created_at).toLocaleDateString();
+  const initial = review.reviewer_uid.slice(0, 1).toUpperCase();
   return (
     <View style={styles.reviewItem}>
       <View style={styles.reviewHeader}>
         <View style={styles.reviewAvatar}>
-          <Text style={styles.reviewAvatarText}>U</Text>
+          <Text style={styles.reviewAvatarText}>{initial}</Text>
         </View>
         <View style={styles.reviewMeta}>
           <Text style={styles.reviewName}>Customer</Text>
@@ -256,7 +257,12 @@ export default function BusinessDashboard() {
         <Text style={styles.sectionTitle}>More Actions</Text>
         <View style={styles.grid}>
           <ActionCard icon="calendar" label="Create Event" sub="New pop-up" onPress={() => router.push('/(tabs)/create_business_event?from=dashboard')} />
-          <ActionCard icon="handshake" label="Collaborate" sub="Partner up" />
+          <ActionCard
+            icon="handshake"
+            label="Collaborate"
+            sub="Partner up"
+            onPress={() => router.push('/(tabs)/collaborate')}
+          />
           <ActionCard icon="offer" label="Create Offer" sub="Special deals" />
           <ActionCard
             icon="analytics"
