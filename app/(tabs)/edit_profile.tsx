@@ -21,6 +21,7 @@ import {
   upsertMyBusiness,
   type VibeTag,
 } from '@/services/api';
+import { notifyProfileChanged } from '@/services/refresh-bus';
 
 export default function EditProfile() {
   const { from } = useLocalSearchParams<{ from?: string }>();
@@ -111,10 +112,17 @@ export default function EditProfile() {
         }),
         updateMyProfile({ location: location.trim() || null }),
       ]);
-      Alert.alert('Saved', 'Your profile has been updated.');
+      // Tell any listening screens (profile, public profile, dashboard) to refetch.
+      notifyProfileChanged();
+      setSaving(false);
+      Alert.alert('Saved', 'Your profile has been updated.', [
+        // setTimeout 0 so the Alert is fully dismissed before we navigate,
+        // avoiding iOS timing quirks that can swallow the navigation call.
+        { text: 'OK', onPress: () => setTimeout(goBack, 0) },
+      ]);
+      return;
     } catch (e: any) {
       Alert.alert('Error', e.message ?? 'Failed to save profile.');
-    } finally {
       setSaving(false);
     }
   };

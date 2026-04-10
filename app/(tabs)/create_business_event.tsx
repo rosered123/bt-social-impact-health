@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import * as Location from 'expo-location';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -11,11 +11,12 @@ import {
   SafeAreaView,
   StatusBar,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 
-import { createMyEvent } from '@/services/api';
-
-interface VibeTag { id: string; label: string }
+import { createMyEvent, getAllTags, getEventById, updateMyEvent } from '@/services/api';
+import type { VibeTag } from '@/services/api';
+import { notifyEventsChanged } from '@/services/refresh-bus';
 
 interface CheckboxRowProps { label: string; checked: boolean; onToggle: () => void }
 
@@ -39,12 +40,29 @@ const NOTIFICATION_OPTIONS = [
 ];
 
 export default function CreateEvent() {
-  const { from } = useLocalSearchParams<{ from?: string }>();
+  const { from, eventId } = useLocalSearchParams<{ from?: string; eventId?: string }>();
+  const editingId = eventId ? Number(eventId) : null;
+  const isEditing = editingId !== null && !Number.isNaN(editingId);
+
   const goBack = () => {
+    // When editing an existing event, always pop back so the previous screen's
+    // useFocusEffect re-runs and shows the updated data.
+    if (isEditing) {
+      if (router.canGoBack()) {
+        router.back();
+      } else if (from === 'drafts') {
+        router.replace('/buisness_events_drafts');
+      } else {
+        router.replace('/buisness_events');
+      }
+      return;
+    }
     if (from === 'events') {
       router.replace('/buisness_events');
     } else if (from === 'dashboard') {
       router.replace('/dashboard');
+    } else if (from === 'drafts') {
+      router.replace('/buisness_events_drafts');
     } else {
       router.back();
     }
@@ -59,13 +77,69 @@ export default function CreateEvent() {
   const [longitude, setLongitude] = useState<number | null>(null);
   const [geocoding, setGeocoding] = useState(false);
   const [customTag, setCustomTag] = useState('');
-  const [vibeTags, setVibeTags] = useState<VibeTag[]>([]);
+  const [vibeTags, setVibeTags] = useState<string[]>([]);
+  const [popularTags, setPopularTags] = useState<VibeTag[]>([]);
   const [notifications, setNotifications] = useState<Record<string, boolean>>({
     'Notify my followers': true,
     'Show on map & explore page': true,
     'Generate sharable event': true,
   });
   const [submitting, setSubmitting] = useState(false);
+  const [loadingEvent, setLoadingEvent] = useState(isEditing);
+
+  useEffect(() => {
+    if (!isEditing || editingId === null) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const evt = await getEventById(editingId);
+        if (cancelled || !evt) return;
+        setEventName(evt.event_name ?? '');
+        setDescription(evt.description ?? '');
+        setDate(evt.event_date ?? '');
+        setStartTime(evt.start_time ?? '');
+        setEndTime(evt.end_time ?? '');
+        setLocation(evt.location ?? '');
+        setLatitude(evt.latitude);
+        setLongitude(evt.longitude);
+      } catch (e: any) {
+        if (!cancelled) Alert.alert('Error', e.message ?? 'Failed to load event.');
+      } finally {
+        if (!cancelled) setLoadingEvent(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [isEditing, editingId]);
+
+  // Reset form to empty state when entering create mode (no eventId).
+  // Handles cases where the screen was previously used for editing and
+  // React kept the component instance alive.
+  useEffect(() => {
+    if (isEditing) return;
+    setEventName('');
+    setDescription('');
+    setDate('');
+    setStartTime('');
+    setEndTime('');
+    setLocation('');
+    setLatitude(null);
+    setLongitude(null);
+    setVibeTags([]);
+    setCustomTag('');
+    setNotifications({
+      'Notify my followers': true,
+      'Show on map & explore page': true,
+      'Generate sharable event': true,
+    });
+  }, [isEditing]);
+
+  useEffect(() => {
+    let cancelled = false;
+    getAllTags()
+      .then(tags => { if (!cancelled) setPopularTags(tags); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
   const geocodeLocation = async (address: string) => {
     if (!address.trim()) return;
@@ -83,13 +157,18 @@ export default function CreateEvent() {
     }
   };
 
-  const removeTag = (id: string) => setVibeTags(prev => prev.filter(t => t.id !== id));
+  const removeTag = (index: number) => setVibeTags(prev => prev.filter((_, i) => i !== index));
 
   const addTag = () => {
     const trimmed = customTag.trim();
-    if (!trimmed) return;
-    setVibeTags(prev => [...prev, { id: Date.now().toString(), label: trimmed }]);
+    if (trimmed && !vibeTags.includes(trimmed)) {
+      setVibeTags(prev => [...prev, trimmed]);
+    }
     setCustomTag('');
+  };
+
+  const addPopularTag = (tag: string) => {
+    if (!vibeTags.includes(tag)) setVibeTags(prev => [...prev, tag]);
   };
 
   const toggleNotification = (key: string) => {
@@ -111,27 +190,70 @@ export default function CreateEvent() {
     }
     setSubmitting(true);
     try {
-      await createMyEvent({
-        event_name: eventName.trim(),
-        description: description.trim() || null,
-        event_date: date.trim(),
-        start_time: startTime.trim() || null,
-        end_time: endTime.trim() || null,
-        location: location.trim(),
-        latitude,
-        longitude,
-        status: 'upcoming',
-        is_published: publish,
-      });
-      Alert.alert('Success', publish ? 'Event created!' : 'Draft saved!', [
-        { text: 'OK', onPress: () => router.back() },
+      if (isEditing && editingId !== null) {
+        // When editing, only update fields the user can actually change.
+        // Don't overwrite status — keep whatever the event already has.
+        const updatePayload = {
+          event_name: eventName.trim(),
+          description: description.trim() || null,
+          event_date: date.trim(),
+          start_time: startTime.trim() || null,
+          end_time: endTime.trim() || null,
+          location: location.trim(),
+          latitude,
+          longitude,
+          is_published: publish,
+        };
+        await updateMyEvent(editingId, updatePayload);
+      } else {
+        await createMyEvent({
+          event_name: eventName.trim(),
+          description: description.trim() || null,
+          event_date: date.trim(),
+          start_time: startTime.trim() || null,
+          end_time: endTime.trim() || null,
+          location: location.trim(),
+          latitude,
+          longitude,
+          status: 'upcoming',
+          is_published: publish,
+        });
+      }
+      // Notify any listening screens (drafts list, events list, dashboard) that
+      // events have changed so they refetch next time they render.
+      notifyEventsChanged();
+      setSubmitting(false);
+      const successMsg = isEditing
+        ? publish ? 'Event published!' : 'Draft updated!'
+        : publish ? 'Event created!' : 'Draft saved!';
+      // Save Draft always routes to the drafts list. Publish uses the normal
+      // back behavior so the user returns to wherever they came from.
+      const afterSubmit = () => {
+        if (!publish) {
+          router.replace('/buisness_events_drafts');
+        } else {
+          goBack();
+        }
+      };
+      Alert.alert('Success', successMsg, [
+        // setTimeout 0 ensures the Alert is fully dismissed before we navigate,
+        // which avoids iOS timing quirks that can swallow the navigation call.
+        { text: 'OK', onPress: () => setTimeout(afterSubmit, 0) },
       ]);
+      return;
     } catch (e: any) {
-      Alert.alert('Error', e.message ?? 'Failed to create event.');
-    } finally {
+      Alert.alert('Error', e.message ?? (isEditing ? 'Failed to update event.' : 'Failed to create event.'));
       setSubmitting(false);
     }
   };
+
+  if (loadingEvent) {
+    return (
+      <SafeAreaView style={[styles.safe, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color="#333" />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -141,7 +263,7 @@ export default function CreateEvent() {
         <TouchableOpacity style={styles.backBtn} onPress={goBack}>
           <Text style={styles.backIcon}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.navTitle}>Create Event</Text>
+        <Text style={styles.navTitle}>{isEditing ? 'Edit Event' : 'Create Event'}</Text>
         <TouchableOpacity style={[styles.saveDraftBtn, submitting && { opacity: 0.5 }]} onPress={() => submit(false)} disabled={submitting}>
           <Text style={styles.saveDraftText}>Save Draft</Text>
         </TouchableOpacity>
@@ -215,16 +337,21 @@ export default function CreateEvent() {
         <SectionCard>
           <Text style={styles.fieldLabel}>Vibe Tags</Text>
           <View style={styles.tagsWrap}>
-            {vibeTags.map(tag => (
-              <View key={tag.id} style={styles.tag}>
-                <Text style={styles.tagText}>{tag.label}</Text>
-                <TouchableOpacity onPress={() => removeTag(tag.id)} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
-                  <Text style={styles.tagRemove}>×</Text>
-                </TouchableOpacity>
-              </View>
+            {vibeTags.map((tag, index) => (
+              <TouchableOpacity key={index} style={styles.tag} onPress={() => removeTag(index)}>
+                <Text style={styles.tagText}>{tag} ×</Text>
+              </TouchableOpacity>
             ))}
           </View>
-          <Text style={styles.customTagLabel}>Add custom tag:</Text>
+          <Text style={styles.customTagLabel}>Select from popular tags:</Text>
+          <View style={styles.tagsWrap}>
+            {popularTags.map(tag => (
+              <TouchableOpacity key={tag.id} style={styles.popularTag} onPress={() => addPopularTag(tag.name)}>
+                <Text style={styles.popularTagText}>{tag.name}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <Text style={[styles.customTagLabel, { marginTop: 10 }]}>Add custom tag:</Text>
           <View style={styles.customTagRow}>
             <TextInput style={styles.customTagInput} placeholder="Enter custom tag..." placeholderTextColor="#aaa" value={customTag} onChangeText={setCustomTag} onSubmitEditing={addTag} returnKeyType="done" />
             <TouchableOpacity style={styles.addTagBtn} onPress={addTag}>
@@ -246,7 +373,11 @@ export default function CreateEvent() {
         </SectionCard>
 
         <TouchableOpacity style={[styles.createBtn, submitting && { opacity: 0.5 }]} onPress={() => submit(true)} activeOpacity={0.85} disabled={submitting}>
-          <Text style={styles.createBtnText}>{submitting ? 'Creating…' : 'Create event'}</Text>
+          <Text style={styles.createBtnText}>
+            {submitting
+              ? isEditing ? 'Saving…' : 'Creating…'
+              : isEditing ? 'Publish event' : 'Create event'}
+          </Text>
         </TouchableOpacity>
 
         <View style={{ height: 32 }} />
@@ -291,9 +422,10 @@ const styles = StyleSheet.create({
   locationIcon: { fontSize: 15, marginRight: 6 },
   locationInput: { flex: 1, fontSize: 13, color: '#333' },
   tagsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
-  tag: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#fff', borderRadius: 20, borderWidth: 1.5, borderColor: '#ccc', paddingHorizontal: 12, paddingVertical: 6 },
-  tagText: { fontSize: 12, color: '#333' },
-  tagRemove: { fontSize: 16, color: '#888', lineHeight: 18 },
+  tag: { backgroundColor: '#333', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6 },
+  tagText: { color: '#fff', fontSize: 13, fontWeight: '600' },
+  popularTag: { backgroundColor: CARD_BG, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6, borderWidth: 1, borderColor: '#ccc' },
+  popularTagText: { color: '#555', fontSize: 13, fontWeight: '600' },
   customTagLabel: { fontSize: 12, fontWeight: '600', color: '#555', marginBottom: 6 },
   customTagRow: { flexDirection: 'row', gap: 8 },
   customTagInput: { flex: 1, backgroundColor: '#fff', borderRadius: 8, borderWidth: 1.5, borderColor: '#d0d0d0', paddingHorizontal: 12, paddingVertical: 8, fontSize: 13, color: '#333' },

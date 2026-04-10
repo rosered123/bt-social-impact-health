@@ -1,10 +1,11 @@
 import { router } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
+  Image,
   StyleSheet,
   SafeAreaView,
   StatusBar,
@@ -16,11 +17,30 @@ import {
   getBusinessByUid,
   listMyEvents,
   listReviewsForBusiness,
+  isActiveEventStatus,
   type Profile,
   type Business,
   type ReviewRow,
+  type EventRow,
+  type EventStatus,
 } from '@/services/api';
-import { LIVE_EVENT } from '@/constants/sample-events';
+import { onEventsChanged, onProfileChanged } from '@/services/refresh-bus';
+
+// Label + dot color for the Right Now card based on the current event status.
+function getRightNowDisplay(status: EventStatus): { label: string; color: string } {
+  switch (status) {
+    case 'open':
+      return { label: 'LIVE NOW', color: '#22c55e' };
+    case 'closing_soon':
+      return { label: 'CLOSING SOON', color: '#f59e0b' };
+    case 'sold_out':
+      return { label: 'SOLD OUT', color: '#ef4444' };
+    case 'paused':
+      return { label: 'ON BREAK', color: '#9ca3af' };
+    default:
+      return { label: 'LIVE NOW', color: '#22c55e' };
+  }
+}
 
 // ─── Icon placeholders ───────────────────────────────────────────────────────
 const Icon = ({ name, size = 20, color = '#222' }: { name: string; size?: number; color?: string }) => {
@@ -60,11 +80,12 @@ const ActionCard = ({ icon, label, sub, onPress }: { icon: string; label: string
 
 const ReviewItem = ({ review }: { review: ReviewRow }) => {
   const date = new Date(review.created_at).toLocaleDateString();
+  const initial = review.reviewer_uid.slice(0, 1).toUpperCase();
   return (
     <View style={styles.reviewItem}>
       <View style={styles.reviewHeader}>
         <View style={styles.reviewAvatar}>
-          <Text style={styles.reviewAvatarText}>U</Text>
+          <Text style={styles.reviewAvatarText}>{initial}</Text>
         </View>
         <View style={styles.reviewMeta}>
           <Text style={styles.reviewName}>Customer</Text>
@@ -88,34 +109,51 @@ export default function BusinessDashboard() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [business, setBusiness] = useState<Business | null>(null);
   const [eventCount, setEventCount] = useState(0);
+  const [liveEvent, setLiveEvent] = useState<EventRow | null>(null);
+  const [upcomingEvents, setUpcomingEvents] = useState<EventRow[]>([]);
   const [reviews, setReviews] = useState<ReviewRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const p = await getMyProfile();
-        if (!p || cancelled) return;
-        setProfile(p);
-        const [biz, events, revs] = await Promise.all([
-          getBusinessByUid(p.uid),
-          listMyEvents(100),
-          listReviewsForBusiness(p.uid),
-        ]);
-        if (cancelled) return;
-        setBusiness(biz);
-        setEventCount(events.length);
-        setReviews(revs.slice(0, 3));
-      } catch (e: any) {
-        if (!cancelled) setError(e.message ?? 'Failed to load dashboard');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
+  const loadDashboard = useCallback(async () => {
+    try {
+      const p = await getMyProfile();
+      if (!p) return;
+      setProfile(p);
+      const [biz, events, revs] = await Promise.all([
+        getBusinessByUid(p.uid),
+        listMyEvents(100),
+        listReviewsForBusiness(p.uid),
+      ]);
+      setBusiness(biz);
+      setEventCount(events.length);
+      const live = events.find(e => e.is_published && isActiveEventStatus(e.status)) ?? null;
+      setLiveEvent(live);
+      const upcoming = events
+        .filter(e => e.is_published && !isActiveEventStatus(e.status) && e.status !== 'closed' && e.status !== 'cancelled')
+        .slice(0, 5);
+      setUpcomingEvents(upcoming);
+      setReviews(revs.slice(0, 3));
+    } catch (e: any) {
+      setError(e.message ?? 'Failed to load dashboard');
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadDashboard();
+  }, [loadDashboard]);
+
+  // Refetch when any screen notifies that events or profile data changed.
+  useEffect(() => {
+    const offEvents = onEventsChanged(loadDashboard);
+    const offProfile = onProfileChanged(loadDashboard);
+    return () => {
+      offEvents();
+      offProfile();
+    };
+  }, [loadDashboard]);
 
   if (loading) {
     return (
@@ -164,7 +202,10 @@ export default function BusinessDashboard() {
             </View>
           </View>
           <View style={styles.profileActions}>
-            <TouchableOpacity style={styles.outlineBtn}>
+            <TouchableOpacity
+              style={styles.outlineBtn}
+              onPress={() => router.push('/(tabs)/public_business_profile')}
+            >
               <Icon name="eye" size={14} color="#333" />
               <Text style={styles.outlineBtnText}> View Public Profile</Text>
             </TouchableOpacity>
@@ -180,19 +221,34 @@ export default function BusinessDashboard() {
         <View style={styles.rightNowCard}>
           <View style={styles.rightNowTopRow}>
             <Text style={styles.rightNowLabel}>CURRENT STATUS</Text>
-            <TouchableOpacity
-              style={styles.updateBtn}
-              activeOpacity={0.85}
-              onPress={() => router.push('/(tabs)/update_status')}
-            >
-              <Text style={styles.updateBtnText}>Update</Text>
-            </TouchableOpacity>
+            {liveEvent ? (
+              <TouchableOpacity
+                style={styles.updateBtn}
+                activeOpacity={0.85}
+                onPress={() =>
+                  router.push({
+                    pathname: '/(tabs)/update_status',
+                    params: { eventId: String(liveEvent.id) },
+                  })
+                }
+              >
+                <Text style={styles.updateBtnText}>Update</Text>
+              </TouchableOpacity>
+            ) : null}
           </View>
-          <View style={styles.liveBadgeRow}>
-            <View style={styles.liveDot} />
-            <Text style={styles.liveText}>LIVE NOW</Text>
-          </View>
-          <Text style={styles.rightNowDetail}>{LIVE_EVENT.name}  |  {LIVE_EVENT.location}</Text>
+          {liveEvent ? (
+            <>
+              <View style={styles.liveBadgeRow}>
+                <View style={[styles.liveDot, { backgroundColor: getRightNowDisplay(liveEvent.status).color }]} />
+                <Text style={styles.liveText}>{getRightNowDisplay(liveEvent.status).label}</Text>
+              </View>
+              <Text style={styles.rightNowDetail}>
+                {liveEvent.event_name}{liveEvent.location ? `  |  ${liveEvent.location}` : ''}
+              </Text>
+            </>
+          ) : (
+            <Text style={styles.rightNowDetail}>No events right now</Text>
+          )}
         </View>
 
         {/* ── Today's Activity ── */}
@@ -207,10 +263,49 @@ export default function BusinessDashboard() {
         <Text style={styles.sectionTitle}>More Actions</Text>
         <View style={styles.grid}>
           <ActionCard icon="calendar" label="Create Event" sub="New pop-up" onPress={() => router.push('/(tabs)/create_business_event?from=dashboard')} />
-          <ActionCard icon="handshake" label="Collaborate" sub="Partner up" />
+          <ActionCard
+            icon="handshake"
+            label="Collaborate"
+            sub="Partner up"
+            onPress={() => router.push('/(tabs)/collaborate')}
+          />
           <ActionCard icon="offer" label="Create Offer" sub="Special deals" />
-          <ActionCard icon="analytics" label="View Analytics" sub="Insights & data" />
+          <ActionCard
+            icon="analytics"
+            label="View Analytics"
+            sub="Insights & data"
+            onPress={() => router.push('/(tabs)/business_insights')}
+          />
         </View>
+
+        {/* ── Your Upcoming Events ── */}
+        <Text style={styles.sectionTitle}>Your Upcoming Events</Text>
+        {upcomingEvents.length === 0 ? (
+          <Text style={styles.emptyText}>No upcoming events.</Text>
+        ) : (
+          upcomingEvents.map(event => (
+            <TouchableOpacity key={event.id} style={styles.eventCard} activeOpacity={0.8}>
+              <View style={styles.eventThumb}>
+                {event.cover_url ? (
+                  <Image source={{ uri: event.cover_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+                ) : null}
+              </View>
+              <View style={styles.eventInfo}>
+                <Text style={styles.eventName}>{event.event_name}</Text>
+                <View style={styles.eventMetaRow}>
+                  <Text style={styles.eventMetaIcon}>📅</Text>
+                  <Text style={styles.eventMetaText}>{event.event_date}</Text>
+                </View>
+                {event.location ? (
+                  <View style={styles.eventMetaRow}>
+                    <Text style={styles.eventMetaIcon}>📍</Text>
+                    <Text style={styles.eventMetaText}>{event.location}</Text>
+                  </View>
+                ) : null}
+              </View>
+            </TouchableOpacity>
+          ))
+        )}
 
         {/* ── Recent Reviews ── */}
         <Text style={styles.sectionTitle}>Recent Reviews</Text>
@@ -283,5 +378,12 @@ const styles = StyleSheet.create({
   reviewBody: { fontSize: 13, color: '#444', lineHeight: 18 },
   reviewBodyPlaceholder: { gap: 6 },
   reviewLine: { height: 8, backgroundColor: '#ccc', borderRadius: 4, width: '100%' },
+  eventCard: { flexDirection: 'row', backgroundColor: CARD_BG, borderRadius: RADIUS, padding: 12, marginBottom: 14, gap: 12, alignItems: 'center' },
+  eventThumb: { width: 64, height: 64, borderRadius: 10, backgroundColor: '#c8c8c8', overflow: 'hidden' },
+  eventInfo: { flex: 1, gap: 4 },
+  eventName: { fontSize: 14, fontWeight: '800', color: '#111' },
+  eventMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  eventMetaIcon: { fontSize: 12 },
+  eventMetaText: { fontSize: 12, color: '#666' },
   emptyText: { color: '#888', fontSize: 13, marginBottom: 16 },
 });

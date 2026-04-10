@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -18,11 +18,13 @@ import {
   getBusinessByUid,
   getBusinessEvents,
   getMyProfile,
+  isActiveEventStatus,
   listReviewsForBusiness,
   type Business,
   type EventRow,
   type ReviewRow,
 } from '@/services/api';
+import { onEventsChanged, onProfileChanged } from '@/services/refresh-bus';
 
 // ─── Star Rating ──────────────────────────────────────────────────────────────
 const StarRating: React.FC<{ rating: number; size?: number }> = ({ rating, size = 13 }) => (
@@ -82,29 +84,46 @@ export default function MyProfile() {
   const [reviews, setReviews] = useState<ReviewRow[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const profile = await getMyProfile();
-        if (!profile || cancelled) return;
-        const [biz, evts, revs] = await Promise.all([
-          getBusinessByUid(profile.uid),
-          getBusinessEvents(profile.uid, 5),
-          listReviewsForBusiness(profile.uid, 5),
-        ]);
-        if (cancelled) return;
-        setBusiness(biz);
-        setEvents(evts);
-        setReviews(revs);
-      } catch {
-        // silently fail — show empty state
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
+  const loadProfile = useCallback(async () => {
+    try {
+      const profile = await getMyProfile();
+      if (!profile) return;
+      // Fetch more than we display so we can filter out currently-live,
+      // closed, or cancelled events and still have 5 upcoming ones left.
+      const [biz, evts, revs] = await Promise.all([
+        getBusinessByUid(profile.uid),
+        getBusinessEvents(profile.uid, 20),
+        listReviewsForBusiness(profile.uid, 5),
+      ]);
+      setBusiness(biz);
+      // Only show events that are actually upcoming — exclude ones that are
+      // currently live (open / closing_soon / sold_out / paused), closed, or
+      // cancelled.
+      const upcoming = evts
+        .filter(e => !isActiveEventStatus(e.status) && e.status !== 'closed' && e.status !== 'cancelled')
+        .slice(0, 5);
+      setEvents(upcoming);
+      setReviews(revs);
+    } catch {
+      // silently fail — show empty state
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadProfile();
+  }, [loadProfile]);
+
+  // Refetch when profile or events are edited elsewhere.
+  useEffect(() => {
+    const offProfile = onProfileChanged(loadProfile);
+    const offEvents = onEventsChanged(loadProfile);
+    return () => {
+      offProfile();
+      offEvents();
+    };
+  }, [loadProfile]);
 
   const onSignOut = async () => {
     try {

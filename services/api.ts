@@ -37,6 +37,18 @@ export type EventStatus =
 	| 'closed'
 	| 'cancelled';
 
+// An event is "active" (currently happening, should appear in Right Now /
+// Live now) whenever its status is one of these. Upcoming/closed/cancelled
+// are not active.
+export function isActiveEventStatus(status: EventStatus): boolean {
+	return (
+		status === 'open' ||
+		status === 'closing_soon' ||
+		status === 'sold_out' ||
+		status === 'paused'
+	);
+}
+
 export type EventRow = {
 	id: number;
 	host_uid: string;
@@ -497,4 +509,19 @@ export async function upsertInventoryItem(
 		.from('inventory_status')
 		.upsert({ event_id: eventId, business_uid: businessUid, ...product }, { onConflict: 'event_id,business_uid,product_name' });
 	if (error) throw error;
+}
+
+// ─── Collaborate ────────────────────────────────────────────────────────────
+// Lists all other businesses (excluding the caller) for the Collaborate
+// Discover tab.
+export async function listBusinessesForCollaborate(limit = 100): Promise<Business[]> {
+	const uid = await requireUserId();
+	const { data, error } = await supabase
+		.from('businesses')
+		.select('*')
+		.neq('uid', uid)
+		.order('follower_count', { ascending: false, nullsFirst: false })
+		.limit(limit);
+	if (error) throw error;
+	return data ?? [];
 }
