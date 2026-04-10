@@ -5,6 +5,7 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
+  Image,
   StyleSheet,
   SafeAreaView,
   StatusBar,
@@ -109,6 +110,7 @@ export default function BusinessDashboard() {
   const [business, setBusiness] = useState<Business | null>(null);
   const [eventCount, setEventCount] = useState(0);
   const [liveEvent, setLiveEvent] = useState<EventRow | null>(null);
+  const [upcomingEvents, setUpcomingEvents] = useState<EventRow[]>([]);
   const [reviews, setReviews] = useState<ReviewRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -127,6 +129,10 @@ export default function BusinessDashboard() {
       setEventCount(events.length);
       const live = events.find(e => e.is_published && isActiveEventStatus(e.status)) ?? null;
       setLiveEvent(live);
+      const upcoming = events
+        .filter(e => e.is_published && !isActiveEventStatus(e.status) && e.status !== 'closed' && e.status !== 'cancelled')
+        .slice(0, 5);
+      setUpcomingEvents(upcoming);
       setReviews(revs.slice(0, 3));
     } catch (e: any) {
       setError(e.message ?? 'Failed to load dashboard');
@@ -272,6 +278,35 @@ export default function BusinessDashboard() {
           />
         </View>
 
+        {/* ── Your Upcoming Events ── */}
+        <Text style={styles.sectionTitle}>Your Upcoming Events</Text>
+        {upcomingEvents.length === 0 ? (
+          <Text style={styles.emptyText}>No upcoming events.</Text>
+        ) : (
+          upcomingEvents.map(event => (
+            <TouchableOpacity key={event.id} style={styles.eventCard} activeOpacity={0.8}>
+              <View style={styles.eventThumb}>
+                {event.cover_url ? (
+                  <Image source={{ uri: event.cover_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+                ) : null}
+              </View>
+              <View style={styles.eventInfo}>
+                <Text style={styles.eventName}>{event.event_name}</Text>
+                <View style={styles.eventMetaRow}>
+                  <Text style={styles.eventMetaIcon}>📅</Text>
+                  <Text style={styles.eventMetaText}>{event.event_date}</Text>
+                </View>
+                {event.location ? (
+                  <View style={styles.eventMetaRow}>
+                    <Text style={styles.eventMetaIcon}>📍</Text>
+                    <Text style={styles.eventMetaText}>{event.location}</Text>
+                  </View>
+                ) : null}
+              </View>
+            </TouchableOpacity>
+          ))
+        )}
+
         {/* ── Recent Reviews ── */}
         <Text style={styles.sectionTitle}>Recent Reviews</Text>
         {reviews.length === 0 ? (
@@ -343,5 +378,12 @@ const styles = StyleSheet.create({
   reviewBody: { fontSize: 13, color: '#444', lineHeight: 18 },
   reviewBodyPlaceholder: { gap: 6 },
   reviewLine: { height: 8, backgroundColor: '#ccc', borderRadius: 4, width: '100%' },
+  eventCard: { flexDirection: 'row', backgroundColor: CARD_BG, borderRadius: RADIUS, padding: 12, marginBottom: 14, gap: 12, alignItems: 'center' },
+  eventThumb: { width: 64, height: 64, borderRadius: 10, backgroundColor: '#c8c8c8', overflow: 'hidden' },
+  eventInfo: { flex: 1, gap: 4 },
+  eventName: { fontSize: 14, fontWeight: '800', color: '#111' },
+  eventMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  eventMetaIcon: { fontSize: 12 },
+  eventMetaText: { fontSize: 12, color: '#666' },
   emptyText: { color: '#888', fontSize: 13, marginBottom: 16 },
 });

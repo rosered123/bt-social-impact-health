@@ -14,10 +14,9 @@ import {
   ActivityIndicator,
 } from 'react-native';
 
-import { createMyEvent, getEventById, updateMyEvent } from '@/services/api';
+import { createMyEvent, getAllTags, getEventById, updateMyEvent } from '@/services/api';
+import type { VibeTag } from '@/services/api';
 import { notifyEventsChanged } from '@/services/refresh-bus';
-
-interface VibeTag { id: string; label: string }
 
 interface CheckboxRowProps { label: string; checked: boolean; onToggle: () => void }
 
@@ -78,7 +77,8 @@ export default function CreateEvent() {
   const [longitude, setLongitude] = useState<number | null>(null);
   const [geocoding, setGeocoding] = useState(false);
   const [customTag, setCustomTag] = useState('');
-  const [vibeTags, setVibeTags] = useState<VibeTag[]>([]);
+  const [vibeTags, setVibeTags] = useState<string[]>([]);
+  const [popularTags, setPopularTags] = useState<VibeTag[]>([]);
   const [notifications, setNotifications] = useState<Record<string, boolean>>({
     'Notify my followers': true,
     'Show on map & explore page': true,
@@ -111,6 +111,36 @@ export default function CreateEvent() {
     return () => { cancelled = true; };
   }, [isEditing, editingId]);
 
+  // Reset form to empty state when entering create mode (no eventId).
+  // Handles cases where the screen was previously used for editing and
+  // React kept the component instance alive.
+  useEffect(() => {
+    if (isEditing) return;
+    setEventName('');
+    setDescription('');
+    setDate('');
+    setStartTime('');
+    setEndTime('');
+    setLocation('');
+    setLatitude(null);
+    setLongitude(null);
+    setVibeTags([]);
+    setCustomTag('');
+    setNotifications({
+      'Notify my followers': true,
+      'Show on map & explore page': true,
+      'Generate sharable event': true,
+    });
+  }, [isEditing]);
+
+  useEffect(() => {
+    let cancelled = false;
+    getAllTags()
+      .then(tags => { if (!cancelled) setPopularTags(tags); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
   const geocodeLocation = async (address: string) => {
     if (!address.trim()) return;
     setGeocoding(true);
@@ -127,13 +157,18 @@ export default function CreateEvent() {
     }
   };
 
-  const removeTag = (id: string) => setVibeTags(prev => prev.filter(t => t.id !== id));
+  const removeTag = (index: number) => setVibeTags(prev => prev.filter((_, i) => i !== index));
 
   const addTag = () => {
     const trimmed = customTag.trim();
-    if (!trimmed) return;
-    setVibeTags(prev => [...prev, { id: Date.now().toString(), label: trimmed }]);
+    if (trimmed && !vibeTags.includes(trimmed)) {
+      setVibeTags(prev => [...prev, trimmed]);
+    }
     setCustomTag('');
+  };
+
+  const addPopularTag = (tag: string) => {
+    if (!vibeTags.includes(tag)) setVibeTags(prev => [...prev, tag]);
   };
 
   const toggleNotification = (key: string) => {
@@ -302,16 +337,21 @@ export default function CreateEvent() {
         <SectionCard>
           <Text style={styles.fieldLabel}>Vibe Tags</Text>
           <View style={styles.tagsWrap}>
-            {vibeTags.map(tag => (
-              <View key={tag.id} style={styles.tag}>
-                <Text style={styles.tagText}>{tag.label}</Text>
-                <TouchableOpacity onPress={() => removeTag(tag.id)} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
-                  <Text style={styles.tagRemove}>×</Text>
-                </TouchableOpacity>
-              </View>
+            {vibeTags.map((tag, index) => (
+              <TouchableOpacity key={index} style={styles.tag} onPress={() => removeTag(index)}>
+                <Text style={styles.tagText}>{tag} ×</Text>
+              </TouchableOpacity>
             ))}
           </View>
-          <Text style={styles.customTagLabel}>Add custom tag:</Text>
+          <Text style={styles.customTagLabel}>Select from popular tags:</Text>
+          <View style={styles.tagsWrap}>
+            {popularTags.map(tag => (
+              <TouchableOpacity key={tag.id} style={styles.popularTag} onPress={() => addPopularTag(tag.name)}>
+                <Text style={styles.popularTagText}>{tag.name}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <Text style={[styles.customTagLabel, { marginTop: 10 }]}>Add custom tag:</Text>
           <View style={styles.customTagRow}>
             <TextInput style={styles.customTagInput} placeholder="Enter custom tag..." placeholderTextColor="#aaa" value={customTag} onChangeText={setCustomTag} onSubmitEditing={addTag} returnKeyType="done" />
             <TouchableOpacity style={styles.addTagBtn} onPress={addTag}>
@@ -382,9 +422,10 @@ const styles = StyleSheet.create({
   locationIcon: { fontSize: 15, marginRight: 6 },
   locationInput: { flex: 1, fontSize: 13, color: '#333' },
   tagsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
-  tag: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#fff', borderRadius: 20, borderWidth: 1.5, borderColor: '#ccc', paddingHorizontal: 12, paddingVertical: 6 },
-  tagText: { fontSize: 12, color: '#333' },
-  tagRemove: { fontSize: 16, color: '#888', lineHeight: 18 },
+  tag: { backgroundColor: '#333', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6 },
+  tagText: { color: '#fff', fontSize: 13, fontWeight: '600' },
+  popularTag: { backgroundColor: CARD_BG, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6, borderWidth: 1, borderColor: '#ccc' },
+  popularTagText: { color: '#555', fontSize: 13, fontWeight: '600' },
   customTagLabel: { fontSize: 12, fontWeight: '600', color: '#555', marginBottom: 6 },
   customTagRow: { flexDirection: 'row', gap: 8 },
   customTagInput: { flex: 1, backgroundColor: '#fff', borderRadius: 8, borderWidth: 1.5, borderColor: '#d0d0d0', paddingHorizontal: 12, paddingVertical: 8, fontSize: 13, color: '#333' },
