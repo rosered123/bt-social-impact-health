@@ -1,3 +1,5 @@
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
@@ -26,7 +28,17 @@ import {
 } from '@/services/api';
 import { onEventsChanged, onProfileChanged } from '@/services/refresh-bus';
 
-// Label + dot color for the Right Now card based on the current event status.
+function formatTime(dbTime: string | null | undefined): string {
+  if (!dbTime) return '—';
+  const [hStr, mStr] = dbTime.split(':');
+  const h = parseInt(hStr, 10);
+  const m = parseInt(mStr ?? '0', 10);
+  if (Number.isNaN(h)) return dbTime;
+  const period = h >= 12 ? 'PM' : 'AM';
+  const hr = ((h + 11) % 12) + 1;
+  return `${hr}:${String(m).padStart(2, '0')} ${period}`;
+}
+
 function getRightNowDisplay(status: EventStatus): { label: string; color: string } {
   switch (status) {
     case 'open':
@@ -42,73 +54,9 @@ function getRightNowDisplay(status: EventStatus): { label: string; color: string
   }
 }
 
-// ─── Icon placeholders ───────────────────────────────────────────────────────
-const Icon = ({ name, size = 20, color = '#222' }: { name: string; size?: number; color?: string }) => {
-  const icons: Record<string, string> = {
-    chart: '📊', people: '👥', events: '⚡', star: '⭐',
-    calendar: '📅', handshake: '🤝', offer: '🎁', analytics: '📈',
-    camera: '📷', chat: '💬', settings: '⚙️', wifi: '📡', eye: '👁', edit: '✏️',
-    reply: '↩', 'star-filled': '★', 'star-empty': '☆',
-  };
-  return <Text style={{ fontSize: size }}>{icons[name] ?? '●'}</Text>;
-};
-
-const StarRating = ({ rating }: { rating: number }) => (
-  <View style={styles.starsRow}>
-    {[1, 2, 3, 4, 5].map(i => (
-      <Text key={i} style={[styles.star, i <= rating ? styles.starFilled : styles.starEmpty]}>★</Text>
-    ))}
-  </View>
-);
-
-const StatCard = ({ icon, value, label, sub }: { icon: string; value: string; label: string; sub: string }) => (
-  <View style={styles.statCard}>
-    <Icon name={icon} size={22} color="#333" />
-    <Text style={styles.statValue}>{value}</Text>
-    <Text style={styles.statLabel}>{label}</Text>
-    <Text style={styles.statSub}>{sub}</Text>
-  </View>
-);
-
-const ActionCard = ({ icon, label, sub, onPress }: { icon: string; label: string; sub: string; onPress?: () => void }) => (
-  <TouchableOpacity style={styles.actionCard} onPress={onPress} activeOpacity={0.75}>
-    <Icon name={icon} size={22} color="#333" />
-    <Text style={styles.actionLabel}>{label}</Text>
-    <Text style={styles.actionSub}>{sub}</Text>
-  </TouchableOpacity>
-);
-
-const ReviewItem = ({ review }: { review: ReviewRow }) => {
-  const date = new Date(review.created_at).toLocaleDateString();
-  const initial = review.reviewer_uid.slice(0, 1).toUpperCase();
-  return (
-    <View style={styles.reviewItem}>
-      <View style={styles.reviewHeader}>
-        <View style={styles.reviewAvatar}>
-          <Text style={styles.reviewAvatarText}>{initial}</Text>
-        </View>
-        <View style={styles.reviewMeta}>
-          <Text style={styles.reviewName}>Customer</Text>
-          <StarRating rating={review.rating} />
-        </View>
-        <Text style={styles.reviewDate}>{date}</Text>
-      </View>
-      {review.body ? (
-        <Text style={styles.reviewBody}>{review.body}</Text>
-      ) : (
-        <View style={styles.reviewBodyPlaceholder}>
-          <View style={styles.reviewLine} />
-          <View style={[styles.reviewLine, { width: '70%' }]} />
-        </View>
-      )}
-    </View>
-  );
-};
-
 export default function BusinessDashboard() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [business, setBusiness] = useState<Business | null>(null);
-  const [eventCount, setEventCount] = useState(0);
   const [liveEvent, setLiveEvent] = useState<EventRow | null>(null);
   const [upcomingEvents, setUpcomingEvents] = useState<EventRow[]>([]);
   const [reviews, setReviews] = useState<ReviewRow[]>([]);
@@ -126,14 +74,13 @@ export default function BusinessDashboard() {
         listReviewsForBusiness(p.uid),
       ]);
       setBusiness(biz);
-      setEventCount(events.length);
       const live = events.find(e => e.is_published && isActiveEventStatus(e.status)) ?? null;
       setLiveEvent(live);
       const upcoming = events
         .filter(e => e.is_published && !isActiveEventStatus(e.status) && e.status !== 'closed' && e.status !== 'cancelled')
         .slice(0, 5);
       setUpcomingEvents(upcoming);
-      setReviews(revs.slice(0, 3));
+      setReviews(revs);
     } catch (e: any) {
       setError(e.message ?? 'Failed to load dashboard');
     } finally {
@@ -145,7 +92,6 @@ export default function BusinessDashboard() {
     loadDashboard();
   }, [loadDashboard]);
 
-  // Refetch when any screen notifies that events or profile data changed.
   useEffect(() => {
     const offEvents = onEventsChanged(loadDashboard);
     const offProfile = onProfileChanged(loadDashboard);
@@ -167,63 +113,66 @@ export default function BusinessDashboard() {
   const avgRating = business?.avg_rating != null ? Number(business.avg_rating).toFixed(1) : '—';
   const followerCount = business?.follower_count ?? 0;
 
+  const liveHours = liveEvent
+    ? `${formatTime(liveEvent.start_time)} – ${formatTime(liveEvent.end_time)}`
+    : '—';
+
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f5f5f5" />
+      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
 
-        {/* ── Header ── */}
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.headerSub}>Business Dashboard</Text>
-            <Text style={styles.headerTitle}>Hey, {businessName} 👋</Text>
+        {/* ── Header (golden gradient) ── */}
+        <LinearGradient
+          colors={['#f5d990', '#f0c060']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.header}
+        >
+          <View style={styles.headerTextWrap}>
+            <Text style={styles.headerWelcome}>Welcome back</Text>
+            <Text style={styles.headerTitle}>{businessName} 👋</Text>
           </View>
-          <View style={styles.headerIcons}>
-            <TouchableOpacity style={styles.iconBtn}><Icon name="chat" size={18} /></TouchableOpacity>
-            <TouchableOpacity style={styles.iconBtn}><Icon name="settings" size={18} /></TouchableOpacity>
+          <TouchableOpacity
+            style={styles.gearBtn}
+            onPress={() => router.push('/(tabs)/settings')}
+          >
+            <Feather name="settings" size={26} color="#000" />
+          </TouchableOpacity>
+
+          {/* Stat pills */}
+          <View style={styles.statPillRow}>
+            <View style={styles.statPill}>
+              <Text style={styles.statPillValue}>{String(followerCount)}</Text>
+              <Text style={styles.statPillLabel}>Followers</Text>
+            </View>
+            <View style={styles.statPill}>
+              <Text style={styles.statPillValue}>—</Text>
+              <Text style={styles.statPillLabel}>Views Today</Text>
+            </View>
+            <View style={styles.statPill}>
+              <Text style={styles.statPillValue}>{avgRating}</Text>
+              <Text style={styles.statPillLabel}>Rating</Text>
+              <Feather name="star" size={17} color="#f5c518" style={styles.statPillStar} />
+            </View>
           </View>
-        </View>
+        </LinearGradient>
 
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-        {/* ── Profile Card ── */}
-        <View style={styles.profileCard}>
-          <View style={styles.profileTop}>
-            <View style={styles.profileAvatar}>
-              <Icon name="camera" size={20} color="#666" />
+        {/* ── Live Now Card ── */}
+        <View style={styles.liveCard}>
+          <View style={styles.liveTopRow}>
+            <View style={styles.liveTitleRow}>
+              {liveEvent ? (
+                <View style={[styles.liveDot, { backgroundColor: getRightNowDisplay(liveEvent.status).color }]} />
+              ) : (
+                <View style={[styles.liveDot, { backgroundColor: '#9ca3af' }]} />
+              )}
+              <Text style={styles.liveTitle}>Live Now</Text>
             </View>
-            <View style={styles.profileInfo}>
-              <Text style={styles.profileName}>{businessName}</Text>
-              <View style={styles.ratingRow}>
-                <Text style={styles.starFilled}>★</Text>
-                <Text style={styles.profileRating}> {avgRating}/5</Text>
-                <Text style={styles.profileReviews}> ({reviews.length} reviews)</Text>
-              </View>
-            </View>
-          </View>
-          <View style={styles.profileActions}>
-            <TouchableOpacity
-              style={styles.outlineBtn}
-              onPress={() => router.push('/(tabs)/public_business_profile')}
-            >
-              <Icon name="eye" size={14} color="#333" />
-              <Text style={styles.outlineBtnText}> View Public Profile</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.filledBtn} onPress={() => router.push('/(tabs)/edit_profile?from=dashboard')}>
-              <Icon name="edit" size={14} color="#fff" />
-              <Text style={styles.filledBtnText}> Edit Profile</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* ── Right Now ── */}
-        <Text style={styles.sectionTitle}>Right Now</Text>
-        <View style={styles.rightNowCard}>
-          <View style={styles.rightNowTopRow}>
-            <Text style={styles.rightNowLabel}>CURRENT STATUS</Text>
             {liveEvent ? (
               <TouchableOpacity
-                style={styles.updateBtn}
                 activeOpacity={0.85}
                 onPress={() =>
                   router.push({
@@ -232,59 +181,138 @@ export default function BusinessDashboard() {
                   })
                 }
               >
-                <Text style={styles.updateBtnText}>Update</Text>
+                <LinearGradient
+                  colors={['#5179be', '#415e8f']}
+                  style={styles.updateBtn}
+                >
+                  <Feather name="radio" size={18} color="#fff" />
+                  <Text style={styles.updateBtnText}>Update</Text>
+                </LinearGradient>
               </TouchableOpacity>
             ) : null}
           </View>
+
           {liveEvent ? (
             <>
-              <View style={styles.liveBadgeRow}>
-                <View style={[styles.liveDot, { backgroundColor: getRightNowDisplay(liveEvent.status).color }]} />
-                <Text style={styles.liveText}>{getRightNowDisplay(liveEvent.status).label}</Text>
+              <Text style={styles.liveSubtitle}>Tap to update status</Text>
+              <View style={styles.subCardRow}>
+                <View style={styles.subCard}>
+                  <Text style={styles.subCardLabel}>Hours</Text>
+                  <Text style={styles.subCardValue}>{liveHours}</Text>
+                </View>
+                <View style={styles.subCard}>
+                  <Text style={styles.subCardLabel}>Location</Text>
+                  <Text style={styles.subCardValue}>{liveEvent.location ?? '—'}</Text>
+                </View>
+                <View style={styles.subCard}>
+                  <Text style={styles.subCardLabel}>Stock</Text>
+                  <Text style={styles.subCardValue}>—</Text>
+                </View>
               </View>
-              <Text style={styles.rightNowDetail}>
-                {liveEvent.event_name}{liveEvent.location ? `  |  ${liveEvent.location}` : ''}
-              </Text>
             </>
           ) : (
-            <Text style={styles.rightNowDetail}>No events right now</Text>
+            <Text style={styles.liveSubtitle}>No events right now</Text>
           )}
         </View>
 
+        {/* ── Pre-Order Active Banner ── */}
+        <LinearGradient
+          colors={['rgb(208,235,255)', 'rgb(104,138,196)']}
+          start={{ x: 0, y: 0.5 }}
+          end={{ x: 1, y: 0.5 }}
+          style={styles.preOrderBanner}
+        >
+          <Feather name="shopping-bag" size={24} color="#000" />
+          <View style={styles.preOrderText}>
+            <Text style={styles.preOrderTitle}>Pre-Order Active</Text>
+            <Text style={styles.preOrderSub}>Tap to manage orders</Text>
+          </View>
+          <View style={styles.preOrderBadge}>
+            <Text style={styles.preOrderBadgeText}>12</Text>
+          </View>
+        </LinearGradient>
+
         {/* ── Today's Activity ── */}
         <Text style={styles.sectionTitle}>Today's Activity</Text>
-        <View style={styles.grid}>
-          <StatCard icon="people" value={String(followerCount)} label="Followers" sub="" />
-          <StatCard icon="events" value={String(eventCount)} label="My Events" sub="" />
-          <StatCard icon="star" value={`${avgRating}/5`} label="Average Rating" sub={`${reviews.length} reviews`} />
+        <View style={styles.activityGrid}>
+          {/* Profile Views */}
+          <View style={styles.activityCard}>
+            <Text style={styles.activityLabel}>Profile Views</Text>
+            <Text style={styles.activityValue}>—</Text>
+            <View style={styles.trendRow}>
+              <Feather name="trending-up" size={14} color="#55be53" />
+              <Text style={styles.trendText}>+23%</Text>
+            </View>
+          </View>
+          {/* Pre-Orders */}
+          <View style={styles.activityCard}>
+            <Text style={styles.activityLabel}>Pre-Orders</Text>
+            <Text style={styles.activityValue}>—</Text>
+            <Text style={styles.activitySub}>for today</Text>
+          </View>
+          {/* Engagement */}
+          <View style={styles.activityCard}>
+            <Text style={styles.activityLabel}>Engagement</Text>
+            <Text style={styles.activityValue}>—</Text>
+            <Text style={styles.activitySub}>Profile Saves</Text>
+          </View>
+          {/* Rating */}
+          <View style={styles.activityCard}>
+            <Text style={styles.activityLabel}>Rating</Text>
+            <Text style={styles.activityValue}>{avgRating}</Text>
+            <Text style={styles.activitySub}>{reviews.length} reviews</Text>
+          </View>
         </View>
 
-        {/* ── More Actions ── */}
-        <Text style={styles.sectionTitle}>More Actions</Text>
-        <View style={styles.grid}>
-          <ActionCard icon="calendar" label="Create Event" sub="New pop-up" onPress={() => router.push('/(tabs)/create_business_event?from=dashboard')} />
-          <ActionCard
-            icon="handshake"
-            label="Collaborate"
-            sub="Partner up"
-            onPress={() => router.push('/(tabs)/collaborate')}
-          />
-          <ActionCard icon="offer" label="Create Offer" sub="Special deals" />
-          <ActionCard
-            icon="analytics"
-            label="View Analytics"
-            sub="Insights & data"
+        {/* ── Quick Actions ── */}
+        <Text style={styles.sectionTitle}>Quick Actions</Text>
+        <View style={styles.quickActionRow}>
+          <TouchableOpacity
+            style={styles.quickActionItem}
+            activeOpacity={0.75}
             onPress={() => router.push('/(tabs)/business_insights')}
-          />
+          >
+            <LinearGradient
+              colors={['#7aaed6', '#3966b3']}
+              style={styles.quickActionIcon}
+            >
+              <MaterialCommunityIcons name="chart-line" size={30} color="#fff" />
+            </LinearGradient>
+            <Text style={styles.quickActionLabel}>Insights</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.quickActionItem}
+            activeOpacity={0.75}
+            onPress={() => router.push('/(tabs)/create_business_event?from=dashboard')}
+          >
+            <LinearGradient
+              colors={['#c5e1f6', '#6f93d1']}
+              style={styles.quickActionIcon}
+            >
+              <Feather name="calendar" size={26} color="#fff" />
+            </LinearGradient>
+            <Text style={styles.quickActionLabel}>Create Event</Text>
+          </TouchableOpacity>
         </View>
 
         {/* ── Your Upcoming Events ── */}
-        <Text style={styles.sectionTitle}>Your Upcoming Events</Text>
+        <View style={styles.eventsHeader}>
+          <Text style={styles.sectionTitle}>Your Upcoming Events</Text>
+          <TouchableOpacity
+            onPress={() => router.push('/(tabs)/buisness_events')}
+            style={styles.viewAllBtn}
+          >
+            <Text style={styles.viewAllText}>View all</Text>
+            <Feather name="chevron-right" size={18} color="#4169e1" />
+          </TouchableOpacity>
+        </View>
+
         {upcomingEvents.length === 0 ? (
           <Text style={styles.emptyText}>No upcoming events.</Text>
         ) : (
           upcomingEvents.map(event => (
-            <TouchableOpacity key={event.id} style={styles.eventCard} activeOpacity={0.8}>
+            <View key={event.id} style={styles.eventCard}>
               <View style={styles.eventThumb}>
                 {event.cover_url ? (
                   <Image source={{ uri: event.cover_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
@@ -293,26 +321,15 @@ export default function BusinessDashboard() {
               <View style={styles.eventInfo}>
                 <Text style={styles.eventName}>{event.event_name}</Text>
                 <View style={styles.eventMetaRow}>
-                  <Text style={styles.eventMetaIcon}>📅</Text>
-                  <Text style={styles.eventMetaText}>{event.event_date}</Text>
+                  <Feather name="calendar" size={14} color="#696969" />
+                  <Text style={styles.eventDate}>{event.event_date}</Text>
                 </View>
-                {event.location ? (
-                  <View style={styles.eventMetaRow}>
-                    <Text style={styles.eventMetaIcon}>📍</Text>
-                    <Text style={styles.eventMetaText}>{event.location}</Text>
-                  </View>
-                ) : null}
+                <Text style={styles.eventRsvps}>
+                  — <Text style={styles.eventRsvpsLabel}>RSVPs</Text>
+                </Text>
               </View>
-            </TouchableOpacity>
+            </View>
           ))
-        )}
-
-        {/* ── Recent Reviews ── */}
-        <Text style={styles.sectionTitle}>Recent Reviews</Text>
-        {reviews.length === 0 ? (
-          <Text style={styles.emptyText}>No reviews yet.</Text>
-        ) : (
-          reviews.map(r => <ReviewItem key={r.id} review={r} />)
         )}
 
         <View style={{ height: 32 }} />
@@ -321,69 +338,325 @@ export default function BusinessDashboard() {
   );
 }
 
-const CARD_BG = '#ebebeb';
-const RADIUS = 12;
-
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#f5f5f5' },
-  scroll: { flex: 1, paddingHorizontal: 16 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 16, marginBottom: 16 },
-  headerSub: { fontSize: 12, color: '#666', fontWeight: '500' },
-  headerTitle: { fontSize: 22, fontWeight: '800', color: '#111', marginTop: 2 },
-  headerIcons: { flexDirection: 'row', gap: 8 },
-  iconBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#ddd', alignItems: 'center', justifyContent: 'center' },
-  errorText: { color: '#ef4444', marginBottom: 12, fontSize: 13 },
-  profileCard: { backgroundColor: CARD_BG, borderRadius: RADIUS, padding: 14, marginBottom: 20 },
-  profileTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  profileAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#ccc', alignItems: 'center', justifyContent: 'center', marginRight: 10 },
-  profileInfo: { flex: 1 },
-  profileName: { fontSize: 15, fontWeight: '700', color: '#111' },
-  ratingRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
-  profileRating: { fontSize: 12, fontWeight: '600', color: '#333' },
-  profileReviews: { fontSize: 12, color: '#777' },
-  profileActions: { flexDirection: 'row', gap: 8 },
-  outlineBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#bbb', borderRadius: 8, paddingVertical: 8 },
-  outlineBtnText: { fontSize: 12, fontWeight: '600', color: '#333' },
-  filledBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#333', borderRadius: 8, paddingVertical: 8 },
-  filledBtnText: { fontSize: 12, fontWeight: '600', color: '#fff' },
-  sectionTitle: { fontSize: 17, fontWeight: '800', color: '#111', marginBottom: 10 },
-  rightNowCard: { backgroundColor: CARD_BG, borderRadius: RADIUS, padding: 14, marginBottom: 20 },
-  rightNowTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  rightNowLabel: { fontSize: 11, fontWeight: '800', color: '#666', letterSpacing: 0.8 },
-  updateBtn: { backgroundColor: '#222', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 7 },
-  updateBtnText: { color: '#fff', fontWeight: '700', fontSize: 12 },
-  liveBadgeRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
-  liveDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#22c55e' },
-  liveText: { fontSize: 14, fontWeight: '800', color: '#111', letterSpacing: 0.5 },
-  rightNowDetail: { fontSize: 13, color: '#555', fontWeight: '500' },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 },
-  statCard: { width: '47.5%', backgroundColor: CARD_BG, borderRadius: RADIUS, padding: 14, gap: 3 },
-  statValue: { fontSize: 22, fontWeight: '900', color: '#111', marginTop: 4 },
-  statLabel: { fontSize: 13, fontWeight: '600', color: '#333' },
-  statSub: { fontSize: 11, color: '#777' },
-  actionCard: { width: '47.5%', backgroundColor: CARD_BG, borderRadius: RADIUS, padding: 14, gap: 4 },
-  actionLabel: { fontSize: 14, fontWeight: '700', color: '#111', marginTop: 4 },
-  actionSub: { fontSize: 11, color: '#777' },
-  starsRow: { flexDirection: 'row', gap: 1 },
-  star: { fontSize: 13 },
-  starFilled: { color: '#f59e0b' },
-  starEmpty: { color: '#ddd' },
-  reviewItem: { backgroundColor: CARD_BG, borderRadius: RADIUS, padding: 14, marginBottom: 12 },
-  reviewHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
-  reviewAvatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#bbb', alignItems: 'center', justifyContent: 'center', marginRight: 10 },
-  reviewAvatarText: { fontWeight: '700', color: '#555', fontSize: 15 },
-  reviewMeta: { flex: 1 },
-  reviewName: { fontWeight: '700', fontSize: 14, color: '#111' },
-  reviewDate: { fontSize: 11, color: '#999' },
-  reviewBody: { fontSize: 13, color: '#444', lineHeight: 18 },
-  reviewBodyPlaceholder: { gap: 6 },
-  reviewLine: { height: 8, backgroundColor: '#ccc', borderRadius: 4, width: '100%' },
-  eventCard: { flexDirection: 'row', backgroundColor: CARD_BG, borderRadius: RADIUS, padding: 12, marginBottom: 14, gap: 12, alignItems: 'center' },
-  eventThumb: { width: 64, height: 64, borderRadius: 10, backgroundColor: '#c8c8c8', overflow: 'hidden' },
-  eventInfo: { flex: 1, gap: 4 },
-  eventName: { fontSize: 14, fontWeight: '800', color: '#111' },
+  safe: { flex: 1, backgroundColor: '#ffffff' },
+  scroll: { flex: 1 },
+
+  // ── Header ──
+  header: {
+    paddingHorizontal: 30,
+    paddingTop: 24,
+    paddingBottom: 30,
+  },
+  headerTextWrap: { flex: 1 },
+  headerWelcome: { fontSize: 18, color: '#000', fontWeight: '400' },
+  headerTitle: { fontSize: 26, fontWeight: '800', color: '#000', marginTop: 2 },
+  gearBtn: {
+    position: 'absolute',
+    top: 24,
+    right: 30,
+  },
+
+  // ── Stat pills ──
+  statPillRow: {
+    flexDirection: 'row',
+    gap: 15,
+    marginTop: 16,
+  },
+  statPill: {
+    backgroundColor: '#2e4a7a',
+    borderRadius: 7,
+    paddingHorizontal: 16,
+    paddingVertical: 13,
+    minWidth: 93,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12.5,
+    elevation: 6,
+  },
+  statPillValue: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  statPillLabel: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: '#fff',
+    marginTop: 4,
+  },
+  statPillStar: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    fontSize: 17,
+  },
+
+  // ── Error ──
+  errorText: { color: '#ef4444', marginHorizontal: 16, marginBottom: 8, fontSize: 13 },
+
+  // ── Live Now Card ──
+  liveCard: {
+    marginHorizontal: 16,
+    marginTop: 20,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#d8d8d8',
+    padding: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 5,
+    elevation: 4,
+  },
+  liveTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  liveTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  liveDot: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+  },
+  liveTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#000',
+  },
+  liveSubtitle: {
+    fontSize: 14,
+    color: '#000',
+    marginTop: 4,
+  },
+  updateBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 100,
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+  },
+  updateBtnText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '500',
+  },
+
+  // ── Sub-cards (Hours / Location / Stock) ──
+  subCardRow: {
+    flexDirection: 'row',
+    gap: 11,
+    marginTop: 14,
+  },
+  subCard: {
+    flex: 1,
+    backgroundColor: '#e5e5e5',
+    borderRadius: 13,
+    borderWidth: 1,
+    borderColor: '#d8d8d8',
+    padding: 10,
+    height: 70,
+    justifyContent: 'center',
+  },
+  subCardLabel: {
+    fontSize: 16,
+    fontWeight: '400',
+    color: '#000',
+  },
+  subCardValue: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#000',
+    marginTop: 4,
+  },
+
+  // ── Pre-Order Banner ──
+  preOrderBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginTop: 18,
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 5,
+    elevation: 4,
+  },
+  preOrderText: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  preOrderTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#000',
+  },
+  preOrderSub: {
+    fontSize: 14,
+    color: '#000',
+    marginTop: 2,
+  },
+  preOrderBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#2e4a7a',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  preOrderBadgeText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '500',
+  },
+
+  // ── Section Title ──
+  sectionTitle: {
+    fontSize: 19,
+    fontWeight: '600',
+    color: '#000',
+    marginHorizontal: 16,
+    marginTop: 22,
+    marginBottom: 8,
+  },
+
+  // ── Today's Activity ──
+  activityGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginHorizontal: 16,
+  },
+  activityCard: {
+    width: '48%',
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    borderWidth: 0.8,
+    borderColor: '#d8d8d8',
+    padding: 18,
+    height: 82,
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 2.5,
+    elevation: 2,
+  },
+  activityLabel: {
+    fontSize: 16,
+    fontWeight: '400',
+    color: '#000',
+  },
+  activityValue: {
+    fontSize: 22,
+    fontWeight: '500',
+    color: '#000',
+    marginTop: 2,
+  },
+  activitySub: {
+    fontSize: 14,
+    color: '#696969',
+    marginTop: 2,
+  },
+  trendRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    marginTop: 2,
+  },
+  trendText: {
+    fontSize: 14,
+    color: '#55be53',
+  },
+
+  // ── Quick Actions ──
+  quickActionRow: {
+    flexDirection: 'row',
+    gap: 18,
+    marginHorizontal: 26,
+    marginBottom: 8,
+  },
+  quickActionItem: {
+    alignItems: 'center',
+  },
+  quickActionIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#d8d8d8',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  quickActionLabel: {
+    fontSize: 16,
+    fontWeight: '400',
+    color: '#000',
+    marginTop: 5,
+  },
+
+  // ── Upcoming Events ──
+  eventsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  viewAllBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  viewAllText: {
+    fontSize: 16,
+    fontWeight: '300',
+    color: '#4169e1',
+  },
+  eventCard: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#d8d8d8',
+    padding: 15,
+    marginHorizontal: 16,
+    marginBottom: 10,
+    gap: 16,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 5,
+    elevation: 4,
+  },
+  eventThumb: {
+    width: 71,
+    height: 71,
+    borderRadius: 10,
+    backgroundColor: '#d8d8d8',
+    overflow: 'hidden',
+  },
+  eventInfo: { flex: 1, gap: 3 },
+  eventName: { fontSize: 19, fontWeight: '500', color: '#000' },
   eventMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  eventMetaIcon: { fontSize: 12 },
-  eventMetaText: { fontSize: 12, color: '#666' },
-  emptyText: { color: '#888', fontSize: 13, marginBottom: 16 },
+  eventDate: { fontSize: 16, color: '#696969' },
+  eventRsvps: { fontSize: 16, color: '#000' },
+  eventRsvpsLabel: { color: '#696969' },
+  emptyText: { color: '#888', fontSize: 13, marginHorizontal: 16, marginBottom: 16 },
 });
