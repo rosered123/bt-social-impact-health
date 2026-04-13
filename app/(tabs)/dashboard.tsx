@@ -48,7 +48,7 @@ function getRightNowDisplay(status: EventStatus): { label: string; color: string
     case 'sold_out':
       return { label: 'SOLD OUT', color: '#ef4444' };
     case 'paused':
-      return { label: 'ON BREAK', color: '#9ca3af' };
+      return { label: 'ON BREAK', color: '#3b82f6' };
     default:
       return { label: 'LIVE NOW', color: '#22c55e' };
   }
