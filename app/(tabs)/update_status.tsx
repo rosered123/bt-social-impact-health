@@ -373,16 +373,15 @@ export default function UpdateStatus() {
                 })}
               </View>
 
-              {/* Pre-Orders toggle */}
-              <View style={styles.preOrderRow}>
+              {/* Pre-Orders link */}
+              <TouchableOpacity
+                style={styles.preOrderRow}
+                onPress={() => router.push('/(tabs)/pre_orders')}
+                activeOpacity={0.75}
+              >
                 <Text style={styles.preOrderLabel}>Pre-Orders</Text>
-                <Switch
-                  value={product.preOrder}
-                  onValueChange={val => updateProduct(index, { preOrder: val })}
-                  trackColor={{ false: '#d8d8d8', true: '#22c55e' }}
-                  thumbColor="#fff"
-                />
-              </View>
+                <Feather name="chevron-right" size={18} color="#666" />
+              </TouchableOpacity>
             </View>
           ))}
 
@@ -624,6 +623,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginTop: 10,
+    paddingVertical: 10,
   },
   preOrderLabel: {
     fontSize: 14,

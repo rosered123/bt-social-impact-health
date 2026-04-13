@@ -57,6 +57,7 @@ export default function TabLayout() {
         }
       />
       <Tabs.Screen name="update_status" options={{ href: null }} />
+      <Tabs.Screen name="pre_orders" options={{ href: null }} />
       <Tabs.Screen
         name="business_profile"
         options={

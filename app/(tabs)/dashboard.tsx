@@ -216,21 +216,23 @@ export default function BusinessDashboard() {
         </View>
 
         {/* ── Pre-Order Active Banner ── */}
-        <LinearGradient
-          colors={['rgb(208,235,255)', 'rgb(104,138,196)']}
-          start={{ x: 0, y: 0.5 }}
-          end={{ x: 1, y: 0.5 }}
-          style={styles.preOrderBanner}
-        >
-          <Feather name="shopping-bag" size={24} color="#000" />
-          <View style={styles.preOrderText}>
-            <Text style={styles.preOrderTitle}>Pre-Order Active</Text>
-            <Text style={styles.preOrderSub}>Tap to manage orders</Text>
-          </View>
-          <View style={styles.preOrderBadge}>
-            <Text style={styles.preOrderBadgeText}>12</Text>
-          </View>
-        </LinearGradient>
+        <TouchableOpacity activeOpacity={0.85} onPress={() => router.push('/(tabs)/pre_orders')}>
+          <LinearGradient
+            colors={['rgb(208,235,255)', 'rgb(104,138,196)']}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+            style={styles.preOrderBanner}
+          >
+            <Feather name="shopping-bag" size={24} color="#000" />
+            <View style={styles.preOrderText}>
+              <Text style={styles.preOrderTitle}>Pre-Order Active</Text>
+              <Text style={styles.preOrderSub}>Tap to manage orders</Text>
+            </View>
+            <View style={styles.preOrderBadge}>
+              <Text style={styles.preOrderBadgeText}>12</Text>
+            </View>
+          </LinearGradient>
+        </TouchableOpacity>
 
         {/* ── Today's Activity ── */}
         <Text style={styles.sectionTitle}>Today's Activity</Text>
