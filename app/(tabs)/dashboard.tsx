@@ -167,7 +167,7 @@ export default function BusinessDashboard() {
               {liveEvent ? (
                 <View style={[styles.liveDot, { backgroundColor: getRightNowDisplay(liveEvent.status).color }]} />
               ) : (
-                <View style={[styles.liveDot, { backgroundColor: '#9ca3af' }]} />
+                <View style={[styles.liveDot, { backgroundColor: '#3b82f6' }]} />
               )}
               <Text style={styles.liveTitle}>Live Now</Text>
             </View>

@@ -77,11 +77,24 @@ const TIME_OPTIONS = [
   '9:00 PM', '9:30 PM', '10:00 PM',
 ];
 
+const PILL_COLORS: Record<AvailPill, { bg: string; border: string }> = {
+  'Available': { bg: '#22c55e', border: '#22c55e' },
+  'Low Stock': { bg: '#f59e0b', border: '#f59e0b' },
+  'Sold Out': { bg: '#ef4444', border: '#ef4444' },
+};
+
 const STATUS_DOT_COLORS: Record<OverallStatus, string> = {
   Open: '#22c55e',
   'Closing soon': '#eab308',
   'Sold Out': '#ef4444',
   'Paused/Break': '#3b82f6',
+};
+
+const STATUS_SELECTED_BG: Record<OverallStatus, string> = {
+  Open: '#e8f8e8',
+  'Closing soon': '#fef9e7',
+  'Sold Out': '#fde8e8',
+  'Paused/Break': '#e8f0fe',
 };
 
 const AVAIL_REVERSE: Record<string, ProductAvailability> = {
@@ -343,12 +356,13 @@ export default function UpdateStatus() {
                 {(['Available', 'Low Stock', 'Sold Out'] as AvailPill[]).map(pill => {
                   const currentPill = AVAIL_TO_PILL[product.availability];
                   const selected = currentPill === pill;
+                  const selectedStyle = selected ? PILL_COLORS[pill] : null;
                   return (
                     <TouchableOpacity
                       key={pill}
                       style={[
                         styles.pill,
-                        selected && styles.pillSelected,
+                        selected && { backgroundColor: selectedStyle?.bg, borderColor: selectedStyle?.border },
                       ]}
                       onPress={() => updateProduct(index, { availability: PILL_TO_AVAIL[pill] })}
                       activeOpacity={0.75}
@@ -421,7 +435,7 @@ export default function UpdateStatus() {
               return (
                 <TouchableOpacity
                   key={s}
-                  style={[styles.statusBtn, selected && styles.statusBtnSelected]}
+                  style={[styles.statusBtn, selected && { backgroundColor: STATUS_SELECTED_BG[s] }]}
                   onPress={() => setOverallStatus(s)}
                   activeOpacity={0.75}
                 >
@@ -594,10 +608,7 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     backgroundColor: '#fff',
   },
-  pillSelected: {
-    backgroundColor: '#22c55e',
-    borderColor: '#22c55e',
-  },
+  pillSelected: {},
   pillText: {
     fontSize: 13,
     fontWeight: '600',
@@ -757,11 +768,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     gap: 6,
   },
-  statusBtnSelected: {
-    backgroundColor: '#e8e8e8',
-    borderWidth: 1.5,
-    borderColor: '#111',
-  },
+  statusBtnSelected: {},
   statusDot: {
     width: 18,
     height: 18,
