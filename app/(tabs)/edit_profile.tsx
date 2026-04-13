@@ -1,3 +1,5 @@
+import { Feather } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -10,6 +12,7 @@ import {
   StatusBar,
   ActivityIndicator,
   Alert,
+  Image,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 
@@ -41,13 +44,10 @@ export default function EditProfile() {
   const [phone, setPhone] = useState('');
   const [website, setWebsite] = useState('');
   const [story, setStory] = useState('');
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [vibeTags, setVibeTags] = useState<string[]>([]);
   const [customTag, setCustomTag] = useState('');
   const [popularTags, setPopularTags] = useState<VibeTag[]>([]);
-  const [instagram, setInstagram] = useState('');
-  const [tiktok, setTiktok] = useState('');
-  const [facebook, setFacebook] = useState('');
-
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -67,6 +67,7 @@ export default function EditProfile() {
           setPhone(biz.phone ?? '');
           setWebsite(biz.website ?? '');
           setStory(biz.story ?? '');
+          setLogoUrl(biz.logo_url ?? null);
         }
         setPopularTags(tags);
       } catch {
@@ -112,12 +113,9 @@ export default function EditProfile() {
         }),
         updateMyProfile({ location: location.trim() || null }),
       ]);
-      // Tell any listening screens (profile, public profile, dashboard) to refetch.
       notifyProfileChanged();
       setSaving(false);
       Alert.alert('Saved', 'Your profile has been updated.', [
-        // setTimeout 0 so the Alert is fully dismissed before we navigate,
-        // avoiding iOS timing quirks that can swallow the navigation call.
         { text: 'OK', onPress: () => setTimeout(goBack, 0) },
       ]);
       return;
@@ -139,7 +137,13 @@ export default function EditProfile() {
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="dark-content" backgroundColor="#f5f5f5" />
 
-      <View style={styles.header}>
+      {/* ── Header (golden gradient) ── */}
+      <LinearGradient
+        colors={['#f5d990', '#f0c060']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.header}
+      >
         <View style={styles.headerLeft}>
           <TouchableOpacity
             style={styles.backBtn}
@@ -151,76 +155,109 @@ export default function EditProfile() {
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Edit Business Profile</Text>
         </View>
-        <TouchableOpacity style={[styles.saveHeaderBtn, saving && styles.saveBtnDisabled]} onPress={handleSave} disabled={saving}>
+        <TouchableOpacity style={[styles.saveHeaderBtn, saving && styles.btnDisabled]} onPress={handleSave} disabled={saving}>
           <Text style={styles.saveHeaderText}>{saving ? 'Saving…' : 'Save'}</Text>
         </TouchableOpacity>
-      </View>
+      </LinearGradient>
 
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
 
-        <Text style={styles.label}>Business Name <Text style={styles.required}>*</Text></Text>
-        <TextInput style={styles.input} placeholder="Type Name..." placeholderTextColor="#999" value={businessName} onChangeText={setBusinessName} />
-
-        <Text style={styles.label}>Short Description <Text style={styles.required}>*</Text></Text>
-        <TextInput style={styles.input} placeholder="Type description..." placeholderTextColor="#999" value={shortDescription} onChangeText={text => { if (text.length <= 100) setShortDescription(text); }} maxLength={100} />
-        <Text style={styles.charCount}>{shortDescription.length}/100 characters</Text>
-
-        <Text style={styles.label}>Location <Text style={styles.required}>*</Text></Text>
-        <TextInput style={styles.input} placeholder="Type Location..." placeholderTextColor="#999" value={location} onChangeText={setLocation} />
-
-        <Text style={styles.sectionTitle}>Contact Information</Text>
-
-        <Text style={styles.label}>Email Address</Text>
-        <TextInput style={styles.input} placeholder="business@gmail.com" placeholderTextColor="#999" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
-
-        <Text style={styles.label}>Phone Number</Text>
-        <TextInput style={styles.input} placeholder="(123) 456-7890" placeholderTextColor="#999" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
-
-        <Text style={styles.label}>Website</Text>
-        <TextInput style={styles.input} placeholder="Type Website..." placeholderTextColor="#999" value={website} onChangeText={setWebsite} keyboardType="url" autoCapitalize="none" />
-
-        <Text style={styles.sectionTitle}>Your Story</Text>
-        <TextInput style={[styles.input, styles.textArea]} placeholder="Type description..." placeholderTextColor="#999" value={story} onChangeText={setStory} multiline textAlignVertical="top" />
-        <Text style={styles.helperText}>Share what makes your business special</Text>
-
-        <Text style={styles.sectionTitle}>Vibe Tags</Text>
-        <View style={styles.tagsContainer}>
-          {vibeTags.map((tag, index) => (
-            <TouchableOpacity key={index} style={styles.tag} onPress={() => removeTag(index)}>
-              <Text style={styles.tagText}>{tag} ×</Text>
+        {/* ── Cover Photo + Avatar ── */}
+        <View style={styles.coverSection}>
+          <View style={styles.coverPhoto}>
+            {logoUrl ? (
+              <Image source={{ uri: logoUrl }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+            ) : null}
+            <TouchableOpacity style={styles.coverBtn} activeOpacity={0.8}>
+              <Feather name="camera" size={14} color="#fff" />
+              <Text style={styles.coverBtnText}>Change Cover Photo</Text>
             </TouchableOpacity>
-          ))}
+          </View>
+          <View style={styles.avatarWrapper}>
+            <View style={styles.avatar}>
+              {logoUrl ? (
+                <Image source={{ uri: logoUrl }} style={styles.avatarImg} resizeMode="cover" />
+              ) : (
+                <Text style={{ fontSize: 22, opacity: 0.5 }}>🖼</Text>
+              )}
+              <View style={styles.avatarCameraBadge}>
+                <Feather name="camera" size={10} color="#fff" />
+              </View>
+            </View>
+          </View>
         </View>
 
-        <Text style={styles.subLabel}>Select from popular tags:</Text>
-        <View style={styles.tagsContainer}>
-          {popularTags.map(tag => (
-            <TouchableOpacity key={tag.id} style={styles.popularTag} onPress={() => addPopularTag(tag.name)}>
-              <Text style={styles.popularTagText}>{tag.name}</Text>
+        {/* ── Card: Business Info ── */}
+        <View style={styles.card}>
+          <Text style={styles.label}>Business Name <Text style={styles.required}>*</Text></Text>
+          <TextInput style={styles.input} placeholder="Type Name..." placeholderTextColor="#999" value={businessName} onChangeText={setBusinessName} />
+
+          <Text style={styles.label}>About/Short Description <Text style={styles.required}>*</Text></Text>
+          <TextInput style={styles.input} placeholder="Type description..." placeholderTextColor="#999" value={shortDescription} onChangeText={text => { if (text.length <= 100) setShortDescription(text); }} maxLength={100} />
+          <Text style={styles.charCount}>{shortDescription.length}/100 characters</Text>
+
+          <Text style={styles.label}>Your Story</Text>
+          <TextInput style={[styles.input, styles.textArea]} placeholder="Type description..." placeholderTextColor="#999" value={story} onChangeText={setStory} multiline textAlignVertical="top" />
+          <Text style={styles.helperText}>Share what makes your business special</Text>
+        </View>
+
+        {/* ── Card: Contact Information ── */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Contact Information</Text>
+
+          <Text style={styles.label}>Location</Text>
+          <TextInput style={styles.input} placeholder="Type Location..." placeholderTextColor="#999" value={location} onChangeText={setLocation} />
+
+          <Text style={styles.label}>Phone Number</Text>
+          <TextInput style={styles.input} placeholder="(123) 456-7890" placeholderTextColor="#999" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
+
+          <Text style={styles.label}>Website</Text>
+          <TextInput style={styles.input} placeholder="Type Website..." placeholderTextColor="#999" value={website} onChangeText={setWebsite} keyboardType="url" autoCapitalize="none" />
+
+          <Text style={styles.label}>Email Address</Text>
+          <TextInput style={styles.input} placeholder="business@gmail.com" placeholderTextColor="#999" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+
+          {/* Social media icons */}
+          <View style={styles.socialRow}>
+            <Feather name="instagram" size={20} color="#333" />
+            <Feather name="facebook" size={20} color="#333" />
+            <Feather name="music" size={20} color="#333" />
+          </View>
+        </View>
+
+        {/* ── Card: Vibe Tags ── */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Vibe Tags</Text>
+          <View style={styles.tagsContainer}>
+            {vibeTags.map((tag, index) => (
+              <TouchableOpacity key={index} style={styles.tag} onPress={() => removeTag(index)}>
+                <Text style={styles.tagText}>{tag} ×</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <Text style={styles.subLabel}>Select from popular tags:</Text>
+          <View style={styles.tagsContainer}>
+            {popularTags
+              .filter(tag => !vibeTags.includes(tag.name))
+              .map(tag => (
+                <TouchableOpacity key={tag.id} style={styles.popularTag} onPress={() => addPopularTag(tag.name)}>
+                  <Text style={styles.popularTagText}>{tag.name}</Text>
+                </TouchableOpacity>
+              ))}
+          </View>
+
+          <Text style={styles.subLabel}>Add custom tag:</Text>
+          <View style={styles.customTagRow}>
+            <TextInput style={[styles.input, styles.customTagInput]} placeholder="Enter custom tag..." placeholderTextColor="#999" value={customTag} onChangeText={setCustomTag} onSubmitEditing={addCustomTag} />
+            <TouchableOpacity style={styles.addTagBtn} onPress={addCustomTag}>
+              <Text style={styles.addTagBtnText}>+ Add</Text>
             </TouchableOpacity>
-          ))}
+          </View>
         </View>
 
-        <Text style={styles.subLabel}>Add custom tag:</Text>
-        <View style={styles.customTagRow}>
-          <TextInput style={[styles.input, styles.customTagInput]} placeholder="Enter custom tag..." placeholderTextColor="#999" value={customTag} onChangeText={setCustomTag} onSubmitEditing={addCustomTag} />
-          <TouchableOpacity style={styles.addTagBtn} onPress={addCustomTag}>
-            <Text style={styles.addTagBtnText}>+ Add</Text>
-          </TouchableOpacity>
-        </View>
-
-        <Text style={styles.sectionTitle}>Social Media</Text>
-
-        <Text style={styles.label}>Instagram</Text>
-        <TextInput style={styles.input} placeholder="type..." placeholderTextColor="#999" value={instagram} onChangeText={setInstagram} autoCapitalize="none" />
-
-        <Text style={styles.label}>TikTok</Text>
-        <TextInput style={styles.input} placeholder="type..." placeholderTextColor="#999" value={tiktok} onChangeText={setTiktok} autoCapitalize="none" />
-
-        <Text style={styles.label}>Facebook</Text>
-        <TextInput style={styles.input} placeholder="type..." placeholderTextColor="#999" value={facebook} onChangeText={setFacebook} autoCapitalize="none" />
-
-        <TouchableOpacity style={[styles.saveBtn, saving && styles.saveBtnDisabled]} onPress={handleSave} disabled={saving}>
+        {/* ── Save Changes ── */}
+        <TouchableOpacity style={[styles.saveBtn, saving && styles.btnDisabled]} onPress={handleSave} disabled={saving} activeOpacity={0.85}>
           <Text style={styles.saveBtnText}>{saving ? 'Saving…' : 'Save Changes'}</Text>
         </TouchableOpacity>
 
@@ -230,37 +267,110 @@ export default function EditProfile() {
   );
 }
 
-const CARD_BG = '#ebebeb';
 const RADIUS = 12;
+const BLUE = '#2e4a7a';
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#f5f5f5' },
   scroll: { flex: 1, paddingHorizontal: 16 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12, backgroundColor: '#f5f5f5' },
+
+  // Header
+  header: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: 16, paddingTop: 48, paddingBottom: 12, backgroundColor: '#f5f5f5',
+  },
   headerLeft: { flexDirection: 'row', alignItems: 'center', flexShrink: 1 },
   backBtn: { marginRight: 10 },
   backIcon: { fontSize: 24, fontWeight: '700', color: '#111' },
   headerTitle: { fontSize: 22, fontWeight: '800', color: '#111', flexShrink: 1 },
-  saveHeaderBtn: { backgroundColor: '#333', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8 },
+  saveHeaderBtn: {
+    backgroundColor: BLUE, borderRadius: 20,
+    paddingHorizontal: 20, paddingVertical: 8,
+  },
   saveHeaderText: { color: '#fff', fontWeight: '700', fontSize: 14 },
-  saveBtnDisabled: { opacity: 0.5 },
-  sectionTitle: { fontSize: 17, fontWeight: '800', color: '#111', marginTop: 24, marginBottom: 12 },
-  label: { fontSize: 14, fontWeight: '600', color: '#333', marginBottom: 6, marginTop: 14 },
+  btnDisabled: { opacity: 0.5 },
+
+  // Cover photo + avatar
+  coverSection: { marginTop: 16, marginBottom: 16 },
+  coverPhoto: {
+    height: 140, backgroundColor: '#e8e8e8', borderRadius: RADIUS,
+    overflow: 'hidden', alignItems: 'center', justifyContent: 'center',
+  },
+  coverBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: 'rgba(46,74,122,0.75)', borderRadius: 20,
+    paddingHorizontal: 16, paddingVertical: 8,
+  },
+  coverBtnText: { color: '#fff', fontSize: 13, fontWeight: '600' },
+  avatarWrapper: { marginTop: -30, marginLeft: 12 },
+  avatar: {
+    width: 60, height: 60, borderRadius: 30, backgroundColor: '#d0d0d0',
+    borderWidth: 3, borderColor: '#f5f5f5',
+    alignItems: 'center', justifyContent: 'center',
+    overflow: 'visible',
+  },
+  avatarImg: { width: '100%', height: '100%', borderRadius: 30 },
+  avatarCameraBadge: {
+    position: 'absolute', bottom: -2, right: -6,
+    width: 24, height: 24, borderRadius: 12,
+    backgroundColor: BLUE, alignItems: 'center', justifyContent: 'center',
+    borderWidth: 2, borderColor: '#f5f5f5',
+  },
+
+  // Cards
+  card: {
+    backgroundColor: '#fff', borderRadius: RADIUS, padding: 16,
+    marginBottom: 14,
+    shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
+  },
+  cardTitle: { fontSize: 17, fontWeight: '800', color: '#111', marginBottom: 10 },
+
+  // Form fields
+  label: { fontSize: 14, fontWeight: '700', color: '#111', marginBottom: 6, marginTop: 12 },
   required: { color: '#e53e3e' },
-  subLabel: { fontSize: 13, fontWeight: '600', color: '#555', marginTop: 14, marginBottom: 8 },
+  input: {
+    borderWidth: 1, borderColor: '#d1d5db', borderRadius: 24,
+    paddingHorizontal: 16, paddingVertical: 11, fontSize: 14, color: '#111',
+    backgroundColor: '#fff',
+  },
+  textArea: { minHeight: 110, paddingTop: 12, borderRadius: RADIUS, textAlignVertical: 'top' },
   helperText: { fontSize: 12, color: '#888', marginTop: 4 },
   charCount: { fontSize: 12, color: '#888', marginTop: 4, textAlign: 'right' },
-  input: { backgroundColor: CARD_BG, borderRadius: RADIUS, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, color: '#111' },
-  textArea: { minHeight: 100, paddingTop: 12 },
-  tagsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  tag: { backgroundColor: '#333', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6 },
-  tagText: { color: '#fff', fontSize: 13, fontWeight: '600' },
-  popularTag: { backgroundColor: CARD_BG, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6, borderWidth: 1, borderColor: '#ccc' },
+  subLabel: { fontSize: 13, fontWeight: '600', color: '#555', marginTop: 14, marginBottom: 8 },
+
+  // Social icons
+  socialRow: { flexDirection: 'row', gap: 16, marginTop: 14 },
+
+  // Tags
+  tagsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
+  tag: {
+    backgroundColor: '#fef3c7', borderRadius: 20,
+    paddingHorizontal: 14, paddingVertical: 6,
+    borderWidth: 1, borderColor: '#f5d990',
+  },
+  tagText: { color: '#333', fontSize: 13, fontWeight: '600' },
+  popularTag: {
+    backgroundColor: '#fef3c7', borderRadius: 20,
+    paddingHorizontal: 14, paddingVertical: 6,
+    borderWidth: 1, borderColor: '#f5d990',
+  },
   popularTagText: { color: '#555', fontSize: 13, fontWeight: '600' },
+
+  // Custom tag
   customTagRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   customTagInput: { flex: 1, marginTop: 0 },
-  addTagBtn: { backgroundColor: '#333', borderRadius: RADIUS, paddingHorizontal: 16, paddingVertical: 12 },
+  addTagBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: BLUE, borderRadius: 20,
+    paddingHorizontal: 16, paddingVertical: 11,
+  },
   addTagBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
-  saveBtn: { backgroundColor: '#333', borderRadius: RADIUS, paddingVertical: 16, alignItems: 'center', marginTop: 28 },
+
+  // Save button
+  saveBtn: {
+    backgroundColor: BLUE, borderRadius: 28,
+    paddingVertical: 16, alignItems: 'center', marginTop: 20,
+  },
   saveBtnText: { color: '#fff', fontWeight: '800', fontSize: 16 },
 });
