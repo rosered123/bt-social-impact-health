@@ -57,6 +57,7 @@ export default function TabLayout() {
         }
       />
       <Tabs.Screen name="update_status" options={{ href: null }} />
+      <Tabs.Screen name="pre_orders" options={{ href: null }} />
       <Tabs.Screen
         name="business_profile"
         options={
@@ -72,6 +73,7 @@ export default function TabLayout() {
       <Tabs.Screen name="public_business_profile" options={{ href: null }} />
       <Tabs.Screen name="business_insights" options={{ href: null }} />
       <Tabs.Screen name="collaborate" options={{ href: null }} />
+      <Tabs.Screen name="settings" options={{ href: null }} />
 
       <Tabs.Screen
         name="explore"

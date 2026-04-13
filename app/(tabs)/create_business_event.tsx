@@ -33,6 +33,39 @@ const SectionCard: React.FC<{ children: React.ReactNode; style?: object }> = ({ 
   <View style={[styles.card, style]}>{children}</View>
 );
 
+const TIME_OPTIONS = [
+  '6:00 AM', '6:30 AM', '7:00 AM', '7:30 AM', '8:00 AM', '8:30 AM',
+  '9:00 AM', '9:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM',
+  '12:00 PM', '12:30 PM', '1:00 PM', '1:30 PM', '2:00 PM', '2:30 PM',
+  '3:00 PM', '3:30 PM', '4:00 PM', '4:30 PM', '5:00 PM', '5:30 PM',
+  '6:00 PM', '6:30 PM', '7:00 PM', '7:30 PM', '8:00 PM', '8:30 PM',
+  '9:00 PM', '9:30 PM', '10:00 PM',
+];
+
+const TimePicker: React.FC<{ label: string; value: string; onChange: (val: string) => void }> = ({ label, value, onChange }) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <View style={styles.timePickerWrapper}>
+      <Text style={styles.timeLabel}>{label}</Text>
+      <TouchableOpacity style={styles.timePickerBtn} onPress={() => setOpen(!open)}>
+        <Text style={styles.timePickerValue}>{value || '--:-- --'}</Text>
+        <Text style={styles.timePickerChevron}>▼</Text>
+      </TouchableOpacity>
+      {open && (
+        <View style={styles.timeDropdown}>
+          <ScrollView style={{ maxHeight: 180 }} nestedScrollEnabled>
+            {TIME_OPTIONS.map(t => (
+              <TouchableOpacity key={t} style={[styles.timeOption, t === value && styles.timeOptionSelected]} onPress={() => { onChange(t); setOpen(false); }}>
+                <Text style={[styles.timeOptionText, t === value && styles.timeOptionTextSelected]}>{t}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+    </View>
+  );
+};
+
 const NOTIFICATION_OPTIONS = [
   'Notify my followers',
   'Show on map & explore page',
@@ -293,20 +326,8 @@ export default function CreateEvent() {
             <TextInput style={styles.dateInput} placeholder="mm/dd/yyyy" placeholderTextColor="#aaa" value={date} onChangeText={setDate} />
           </View>
           <View style={styles.timeRow}>
-            <View style={styles.timeField}>
-              <Text style={styles.timeLabel}>Start time <Text style={styles.required}>*</Text></Text>
-              <View style={styles.timeInputRow}>
-                <Text style={styles.timeIcon}>🕐</Text>
-                <TextInput style={styles.timeInput} placeholder="--:-- --" placeholderTextColor="#aaa" value={startTime} onChangeText={setStartTime} />
-              </View>
-            </View>
-            <View style={styles.timeField}>
-              <Text style={styles.timeLabel}>End time <Text style={styles.required}>*</Text></Text>
-              <View style={styles.timeInputRow}>
-                <Text style={styles.timeIcon}>🕐</Text>
-                <TextInput style={styles.timeInput} placeholder="--:-- --" placeholderTextColor="#aaa" value={endTime} onChangeText={setEndTime} />
-              </View>
-            </View>
+            <TimePicker label="Start time *" value={startTime} onChange={setStartTime} />
+            <TimePicker label="End time *" value={endTime} onChange={setEndTime} />
           </View>
         </SectionCard>
 
@@ -410,11 +431,16 @@ const styles = StyleSheet.create({
   dateIcon: { fontSize: 15, marginRight: 6 },
   dateInput: { flex: 1, fontSize: 13, color: '#333' },
   timeRow: { flexDirection: 'row', gap: 10 },
-  timeField: { flex: 1 },
   timeLabel: { fontSize: 12, fontWeight: '600', color: '#555', marginBottom: 4 },
-  timeInputRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 8, borderWidth: 1.5, borderColor: '#d0d0d0', paddingHorizontal: 8, paddingVertical: 8 },
-  timeIcon: { fontSize: 13, marginRight: 4 },
-  timeInput: { flex: 1, fontSize: 12, color: '#333' },
+  timePickerWrapper: { flex: 1, zIndex: 10 },
+  timePickerBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#fff', borderRadius: 8, borderWidth: 1.5, borderColor: '#d0d0d0', paddingHorizontal: 10, paddingVertical: 8 },
+  timePickerValue: { fontSize: 13, fontWeight: '600', color: '#111' },
+  timePickerChevron: { fontSize: 10, color: '#666' },
+  timeDropdown: { position: 'absolute', top: 52, left: 0, right: 0, backgroundColor: '#fff', borderRadius: 8, zIndex: 100, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 8 },
+  timeOption: { paddingHorizontal: 12, paddingVertical: 9 },
+  timeOptionSelected: { backgroundColor: '#f0f0f0' },
+  timeOptionText: { fontSize: 13, color: '#333' },
+  timeOptionTextSelected: { fontWeight: '700', color: '#111' },
   locationLabelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
   geocodingText: { fontSize: 11, color: '#888', fontStyle: 'italic' },
   geocodedText: { fontSize: 11, color: '#22c55e', fontWeight: '600' },
