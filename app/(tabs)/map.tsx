@@ -140,7 +140,7 @@ function statusColor(status: string): string {
     case 'sold_out':
     case 'closed':
     case 'cancelled': return '#ef4444';
-    default: return '#6b7280';
+    default: return '#3b82f6';
   }
 }
 

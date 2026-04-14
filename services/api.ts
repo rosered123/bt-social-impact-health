@@ -37,6 +37,18 @@ export type EventStatus =
 	| 'closed'
 	| 'cancelled';
 
+// An event is "active" (currently happening, should appear in Right Now /
+// Live now) whenever its status is one of these. Upcoming/closed/cancelled
+// are not active.
+export function isActiveEventStatus(status: EventStatus): boolean {
+	return (
+		status === 'open' ||
+		status === 'closing_soon' ||
+		status === 'sold_out' ||
+		status === 'paused'
+	);
+}
+
 export type EventRow = {
 	id: number;
 	host_uid: string;
@@ -64,6 +76,8 @@ export type ReviewRow = {
 	rating: number;
 	body: string | null;
 	created_at: string;
+	reviewer_display_name: string | null;
+	reviewer_avatar_url: string | null;
 };
 
 type EventCreateInput = {
@@ -278,7 +292,7 @@ export async function deleteMyEvent(eventId: number): Promise<void> {
 export async function listReviewsForBusiness(businessUid: string, limit = 50): Promise<ReviewRow[]> {
 	const { data, error } = await supabase
 		.from('reviews')
-		.select('*')
+		.select('*, profiles!reviewer_uid(display_name, avatar_url)')
 		.eq('business_uid', businessUid)
 		.order('created_at', { ascending: false })
 		.limit(limit);
@@ -287,7 +301,12 @@ export async function listReviewsForBusiness(businessUid: string, limit = 50): P
 		throw error;
 	}
 
-	return data;
+	return (data ?? []).map((row: any) => ({
+		...row,
+		reviewer_display_name: row.profiles?.display_name ?? null,
+		reviewer_avatar_url: row.profiles?.avatar_url ?? null,
+		profiles: undefined,
+	}));
 }
 
 export async function createMyReview(input: ReviewCreateInput): Promise<ReviewRow> {
@@ -371,12 +390,17 @@ export async function getMyReviews(limit = 50): Promise<ReviewRow[]> {
 	const uid = await requireUserId();
 	const { data, error } = await supabase
 		.from('reviews')
-		.select('*')
+		.select('*, profiles!reviewer_uid(display_name, avatar_url)')
 		.eq('reviewer_uid', uid)
 		.order('created_at', { ascending: false })
 		.limit(limit);
 	if (error) throw error;
-	return data;
+	return (data ?? []).map((row: any) => ({
+		...row,
+		reviewer_display_name: row.profiles?.display_name ?? null,
+		reviewer_avatar_url: row.profiles?.avatar_url ?? null,
+		profiles: undefined,
+	}));
 }
 
 export async function getFollowedBusinesses(): Promise<Business[]> {
@@ -409,6 +433,15 @@ export async function setMyUserInterests(tagIds: number[]): Promise<void> {
 	const rows = tagIds.map((tag_id) => ({ user_uid, tag_id }));
 	const { error: insertError } = await supabase.from('user_interests').insert(rows);
 	if (insertError) throw insertError;
+}
+
+export async function getBusinessTags(businessUid: string): Promise<VibeTag[]> {
+	const { data, error } = await supabase
+		.from('business_tags')
+		.select('tag_id, vibe_tags(id, name)')
+		.eq('business_uid', businessUid);
+	if (error) throw error;
+	return (data ?? []).map((row: any) => row.vibe_tags).filter(Boolean);
 }
 
 export async function setMyBusinessTags(tagIds: number[]): Promise<void> {
@@ -497,4 +530,19 @@ export async function upsertInventoryItem(
 		.from('inventory_status')
 		.upsert({ event_id: eventId, business_uid: businessUid, ...product }, { onConflict: 'event_id,business_uid,product_name' });
 	if (error) throw error;
+}
+
+// ─── Collaborate ────────────────────────────────────────────────────────────
+// Lists all other businesses (excluding the caller) for the Collaborate
+// Discover tab.
+export async function listBusinessesForCollaborate(limit = 100): Promise<Business[]> {
+	const uid = await requireUserId();
+	const { data, error } = await supabase
+		.from('businesses')
+		.select('*')
+		.neq('uid', uid)
+		.order('follower_count', { ascending: false, nullsFirst: false })
+		.limit(limit);
+	if (error) throw error;
+	return data ?? [];
 }

@@ -33,15 +33,20 @@ const StarRating: React.FC<{ rating: number; size?: number }> = ({ rating, size 
 );
 
 const ReviewItem: React.FC<{ review: ReviewRow }> = ({ review }) => {
+  const initial = (review.reviewer_display_name ?? review.reviewer_uid).slice(0, 1).toUpperCase();
   const date = new Date(review.created_at).toLocaleDateString();
   return (
     <View style={styles.reviewItem}>
       <View style={styles.reviewHeader}>
         <View style={styles.reviewAvatar}>
-          <Text style={styles.reviewAvatarText}>U</Text>
+          {review.reviewer_avatar_url ? (
+            <Image source={{ uri: review.reviewer_avatar_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+          ) : (
+            <Text style={styles.reviewAvatarText}>{initial}</Text>
+          )}
         </View>
         <View style={styles.reviewMeta}>
-          <Text style={styles.reviewName}>Customer</Text>
+          <Text style={styles.reviewName}>{review.reviewer_display_name ?? 'Customer'}</Text>
           <StarRating rating={review.rating} />
         </View>
         <Text style={styles.reviewDate}>{date}</Text>
@@ -260,7 +265,7 @@ export default function UserBusinessProfile() {
   );
 }
 
-const CARD_BG = '#e8e8e8';
+const CARD_BG = '#FFFFFF';
 const RADIUS = 12;
 
 const styles = StyleSheet.create({

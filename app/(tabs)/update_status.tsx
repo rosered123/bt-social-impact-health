@@ -1,3 +1,5 @@
+import { Feather } from '@expo/vector-icons';
+
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -10,10 +12,12 @@ import {
   StatusBar,
   Alert,
   ActivityIndicator,
+  Switch,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 
 import {
+  getEventById,
   getInventory,
   listMyEvents,
   updateMyEvent,
@@ -22,6 +26,7 @@ import {
   type EventStatus,
   type InventoryItem,
 } from '@/services/api';
+import { notifyEventsChanged } from '@/services/refresh-bus';
 
 type OverallStatus = 'Open' | 'Closing soon' | 'Sold Out' | 'Paused/Break';
 type ProductAvailability =
@@ -30,6 +35,23 @@ type ProductAvailability =
   | 'Available - Limited menu'
   | 'Available - Closing early'
   | 'Closed for today';
+
+// Simplified display labels for the new pill UI
+type AvailPill = 'Available' | 'Low Stock' | 'Sold Out';
+
+const PILL_TO_AVAIL: Record<AvailPill, ProductAvailability> = {
+  'Available': 'Available - Full stock',
+  'Low Stock': 'Available - Low stock',
+  'Sold Out': 'Closed for today',
+};
+
+const AVAIL_TO_PILL: Record<ProductAvailability, AvailPill> = {
+  'Available - Full stock': 'Available',
+  'Available - Low stock': 'Low Stock',
+  'Available - Limited menu': 'Low Stock',
+  'Available - Closing early': 'Low Stock',
+  'Closed for today': 'Sold Out',
+};
 
 const STATUS_MAP: Record<OverallStatus, EventStatus> = {
   'Open': 'open',
@@ -55,21 +77,48 @@ const TIME_OPTIONS = [
   '9:00 PM', '9:30 PM', '10:00 PM',
 ];
 
+const PILL_COLORS: Record<AvailPill, { bg: string; border: string }> = {
+  'Available': { bg: '#22c55e', border: '#22c55e' },
+  'Low Stock': { bg: '#f59e0b', border: '#f59e0b' },
+  'Sold Out': { bg: '#ef4444', border: '#ef4444' },
+};
+
 const STATUS_DOT_COLORS: Record<OverallStatus, string> = {
   Open: '#22c55e',
   'Closing soon': '#eab308',
   'Sold Out': '#ef4444',
-  'Paused/Break': '#6b7280',
+  'Paused/Break': '#3b82f6',
 };
 
-const TimePicker: React.FC<{ label: string; value: string; onChange: (val: string) => void }> = ({ label, value, onChange }) => {
+const STATUS_SELECTED_BG: Record<OverallStatus, string> = {
+  Open: '#e8f8e8',
+  'Closing soon': '#fef9e7',
+  'Sold Out': '#fde8e8',
+  'Paused/Break': '#e8f0fe',
+};
+
+const AVAIL_REVERSE: Record<string, ProductAvailability> = {
+  full_stock: 'Available - Full stock',
+  low_stock: 'Available - Low stock',
+  limited_menu: 'Available - Limited menu',
+  closing_early: 'Available - Closing early',
+  closed_today: 'Closed for today',
+};
+
+const STATUS_REVERSE: Partial<Record<EventStatus, OverallStatus>> = {
+  open: 'Open',
+  closing_soon: 'Closing soon',
+  sold_out: 'Sold Out',
+  paused: 'Paused/Break',
+};
+
+const TimePicker: React.FC<{ value: string; onChange: (val: string) => void }> = ({ value, onChange }) => {
   const [open, setOpen] = useState(false);
   return (
     <View style={styles.timePickerWrapper}>
-      <Text style={styles.timePickerLabel}>{label}</Text>
       <TouchableOpacity style={styles.timePickerBtn} onPress={() => setOpen(!open)}>
         <Text style={styles.timePickerValue}>{value}</Text>
-        <Text style={styles.timePickerChevron}>▼</Text>
+        <Feather name="chevron-down" size={14} color="#666" />
       </TouchableOpacity>
       {open && (
         <View style={styles.timeDropdown}>
@@ -86,52 +135,50 @@ const TimePicker: React.FC<{ label: string; value: string; onChange: (val: strin
   );
 };
 
-const StatusButton: React.FC<{ status: OverallStatus; selected: boolean; onPress: () => void }> = ({ status, selected, onPress }) => (
-  <TouchableOpacity style={[styles.statusBtn, selected && styles.statusBtnSelected]} onPress={onPress} activeOpacity={0.75}>
-    <View style={[styles.statusDot, { backgroundColor: STATUS_DOT_COLORS[status] }]} />
-    <Text style={[styles.statusBtnText, selected && styles.statusBtnTextSelected]}>{status}</Text>
-  </TouchableOpacity>
-);
+function dbTimeToPicker(dbTime: string | null | undefined): string | null {
+  if (!dbTime) return null;
+  const [hStr, mStr] = dbTime.split(':');
+  const h = parseInt(hStr, 10);
+  const m = parseInt(mStr ?? '0', 10);
+  if (Number.isNaN(h)) return null;
+  const period = h >= 12 ? 'PM' : 'AM';
+  const hr = ((h + 11) % 12) + 1;
+  return `${hr}:${String(m).padStart(2, '0')} ${period}`;
+}
 
-const AvailabilityOption: React.FC<{ label: ProductAvailability; selected: boolean; onPress: () => void }> = ({ label, selected, onPress }) => (
-  <TouchableOpacity style={[styles.availOption, selected && styles.availOptionSelected]} onPress={onPress} activeOpacity={0.75}>
-    <Text style={[styles.availOptionText, selected && styles.availOptionTextSelected]}>{label}</Text>
-  </TouchableOpacity>
-);
-
-const AVAILABILITY_OPTIONS: ProductAvailability[] = [
-  'Available - Full stock',
-  'Available - Low stock',
-  'Available - Limited menu',
-  'Available - Closing early',
-  'Closed for today',
-];
+function pickerTimeToDb(pickerTime: string): string | null {
+  const match = pickerTime.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (!match) return null;
+  let h = parseInt(match[1], 10);
+  const m = match[2];
+  const period = match[3].toUpperCase();
+  if (period === 'PM' && h !== 12) h += 12;
+  if (period === 'AM' && h === 12) h = 0;
+  return `${String(h).padStart(2, '0')}:${m}`;
+}
 
 type ProductState = {
   product_name: string;
   availability: ProductAvailability;
   custom_message: string;
-};
-
-const AVAIL_REVERSE: Record<string, ProductAvailability> = {
-  full_stock: 'Available - Full stock',
-  low_stock: 'Available - Low stock',
-  limited_menu: 'Available - Limited menu',
-  closing_early: 'Available - Closing early',
-  closed_today: 'Closed for today',
+  preOrder: boolean;
 };
 
 export default function UpdateStatus() {
+  const { eventId } = useLocalSearchParams<{ eventId?: string }>();
   const [event, setEvent] = useState<EventRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [ending, setEnding] = useState(false);
 
   const [openTime, setOpenTime] = useState('11:00 AM');
   const [closeTime, setCloseTime] = useState('9:00 PM');
   const [overallStatus, setOverallStatus] = useState<OverallStatus>('Open');
   const [location, setLocation] = useState('');
+  const [customMessage, setCustomMessage] = useState('');
+  const [pushNotification, setPushNotification] = useState(false);
   const [products, setProducts] = useState<ProductState[]>([
-    { product_name: 'General', availability: 'Available - Full stock', custom_message: '' },
+    { product_name: 'General', availability: 'Available - Full stock', custom_message: '', preOrder: false },
   ]);
   const [newProductName, setNewProductName] = useState('');
 
@@ -139,19 +186,34 @@ export default function UpdateStatus() {
     let cancelled = false;
     (async () => {
       try {
-        const events = await listMyEvents(1);
-        if (cancelled) return;
-        if (events[0]) {
-          setEvent(events[0]);
-          setLocation(events[0].location ?? '');
-          const inventory = await getInventory(events[0].id);
-          if (!cancelled && inventory.length > 0) {
-            setProducts(inventory.map((item: InventoryItem) => ({
-              product_name: item.product_name,
-              availability: AVAIL_REVERSE[item.availability] ?? 'Available - Full stock',
-              custom_message: item.custom_message ?? '',
-            })));
-          }
+        let target: EventRow | null = null;
+        const parsedId = eventId ? Number(eventId) : null;
+        if (parsedId !== null && !Number.isNaN(parsedId)) {
+          target = await getEventById(parsedId);
+        }
+        if (!target) {
+          const events = await listMyEvents(50);
+          target = events.find(e => e.status === 'open') ?? events[0] ?? null;
+        }
+        if (cancelled || !target) return;
+
+        setEvent(target);
+        setLocation(target.location ?? '');
+        const openFromDb = dbTimeToPicker(target.start_time);
+        if (openFromDb) setOpenTime(openFromDb);
+        const closeFromDb = dbTimeToPicker(target.end_time);
+        if (closeFromDb) setCloseTime(closeFromDb);
+        const mappedStatus = STATUS_REVERSE[target.status];
+        if (mappedStatus) setOverallStatus(mappedStatus);
+
+        const inventory = await getInventory(target.id);
+        if (!cancelled && inventory.length > 0) {
+          setProducts(inventory.map((item: InventoryItem) => ({
+            product_name: item.product_name,
+            availability: AVAIL_REVERSE[item.availability] ?? 'Available - Full stock',
+            custom_message: item.custom_message ?? '',
+            preOrder: false,
+          })));
         }
       } catch {
         // show form without event info
@@ -160,7 +222,7 @@ export default function UpdateStatus() {
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [eventId]);
 
   const updateProduct = (index: number, patch: Partial<ProductState>) => {
     setProducts(prev => prev.map((p, i) => i === index ? { ...p, ...patch } : p));
@@ -170,7 +232,7 @@ export default function UpdateStatus() {
     const name = newProductName.trim();
     if (!name) return;
     if (products.some(p => p.product_name === name)) return;
-    setProducts(prev => [...prev, { product_name: name, availability: 'Available - Full stock', custom_message: '' }]);
+    setProducts(prev => [...prev, { product_name: name, availability: 'Available - Full stock', custom_message: '', preOrder: false }]);
     setNewProductName('');
   };
 
@@ -183,23 +245,56 @@ export default function UpdateStatus() {
     try {
       await updateMyEvent(event.id, {
         status: STATUS_MAP[overallStatus],
-        start_time: openTime,
-        end_time: closeTime,
-        location: location.trim() || undefined,
+        start_time: pickerTimeToDb(openTime),
+        end_time: pickerTimeToDb(closeTime),
+        location: location.trim() || null,
       });
       await Promise.all(products.map(p =>
         upsertInventoryItem(event.id, {
           product_name: p.product_name,
           availability: AVAIL_MAP[p.availability],
-          custom_message: p.custom_message.trim() || null,
+          custom_message: p.custom_message.trim() || customMessage.trim() || null,
         })
       ));
-      Alert.alert('Updated', 'Status has been updated.');
+      notifyEventsChanged();
+      setSubmitting(false);
+      Alert.alert('Updated', 'Status has been updated.', [
+        { text: 'OK', onPress: () => setTimeout(() => router.back(), 0) },
+      ]);
+      return;
     } catch (e: any) {
       Alert.alert('Error', e.message ?? 'Failed to update status.');
-    } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleEndEvent = () => {
+    if (!event) return;
+    Alert.alert(
+      'End this event?',
+      `"${event.event_name}" will be moved to the Past tab. This cannot be undone from here.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'End Event',
+          style: 'destructive',
+          onPress: async () => {
+            setEnding(true);
+            try {
+              await updateMyEvent(event.id, { status: 'closed' });
+              notifyEventsChanged();
+              setEnding(false);
+              Alert.alert('Event Ended', 'Your event has been moved to Past.', [
+                { text: 'OK', onPress: () => setTimeout(() => router.back(), 0) },
+              ]);
+            } catch (e: any) {
+              Alert.alert('Error', e.message ?? 'Failed to end event.');
+              setEnding(false);
+            }
+          },
+        },
+      ],
+    );
   };
 
   if (loading) {
@@ -212,80 +307,85 @@ export default function UpdateStatus() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f5f5f5" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFF1AD" />
 
-      <View style={styles.navbar}>
-        <TouchableOpacity
-          style={styles.backBtn}
-          onPress={() => router.back()}
-          activeOpacity={0.75}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Text style={styles.backIcon}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.navTitle}>Update Status</Text>
-        <TouchableOpacity style={[styles.navUpdateBtn, submitting && { opacity: 0.5 }]} onPress={handleUpdate} disabled={submitting}>
-          <Text style={styles.navUpdateText}>{submitting ? '…' : 'Update'}</Text>
-        </TouchableOpacity>
+      {/* Golden gradient header */}
+      <View style={styles.headerGradient}>
+        <View style={styles.headerContent}>
+          <View style={styles.headerLeft}>
+            <TouchableOpacity
+              onPress={() => router.back()}
+              activeOpacity={0.75}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Feather name="arrow-left" size={24} color="#000" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Status Update</Text>
+          </View>
+          <TouchableOpacity
+            style={[styles.headerUpdateBtn, submitting && { opacity: 0.5 }]}
+            onPress={handleUpdate}
+            disabled={submitting}
+          >
+            <Text style={styles.headerUpdateText}>{submitting ? '...' : 'Update'}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
 
-        <View style={styles.card}>
-          <View style={styles.currentStatusRow}>
-            <View style={[styles.greenDot, { backgroundColor: STATUS_DOT_COLORS[overallStatus] }]} />
-            <Text style={styles.currentStatusText}>Currently {overallStatus}</Text>
+        {/* Menu Stock Section */}
+        <View style={styles.menuStockWrapper}>
+          {/* Section header */}
+          <View style={styles.menuStockHeader}>
+            <Feather name="check-square" size={18} color="#333" />
+            <Text style={styles.menuStockTitle}>Menu Stock</Text>
           </View>
-          <Text style={styles.popupName}>{event?.event_name ?? 'No upcoming event'}</Text>
-          <Text style={styles.popupSub}>{event?.location ?? '—'} · {event?.event_date ?? ''}</Text>
-        </View>
 
-        <View style={styles.card}>
-          <View style={styles.sectionHeaderRow}>
-            <Text style={styles.clockIcon}>🕐</Text>
-            <Text style={styles.sectionTitle}>Today's Hour</Text>
-          </View>
-          <View style={styles.timeRow}>
-            <TimePicker label="Open at" value={openTime} onChange={setOpenTime} />
-            <TimePicker label="Close at" value={closeTime} onChange={setCloseTime} />
-          </View>
-        </View>
-
-        <Text style={styles.standaloneSectionTitle}>Overall Status</Text>
-        <View style={styles.statusGrid}>
-          {(['Open', 'Closing soon', 'Sold Out', 'Paused/Break'] as OverallStatus[]).map(s => (
-            <StatusButton key={s} status={s} selected={overallStatus === s} onPress={() => setOverallStatus(s)} />
-          ))}
-        </View>
-
-        <View style={styles.card}>
-          <View style={styles.sectionHeaderRow}>
-            <Text style={styles.clockIcon}>📦</Text>
-            <Text style={styles.sectionTitle}>Product Availability</Text>
-          </View>
           {products.map((product, index) => (
-            <View key={product.product_name} style={styles.productBlock}>
-              <Text style={styles.productName}>{product.product_name}</Text>
-              {AVAILABILITY_OPTIONS.map(opt => (
-                <AvailabilityOption
-                  key={opt}
-                  label={opt}
-                  selected={product.availability === opt}
-                  onPress={() => updateProduct(index, { availability: opt })}
-                />
-              ))}
-              <Text style={styles.customMsgLabel}>Custom Message</Text>
-              <TextInput
-                style={styles.customMsgInput}
-                placeholder={'e.g. "Just restocked! ☕"'}
-                placeholderTextColor="#aaa"
-                value={product.custom_message}
-                onChangeText={val => updateProduct(index, { custom_message: val })}
-                multiline
-              />
-              {index < products.length - 1 && <View style={styles.productDivider} />}
+            <View key={product.product_name} style={styles.productCard}>
+              <View style={styles.productNameRow}>
+                <Text style={styles.productName}>{product.product_name}</Text>
+              </View>
+              {product.custom_message ? (
+                <Text style={styles.productDescription}>{product.custom_message}</Text>
+              ) : null}
+
+              {/* Availability pills */}
+              <View style={styles.pillRow}>
+                {(['Available', 'Low Stock', 'Sold Out'] as AvailPill[]).map(pill => {
+                  const currentPill = AVAIL_TO_PILL[product.availability];
+                  const selected = currentPill === pill;
+                  const selectedStyle = selected ? PILL_COLORS[pill] : null;
+                  return (
+                    <TouchableOpacity
+                      key={pill}
+                      style={[
+                        styles.pill,
+                        selected && { backgroundColor: selectedStyle?.bg, borderColor: selectedStyle?.border },
+                      ]}
+                      onPress={() => updateProduct(index, { availability: PILL_TO_AVAIL[pill] })}
+                      activeOpacity={0.75}
+                    >
+                      <Text style={[styles.pillText, selected && styles.pillTextSelected]}>{pill}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              {/* Pre-Orders link */}
+              <TouchableOpacity
+                style={styles.preOrderRow}
+                onPress={() => router.push('/(tabs)/pre_orders')}
+                activeOpacity={0.75}
+              >
+                <Text style={styles.preOrderLabel}>Pre-Orders</Text>
+                <Feather name="chevron-right" size={18} color="#666" />
+              </TouchableOpacity>
             </View>
           ))}
+
+          {/* Add product */}
           <View style={styles.addProductRow}>
             <TextInput
               style={styles.addProductInput}
@@ -300,17 +400,103 @@ export default function UpdateStatus() {
           </View>
         </View>
 
-        <View style={styles.sectionHeaderRow}>
-          <Text style={styles.clockIcon}>📍</Text>
-          <Text style={styles.standaloneSectionTitle}>Current Location</Text>
-        </View>
-        <View style={styles.card}>
-          <TextInput style={styles.locationInput} placeholder="Type location..." placeholderTextColor="#aaa" value={location} onChangeText={setLocation} />
+        {/* Location */}
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Location</Text>
+          <View style={styles.sectionInput}>
+            <TextInput
+              style={styles.locationInput}
+              placeholder="Type location..."
+              placeholderTextColor="#aaa"
+              value={location}
+              onChangeText={setLocation}
+            />
+          </View>
         </View>
 
-        <TouchableOpacity style={[styles.updateStatusBtn, submitting && { opacity: 0.5 }]} onPress={handleUpdate} activeOpacity={0.85} disabled={submitting}>
-          <Text style={styles.updateStatusBtnText}>{submitting ? 'Updating…' : 'Update Status'}</Text>
+        {/* Hours */}
+        <View style={[styles.sectionCard, { zIndex: 10 }]}>
+          <Text style={styles.sectionTitle}>Hours</Text>
+          <View style={styles.timeRow}>
+            <TimePicker value={openTime} onChange={setOpenTime} />
+            <Text style={styles.timeSeparator}>–</Text>
+            <TimePicker value={closeTime} onChange={setCloseTime} />
+          </View>
+        </View>
+
+        {/* Overall Status */}
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Overall Status</Text>
+          <View style={styles.statusGrid}>
+            {(['Open', 'Closing soon', 'Sold Out', 'Paused/Break'] as OverallStatus[]).map(s => {
+              const selected = overallStatus === s;
+              const displayLabel = s === 'Paused/Break' ? 'Break' : s;
+              return (
+                <TouchableOpacity
+                  key={s}
+                  style={[styles.statusBtn, selected && { backgroundColor: STATUS_SELECTED_BG[s] }]}
+                  onPress={() => setOverallStatus(s)}
+                  activeOpacity={0.75}
+                >
+                  <View style={[styles.statusDot, { backgroundColor: STATUS_DOT_COLORS[s] }]} />
+                  <Text style={[styles.statusBtnText, selected && styles.statusBtnTextSelected]}>{displayLabel}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Custom Message */}
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Custom Message (Optional)</Text>
+          <View style={styles.sectionInput}>
+            <TextInput
+              style={styles.customMsgInput}
+              placeholder="Write a custom message..."
+              placeholderTextColor="#aaa"
+              value={customMessage}
+              onChangeText={setCustomMessage}
+              multiline
+            />
+          </View>
+        </View>
+
+        {/* Push Notification */}
+        <View style={styles.pushNotifRow}>
+          <Feather name="bell" size={20} color="#111" />
+          <Text style={styles.pushNotifLabel}>Push Notification</Text>
+          <View style={{ flex: 1 }} />
+          <Switch
+            value={pushNotification}
+            onValueChange={setPushNotification}
+            trackColor={{ false: '#d8d8d8', true: '#22c55e' }}
+            thumbColor="#fff"
+          />
+        </View>
+
+        {/* Update Status Button */}
+        <TouchableOpacity
+          style={[styles.updateStatusBtn, submitting && { opacity: 0.5 }]}
+          onPress={handleUpdate}
+          activeOpacity={0.85}
+          disabled={submitting}
+        >
+          <View style={styles.updateStatusGradient}>
+            <Text style={styles.updateStatusBtnText}>{submitting ? 'Updating...' : 'Update Status'}</Text>
+          </View>
         </TouchableOpacity>
+
+        {/* End Event Button */}
+        {event ? (
+          <TouchableOpacity
+            style={[styles.endEventBtn, ending && { opacity: 0.5 }]}
+            onPress={handleEndEvent}
+            activeOpacity={0.85}
+            disabled={ending || submitting}
+          >
+            <Text style={styles.endEventBtnText}>{ending ? 'Ending...' : 'End Event'}</Text>
+          </TouchableOpacity>
+        ) : null}
 
         <View style={{ height: 32 }} />
       </ScrollView>
@@ -318,59 +504,349 @@ export default function UpdateStatus() {
   );
 }
 
-const CARD_BG = '#ebebeb';
-const RADIUS = 12;
-
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#f5f5f5' },
+
+  /* Header */
+  headerGradient: {
+    paddingTop: 12,
+    paddingBottom: 20,
+    paddingHorizontal: 20,
+    backgroundColor: '#FFF1AD',
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 36,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#000',
+  },
+  headerUpdateBtn: {
+    backgroundColor: '#2E4A7A',
+    borderRadius: 20,
+    paddingHorizontal: 22,
+    paddingVertical: 8,
+  },
+  headerUpdateText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+
   scroll: { flex: 1, paddingHorizontal: 16 },
-  navbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#f5f5f5' },
-  backBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  backIcon: { fontSize: 24, fontWeight: '700', color: '#111' },
-  navTitle: { fontSize: 18, fontWeight: '800', color: '#111' },
-  navUpdateBtn: { backgroundColor: '#222', borderRadius: 10, paddingHorizontal: 18, paddingVertical: 8 },
-  navUpdateText: { color: '#fff', fontWeight: '700', fontSize: 14 },
-  card: { backgroundColor: CARD_BG, borderRadius: RADIUS, padding: 14, marginBottom: 14 },
-  sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 },
-  sectionTitle: { fontSize: 15, fontWeight: '700', color: '#111' },
-  standaloneSectionTitle: { fontSize: 16, fontWeight: '800', color: '#111', marginBottom: 10 },
-  clockIcon: { fontSize: 16 },
-  currentStatusRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
-  greenDot: { width: 10, height: 10, borderRadius: 5 },
-  currentStatusText: { fontSize: 13, color: '#444', fontWeight: '500' },
-  popupName: { fontSize: 17, fontWeight: '800', color: '#111', marginBottom: 2 },
-  popupSub: { fontSize: 12, color: '#888' },
-  timeRow: { flexDirection: 'row', gap: 12 },
-  timePickerWrapper: { flex: 1, zIndex: 10 },
-  timePickerLabel: { fontSize: 12, color: '#666', marginBottom: 4 },
-  timePickerBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#fff', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8 },
-  timePickerValue: { fontSize: 13, fontWeight: '600', color: '#111' },
-  timePickerChevron: { fontSize: 10, color: '#666' },
-  timeDropdown: { position: 'absolute', top: 60, left: 0, right: 0, backgroundColor: '#fff', borderRadius: 8, zIndex: 100, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 8 },
-  timeOption: { paddingHorizontal: 12, paddingVertical: 9 },
-  timeOptionSelected: { backgroundColor: '#f0f0f0' },
-  timeOptionText: { fontSize: 13, color: '#333' },
-  timeOptionTextSelected: { fontWeight: '700', color: '#111' },
-  statusGrid: { flexDirection: 'row', gap: 8, marginBottom: 14 },
-  statusBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: CARD_BG, borderRadius: RADIUS, paddingVertical: 12, paddingHorizontal: 4, gap: 6 },
-  statusBtnSelected: { backgroundColor: '#d4d4d4', borderWidth: 2, borderColor: '#333' },
-  statusDot: { width: 12, height: 12, borderRadius: 6 },
-  statusBtnText: { fontSize: 11, fontWeight: '600', color: '#555', textAlign: 'center' },
-  statusBtnTextSelected: { color: '#111', fontWeight: '800' },
-  availOption: { borderWidth: 1.5, borderColor: '#d0d0d0', borderRadius: 8, paddingVertical: 10, paddingHorizontal: 12, marginBottom: 8, backgroundColor: '#fff' },
-  availOptionSelected: { borderColor: '#333', backgroundColor: '#e8e8e8' },
-  availOptionText: { fontSize: 13, color: '#444' },
-  availOptionTextSelected: { fontWeight: '700', color: '#111' },
-  customMsgLabel: { fontSize: 13, fontWeight: '700', color: '#111', marginTop: 6, marginBottom: 6 },
-  customMsgInput: { borderWidth: 1.5, borderColor: '#d0d0d0', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, color: '#333', backgroundColor: '#fff', minHeight: 64, textAlignVertical: 'top' },
-  locationInput: { borderWidth: 1.5, borderColor: '#d0d0d0', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, color: '#333', backgroundColor: '#fff', marginBottom: 8 },
-  updateStatusBtn: { backgroundColor: '#222', borderRadius: RADIUS, paddingVertical: 16, alignItems: 'center', marginTop: 4, marginBottom: 8 },
-  updateStatusBtnText: { color: '#fff', fontSize: 16, fontWeight: '800' },
-  productBlock: { marginBottom: 8 },
-  productName: { fontSize: 14, fontWeight: '800', color: '#111', marginBottom: 8 },
-  productDivider: { height: 1, backgroundColor: '#d0d0d0', marginVertical: 12 },
-  addProductRow: { flexDirection: 'row', gap: 8, marginTop: 12, alignItems: 'center' },
-  addProductInput: { flex: 1, borderWidth: 1.5, borderColor: '#d0d0d0', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, fontSize: 13, color: '#333', backgroundColor: '#fff' },
-  addProductBtn: { backgroundColor: '#222', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 9 },
-  addProductBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+
+  /* Menu Stock Wrapper (gradient background) */
+  menuStockWrapper: {
+    borderRadius: 18,
+    padding: 14,
+    marginTop: 16,
+    marginBottom: 16,
+    backgroundColor: '#7AAED6',
+  },
+  menuStockHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+    paddingHorizontal: 4,
+  },
+  menuStockTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#222',
+  },
+
+  /* Product Cards */
+  productCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 10,
+  },
+  productNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 2,
+  },
+  productName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111',
+  },
+  productPrice: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111',
+  },
+  productDescription: {
+    fontSize: 13,
+    color: '#888',
+    marginBottom: 6,
+  },
+
+  /* Availability Pills */
+  pillRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 10,
+    marginBottom: 6,
+  },
+  pill: {
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: '#d8d8d8',
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    backgroundColor: '#fff',
+  },
+  pillSelected: {},
+  pillText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#666',
+  },
+  pillTextSelected: {
+    color: '#fff',
+  },
+
+  /* Pre-Orders */
+  preOrderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 10,
+    paddingVertical: 10,
+  },
+  preOrderLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#111',
+  },
+
+  /* Add product */
+  addProductRow: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+    marginTop: 2,
+  },
+  addProductInput: {
+    flex: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: '#333',
+    backgroundColor: '#fff',
+  },
+  addProductBtn: {
+    backgroundColor: '#555',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+  },
+  addProductBtnText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 13,
+  },
+
+  /* Section Card (white box wrapping title + content) */
+  sectionCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  sectionTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#111',
+    marginBottom: 10,
+  },
+  sectionInput: {
+    backgroundColor: '#f5f5f5',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+
+  /* Location */
+  locationInput: {
+    fontSize: 14,
+    color: '#333',
+  },
+
+  /* Time Pickers */
+  timeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  timeSeparator: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111',
+  },
+  timePickerWrapper: {
+    flex: 1,
+    zIndex: 10,
+  },
+  timePickerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#f5f5f5',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  timePickerValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111',
+  },
+  timeDropdown: {
+    position: 'absolute',
+    top: 46,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    zIndex: 100,
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  timeOption: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  timeOptionSelected: {
+    backgroundColor: '#f0f0f0',
+  },
+  timeOptionText: {
+    fontSize: 14,
+    color: '#333',
+  },
+  timeOptionTextSelected: {
+    fontWeight: '700',
+    color: '#111',
+  },
+
+  /* Overall Status */
+  statusGrid: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  statusBtn: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f5f5f5',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+    gap: 6,
+  },
+  statusBtnSelected: {},
+  statusDot: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+  },
+  statusBtnText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#666',
+    textAlign: 'center',
+  },
+  statusBtnTextSelected: {
+    color: '#111',
+    fontWeight: '800',
+  },
+
+  /* Custom Message */
+  customMsgInput: {
+    fontSize: 14,
+    color: '#333',
+    minHeight: 60,
+    textAlignVertical: 'top',
+  },
+
+  /* Push Notification */
+  pushNotifRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  pushNotifLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#111',
+  },
+
+  /* Update Status Button */
+  updateStatusBtn: {
+    borderRadius: 14,
+    overflow: 'hidden',
+    marginBottom: 10,
+  },
+  updateStatusGradient: {
+    paddingVertical: 16,
+    alignItems: 'center',
+    borderRadius: 14,
+    backgroundColor: '#2E4A7A',
+  },
+  updateStatusBtnText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+
+  /* End Event Button */
+  endEventBtn: {
+    backgroundColor: '#fff',
+    borderWidth: 1.5,
+    borderColor: '#ef4444',
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  endEventBtnText: {
+    color: '#ef4444',
+    fontSize: 15,
+    fontWeight: '800',
+  },
 });

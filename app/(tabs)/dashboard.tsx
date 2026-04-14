@@ -1,10 +1,13 @@
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+
 import { router } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
+  Image,
   StyleSheet,
   SafeAreaView,
   StatusBar,
@@ -16,106 +19,87 @@ import {
   getBusinessByUid,
   listMyEvents,
   listReviewsForBusiness,
+  isActiveEventStatus,
   type Profile,
   type Business,
   type ReviewRow,
+  type EventRow,
+  type EventStatus,
 } from '@/services/api';
-import { LIVE_EVENT } from '@/constants/sample-events';
+import { onEventsChanged, onProfileChanged } from '@/services/refresh-bus';
 
-// ─── Icon placeholders ───────────────────────────────────────────────────────
-const Icon = ({ name, size = 20, color = '#222' }: { name: string; size?: number; color?: string }) => {
-  const icons: Record<string, string> = {
-    chart: '📊', people: '👥', events: '⚡', star: '⭐',
-    calendar: '📅', handshake: '🤝', offer: '🎁', analytics: '📈',
-    camera: '📷', chat: '💬', settings: '⚙️', wifi: '📡', eye: '👁', edit: '✏️',
-    reply: '↩', 'star-filled': '★', 'star-empty': '☆',
-  };
-  return <Text style={{ fontSize: size }}>{icons[name] ?? '●'}</Text>;
-};
+function formatTime(dbTime: string | null | undefined): string {
+  if (!dbTime) return '—';
+  const [hStr, mStr] = dbTime.split(':');
+  const h = parseInt(hStr, 10);
+  const m = parseInt(mStr ?? '0', 10);
+  if (Number.isNaN(h)) return dbTime;
+  const period = h >= 12 ? 'PM' : 'AM';
+  const hr = ((h + 11) % 12) + 1;
+  return `${hr}:${String(m).padStart(2, '0')} ${period}`;
+}
 
-const StarRating = ({ rating }: { rating: number }) => (
-  <View style={styles.starsRow}>
-    {[1, 2, 3, 4, 5].map(i => (
-      <Text key={i} style={[styles.star, i <= rating ? styles.starFilled : styles.starEmpty]}>★</Text>
-    ))}
-  </View>
-);
-
-const StatCard = ({ icon, value, label, sub }: { icon: string; value: string; label: string; sub: string }) => (
-  <View style={styles.statCard}>
-    <Icon name={icon} size={22} color="#333" />
-    <Text style={styles.statValue}>{value}</Text>
-    <Text style={styles.statLabel}>{label}</Text>
-    <Text style={styles.statSub}>{sub}</Text>
-  </View>
-);
-
-const ActionCard = ({ icon, label, sub, onPress }: { icon: string; label: string; sub: string; onPress?: () => void }) => (
-  <TouchableOpacity style={styles.actionCard} onPress={onPress} activeOpacity={0.75}>
-    <Icon name={icon} size={22} color="#333" />
-    <Text style={styles.actionLabel}>{label}</Text>
-    <Text style={styles.actionSub}>{sub}</Text>
-  </TouchableOpacity>
-);
-
-const ReviewItem = ({ review }: { review: ReviewRow }) => {
-  const date = new Date(review.created_at).toLocaleDateString();
-  return (
-    <View style={styles.reviewItem}>
-      <View style={styles.reviewHeader}>
-        <View style={styles.reviewAvatar}>
-          <Text style={styles.reviewAvatarText}>U</Text>
-        </View>
-        <View style={styles.reviewMeta}>
-          <Text style={styles.reviewName}>Customer</Text>
-          <StarRating rating={review.rating} />
-        </View>
-        <Text style={styles.reviewDate}>{date}</Text>
-      </View>
-      {review.body ? (
-        <Text style={styles.reviewBody}>{review.body}</Text>
-      ) : (
-        <View style={styles.reviewBodyPlaceholder}>
-          <View style={styles.reviewLine} />
-          <View style={[styles.reviewLine, { width: '70%' }]} />
-        </View>
-      )}
-    </View>
-  );
-};
+function getRightNowDisplay(status: EventStatus): { label: string; color: string } {
+  switch (status) {
+    case 'open':
+      return { label: 'LIVE NOW', color: '#22c55e' };
+    case 'closing_soon':
+      return { label: 'CLOSING SOON', color: '#f59e0b' };
+    case 'sold_out':
+      return { label: 'SOLD OUT', color: '#ef4444' };
+    case 'paused':
+      return { label: 'ON BREAK', color: '#3b82f6' };
+    default:
+      return { label: 'LIVE NOW', color: '#22c55e' };
+  }
+}
 
 export default function BusinessDashboard() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [business, setBusiness] = useState<Business | null>(null);
-  const [eventCount, setEventCount] = useState(0);
+  const [liveEvent, setLiveEvent] = useState<EventRow | null>(null);
+  const [upcomingEvents, setUpcomingEvents] = useState<EventRow[]>([]);
   const [reviews, setReviews] = useState<ReviewRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const p = await getMyProfile();
-        if (!p || cancelled) return;
-        setProfile(p);
-        const [biz, events, revs] = await Promise.all([
-          getBusinessByUid(p.uid),
-          listMyEvents(100),
-          listReviewsForBusiness(p.uid),
-        ]);
-        if (cancelled) return;
-        setBusiness(biz);
-        setEventCount(events.length);
-        setReviews(revs.slice(0, 3));
-      } catch (e: any) {
-        if (!cancelled) setError(e.message ?? 'Failed to load dashboard');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
+  const loadDashboard = useCallback(async () => {
+    try {
+      const p = await getMyProfile();
+      if (!p) return;
+      setProfile(p);
+      const [biz, events, revs] = await Promise.all([
+        getBusinessByUid(p.uid),
+        listMyEvents(100),
+        listReviewsForBusiness(p.uid),
+      ]);
+      setBusiness(biz);
+      const live = events.find(e => e.is_published && isActiveEventStatus(e.status)) ?? null;
+      setLiveEvent(live);
+      const upcoming = events
+        .filter(e => e.is_published && !isActiveEventStatus(e.status) && e.status !== 'closed' && e.status !== 'cancelled')
+        .slice(0, 5);
+      setUpcomingEvents(upcoming);
+      setReviews(revs);
+    } catch (e: any) {
+      setError(e.message ?? 'Failed to load dashboard');
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadDashboard();
+  }, [loadDashboard]);
+
+  useEffect(() => {
+    const offEvents = onEventsChanged(loadDashboard);
+    const offProfile = onProfileChanged(loadDashboard);
+    return () => {
+      offEvents();
+      offProfile();
+    };
+  }, [loadDashboard]);
 
   if (loading) {
     return (
@@ -129,95 +113,210 @@ export default function BusinessDashboard() {
   const avgRating = business?.avg_rating != null ? Number(business.avg_rating).toFixed(1) : '—';
   const followerCount = business?.follower_count ?? 0;
 
+  const liveHours = liveEvent
+    ? `${formatTime(liveEvent.start_time)} – ${formatTime(liveEvent.end_time)}`
+    : '—';
+
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFF14D" />
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
 
-        {/* ── Header ── */}
+        {/* ── Header (golden gradient) ── */}
         <View style={styles.header}>
-          <View>
-            <Text style={styles.headerSub}>Business Dashboard</Text>
-            <Text style={styles.headerTitle}>Hey, {businessName} 👋</Text>
+          <View style={styles.headerTextWrap}>
+            <Text style={styles.headerWelcome}>Welcome back</Text>
+            <Text style={styles.headerTitle}>{businessName} 👋</Text>
           </View>
-          <View style={styles.headerIcons}>
-            <TouchableOpacity style={styles.iconBtn}><Icon name="chat" size={18} /></TouchableOpacity>
-            <TouchableOpacity style={styles.iconBtn}><Icon name="settings" size={18} /></TouchableOpacity>
+          <TouchableOpacity
+            style={styles.gearBtn}
+            onPress={() => router.push('/(tabs)/settings')}
+          >
+            <Feather name="settings" size={26} color="#000" />
+          </TouchableOpacity>
+
+          {/* Stat pills */}
+          <View style={styles.statPillRow}>
+            <View style={styles.statPill}>
+              <Text style={styles.statPillValue}>{String(followerCount)}</Text>
+              <Text style={styles.statPillLabel}>Followers</Text>
+            </View>
+            <View style={styles.statPill}>
+              <Text style={styles.statPillValue}>—</Text>
+              <Text style={styles.statPillLabel}>Views Today</Text>
+            </View>
+            <View style={styles.statPill}>
+              <Text style={styles.statPillValue}>{avgRating}</Text>
+              <Text style={styles.statPillLabel}>Rating</Text>
+              <Feather name="star" size={17} color="#f5c518" style={styles.statPillStar} />
+            </View>
           </View>
         </View>
 
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-        {/* ── Profile Card ── */}
-        <View style={styles.profileCard}>
-          <View style={styles.profileTop}>
-            <View style={styles.profileAvatar}>
-              <Icon name="camera" size={20} color="#666" />
-            </View>
-            <View style={styles.profileInfo}>
-              <Text style={styles.profileName}>{businessName}</Text>
-              <View style={styles.ratingRow}>
-                <Text style={styles.starFilled}>★</Text>
-                <Text style={styles.profileRating}> {avgRating}/5</Text>
-                <Text style={styles.profileReviews}> ({reviews.length} reviews)</Text>
+        {/* ── Live Now Card ── */}
+        <View style={styles.liveCard}>
+          <View style={styles.liveTopRow}>
+            <View style={styles.liveTitleCol}>
+              <View style={styles.liveTitleRow}>
+                {liveEvent ? (
+                  <View style={[styles.liveDot, { backgroundColor: getRightNowDisplay(liveEvent.status).color }]} />
+                ) : (
+                  <View style={[styles.liveDot, { backgroundColor: '#3b82f6' }]} />
+                )}
+                <Text style={styles.liveTitle}>Live Now</Text>
               </View>
+              {liveEvent ? (
+                <Text style={styles.liveSubtitle}>Tap to update status</Text>
+              ) : null}
             </View>
+            {liveEvent ? (
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() =>
+                  router.push({
+                    pathname: '/(tabs)/update_status',
+                    params: { eventId: String(liveEvent.id) },
+                  })
+                }
+              >
+                <View style={styles.updateBtn}>
+                  <Feather name="radio" size={18} color="#fff" />
+                  <Text style={styles.updateBtnText}>Update</Text>
+                </View>
+              </TouchableOpacity>
+            ) : null}
           </View>
-          <View style={styles.profileActions}>
-            <TouchableOpacity style={styles.outlineBtn}>
-              <Icon name="eye" size={14} color="#333" />
-              <Text style={styles.outlineBtnText}> View Public Profile</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.filledBtn} onPress={() => router.push('/(tabs)/edit_profile?from=dashboard')}>
-              <Icon name="edit" size={14} color="#fff" />
-              <Text style={styles.filledBtnText}> Edit Profile</Text>
-            </TouchableOpacity>
-          </View>
+
+          {liveEvent ? (
+            <>
+              <View style={styles.subCardRow}>
+                <View style={styles.subCard}>
+                  <Text style={styles.subCardLabel}>Hours</Text>
+                  <Text style={styles.subCardValue}>{liveHours}</Text>
+                </View>
+                <View style={styles.subCard}>
+                  <Text style={styles.subCardLabel}>Location</Text>
+                  <Text style={styles.subCardValue}>{liveEvent.location ?? '—'}</Text>
+                </View>
+                <View style={styles.subCard}>
+                  <Text style={styles.subCardLabel}>Stock</Text>
+                  <Text style={styles.subCardValue}>—</Text>
+                </View>
+              </View>
+            </>
+          ) : (
+            <Text style={styles.liveSubtitle}>No events right now</Text>
+          )}
         </View>
 
-        {/* ── Right Now ── */}
-        <Text style={styles.sectionTitle}>Right Now</Text>
-        <View style={styles.rightNowCard}>
-          <View style={styles.rightNowTopRow}>
-            <Text style={styles.rightNowLabel}>CURRENT STATUS</Text>
-            <TouchableOpacity
-              style={styles.updateBtn}
-              activeOpacity={0.85}
-              onPress={() => router.push('/(tabs)/update_status')}
-            >
-              <Text style={styles.updateBtnText}>Update</Text>
-            </TouchableOpacity>
+        {/* ── Pre-Order Active Banner ── */}
+        <TouchableOpacity activeOpacity={0.85} onPress={() => router.push('/(tabs)/pre_orders')}>
+          <View style={styles.preOrderBanner}>
+            <Feather name="shopping-bag" size={24} color="#000" />
+            <View style={styles.preOrderText}>
+              <Text style={styles.preOrderTitle}>Pre-Order Active</Text>
+              <Text style={styles.preOrderSub}>Tap to manage orders</Text>
+            </View>
+            <View style={styles.preOrderBadge}>
+              <Text style={styles.preOrderBadgeText}>12</Text>
+            </View>
           </View>
-          <View style={styles.liveBadgeRow}>
-            <View style={styles.liveDot} />
-            <Text style={styles.liveText}>LIVE NOW</Text>
-          </View>
-          <Text style={styles.rightNowDetail}>{LIVE_EVENT.name}  |  {LIVE_EVENT.location}</Text>
-        </View>
+        </TouchableOpacity>
 
         {/* ── Today's Activity ── */}
         <Text style={styles.sectionTitle}>Today's Activity</Text>
-        <View style={styles.grid}>
-          <StatCard icon="people" value={String(followerCount)} label="Followers" sub="" />
-          <StatCard icon="events" value={String(eventCount)} label="My Events" sub="" />
-          <StatCard icon="star" value={`${avgRating}/5`} label="Average Rating" sub={`${reviews.length} reviews`} />
+        <View style={styles.activityGrid}>
+          {/* Profile Views */}
+          <View style={styles.activityCard}>
+            <Text style={styles.activityLabel}>Profile Views</Text>
+            <Text style={styles.activityValue}>—</Text>
+            <View style={styles.trendRow}>
+              <Feather name="trending-up" size={14} color="#55be53" />
+              <Text style={styles.trendText}>+23%</Text>
+            </View>
+          </View>
+          {/* Pre-Orders */}
+          <View style={styles.activityCard}>
+            <Text style={styles.activityLabel}>Pre-Orders</Text>
+            <Text style={styles.activityValue}>—</Text>
+            <Text style={styles.activitySub}>for today</Text>
+          </View>
+          {/* Engagement */}
+          <View style={styles.activityCard}>
+            <Text style={styles.activityLabel}>Engagement</Text>
+            <Text style={styles.activityValue}>—</Text>
+            <Text style={styles.activitySub}>Profile Saves</Text>
+          </View>
+          {/* Rating */}
+          <View style={styles.activityCard}>
+            <Text style={styles.activityLabel}>Rating</Text>
+            <Text style={styles.activityValue}>{avgRating}</Text>
+            <Text style={styles.activitySub}>{reviews.length} reviews</Text>
+          </View>
         </View>
 
-        {/* ── More Actions ── */}
-        <Text style={styles.sectionTitle}>More Actions</Text>
-        <View style={styles.grid}>
-          <ActionCard icon="calendar" label="Create Event" sub="New pop-up" onPress={() => router.push('/(tabs)/create_business_event?from=dashboard')} />
-          <ActionCard icon="handshake" label="Collaborate" sub="Partner up" />
-          <ActionCard icon="offer" label="Create Offer" sub="Special deals" />
-          <ActionCard icon="analytics" label="View Analytics" sub="Insights & data" />
+        {/* ── Quick Actions ── */}
+        <Text style={styles.sectionTitle}>Quick Actions</Text>
+        <View style={styles.quickActionRow}>
+          <TouchableOpacity
+            style={styles.quickActionItem}
+            activeOpacity={0.75}
+            onPress={() => router.push('/(tabs)/business_insights')}
+          >
+            <View style={styles.quickActionIcon}>
+              <MaterialCommunityIcons name="chart-line" size={30} color="#fff" />
+            </View>
+            <Text style={styles.quickActionLabel}>Insights</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.quickActionItem}
+            activeOpacity={0.75}
+            onPress={() => router.push('/(tabs)/create_business_event?from=dashboard')}
+          >
+            <View style={styles.quickActionIcon}>
+              <Feather name="calendar" size={26} color="#fff" />
+            </View>
+            <Text style={styles.quickActionLabel}>Create Event</Text>
+          </TouchableOpacity>
         </View>
 
-        {/* ── Recent Reviews ── */}
-        <Text style={styles.sectionTitle}>Recent Reviews</Text>
-        {reviews.length === 0 ? (
-          <Text style={styles.emptyText}>No reviews yet.</Text>
+        {/* ── Your Upcoming Events ── */}
+        <View style={styles.eventsHeader}>
+          <Text style={styles.sectionTitle}>Your Upcoming Events</Text>
+          <TouchableOpacity
+            onPress={() => router.push('/(tabs)/buisness_events')}
+            style={styles.viewAllBtn}
+          >
+            <Text style={styles.viewAllText}>View all</Text>
+            <Feather name="chevron-right" size={18} color="#4169e1" />
+          </TouchableOpacity>
+        </View>
+
+        {upcomingEvents.length === 0 ? (
+          <Text style={styles.emptyText}>No upcoming events.</Text>
         ) : (
-          reviews.map(r => <ReviewItem key={r.id} review={r} />)
+          upcomingEvents.map(event => (
+            <View key={event.id} style={styles.eventCard}>
+              <View style={styles.eventThumb}>
+                {event.cover_url ? (
+                  <Image source={{ uri: event.cover_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+                ) : null}
+              </View>
+              <View style={styles.eventInfo}>
+                <Text style={styles.eventName}>{event.event_name}</Text>
+                <View style={styles.eventMetaRow}>
+                  <Feather name="calendar" size={14} color="#696969" />
+                  <Text style={styles.eventDate}>{event.event_date}</Text>
+                </View>
+                <Text style={styles.eventRsvps}>
+                  — <Text style={styles.eventRsvpsLabel}>RSVPs</Text>
+                </Text>
+              </View>
+            </View>
+          ))
         )}
 
         <View style={{ height: 32 }} />
@@ -225,9 +324,6 @@ export default function BusinessDashboard() {
     </SafeAreaView>
   );
 }
-
-const CARD_BG = '#ebebeb';
-const RADIUS = 12;
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#f5f5f5' },

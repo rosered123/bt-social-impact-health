@@ -49,12 +49,16 @@ function Stars({ rating }: { rating: number }) {
   );
 }
 
-function ReviewCard({ review }: { review: ReviewRow }) {
+function ReviewCard({ review, avatarUrl }: { review: ReviewRow; avatarUrl?: string | null }) {
   const date = new Date(review.created_at).toLocaleDateString();
   return (
     <View style={styles.reviewCard}>
       <View style={styles.reviewTop}>
-        <View style={styles.reviewAvatar} />
+        <View style={styles.reviewAvatar}>
+          {avatarUrl ? (
+            <Image source={{ uri: avatarUrl }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+          ) : null}
+        </View>
         <View style={styles.reviewMetaWrap}>
           <Text style={styles.reviewName}>Your review</Text>
           <Stars rating={review.rating} />
@@ -155,7 +159,7 @@ export default function Profile() {
         {reviews.length === 0 ? (
           <Text style={styles.emptyText}>You haven't written any reviews yet.</Text>
         ) : (
-          reviews.map(r => <ReviewCard key={r.id} review={r} />)
+          reviews.map(r => <ReviewCard key={r.id} review={r} avatarUrl={profile?.avatar_url} />)
         )}
 
         <TouchableOpacity activeOpacity={0.85} style={styles.signOutButton} onPress={onSignOut}>
@@ -193,7 +197,7 @@ const styles = StyleSheet.create({
   reviewsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
   reviewCard: { backgroundColor: CARD, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 13, marginBottom: 12 },
   reviewTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  reviewAvatar: { width: 35, height: 35, borderRadius: 18, backgroundColor: MID, marginRight: 10 },
+  reviewAvatar: { width: 35, height: 35, borderRadius: 18, backgroundColor: MID, marginRight: 10, overflow: 'hidden' },
   reviewMetaWrap: { flex: 1 },
   reviewName: { fontSize: 13, fontWeight: '700', color: '#444', marginBottom: 1 },
   reviewDate: { fontSize: 10, color: '#666' },
