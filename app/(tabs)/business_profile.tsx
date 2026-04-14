@@ -1,7 +1,5 @@
-import { Feather } from '@expo/vector-icons';
-
-import { router } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Clipboard,
@@ -96,7 +94,31 @@ export default function MyProfile() {
   const [shareVisible, setShareVisible] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
 
-  const loadProfile = useCallback(async () => {
+  useFocusEffect(useCallback(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const profile = await getMyProfile();
+        if (!profile || cancelled) return;
+        const [biz, evts, revs] = await Promise.all([
+          getBusinessByUid(profile.uid),
+          getBusinessEvents(profile.uid, 5),
+          listReviewsForBusiness(profile.uid, 5),
+        ]);
+        if (cancelled) return;
+        setBusiness(biz);
+        setEvents(evts);
+        setReviews(revs);
+      } catch {
+        // silently fail — show empty state
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []));
+
+  const onSignOut = async () => {
     try {
       const p = await getMyProfile();
       if (!p) return;
@@ -147,7 +169,7 @@ export default function MyProfile() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f5f5f5" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFF14D" />
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
 
         {/* ── Golden Gradient Header ── */}
@@ -376,16 +398,10 @@ const RADIUS = 12;
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#f5f5f5' },
-  scroll: { flex: 1 },
-  emptyText: { fontSize: 13, color: '#888', marginBottom: 16, paddingHorizontal: 16 },
+  scroll: { flex: 1, paddingHorizontal: 16 },
+  emptyText: { fontSize: 13, color: '#888', marginBottom: 16 },
 
-  gradientHeader: {
-    paddingHorizontal: 16,
-    paddingTop: 48,
-    paddingBottom: 14,
-    backgroundColor: '#FFF1AD',
-  },
-  pageTitle: { fontSize: 24, fontWeight: '900', color: '#111' },
+  pageTitle: { fontSize: 24, fontWeight: '900', color: '#111', paddingTop: 16, paddingBottom: 14, marginHorizontal: -16, paddingHorizontal: 16, backgroundColor: '#FFF14D' },
 
   coverSection: { marginBottom: 0, paddingHorizontal: 16 },
   coverPhoto: {
@@ -421,17 +437,17 @@ const styles = StyleSheet.create({
   tagText: { fontSize: 12, color: '#333', fontWeight: '500' },
 
   actionRow: { flexDirection: 'row', gap: 10 },
-  editBtn: {
-    flex: 1, backgroundColor: '#2E4A7A', borderRadius: 10,
+  followBtn: {
+    flex: 1, backgroundColor: '#07345F', borderRadius: 10,
     paddingVertical: 10, alignItems: 'center',
   },
   editBtnText: { color: '#FFFFFF', fontWeight: '700', fontSize: 14 },
   shareBtn: {
-    flex: 1, backgroundColor: '#7AAED6', borderRadius: 10,
+    flex: 1, backgroundColor: '#85E4FF', borderRadius: 10,
     paddingVertical: 10, alignItems: 'center',
     borderWidth: 1, borderColor: '#333',
   },
-  shareBtnText: { color: '#333', fontWeight: '700', fontSize: 14 },
+  shareBtnText: { color: '#07345F', fontWeight: '700', fontSize: 14 },
 
   aboutCard: {
     backgroundColor: '#FFFFFF', borderRadius: RADIUS, padding: 16,

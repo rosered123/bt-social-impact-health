@@ -1,5 +1,5 @@
-import { router } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -84,7 +84,7 @@ export default function Profile() {
   const [reviews, setReviews] = useState<ReviewRow[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     let cancelled = false;
     (async () => {
       try {
@@ -102,7 +102,7 @@ export default function Profile() {
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, []));
 
   const onSignOut = async () => {
     try {
@@ -123,7 +123,7 @@ export default function Profile() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f2f2f2" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFF14D" />
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} style={styles.scroll}>
 
         <View style={styles.headerRow}>
@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: BG },
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 24 },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 22 },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingBottom: 22, marginHorizontal: -16, paddingHorizontal: 16, backgroundColor: '#FFF14D' },
   greeting: { fontSize: 22, fontWeight: '800', color: '#111', marginBottom: 4 },
   locationRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   location: { fontSize: 20, color: '#222' },
