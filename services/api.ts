@@ -76,6 +76,8 @@ export type ReviewRow = {
 	rating: number;
 	body: string | null;
 	created_at: string;
+	reviewer_display_name: string | null;
+	reviewer_avatar_url: string | null;
 };
 
 type EventCreateInput = {
@@ -290,7 +292,7 @@ export async function deleteMyEvent(eventId: number): Promise<void> {
 export async function listReviewsForBusiness(businessUid: string, limit = 50): Promise<ReviewRow[]> {
 	const { data, error } = await supabase
 		.from('reviews')
-		.select('*')
+		.select('*, profiles!reviewer_uid(display_name, avatar_url)')
 		.eq('business_uid', businessUid)
 		.order('created_at', { ascending: false })
 		.limit(limit);
@@ -299,7 +301,12 @@ export async function listReviewsForBusiness(businessUid: string, limit = 50): P
 		throw error;
 	}
 
-	return data;
+	return (data ?? []).map((row: any) => ({
+		...row,
+		reviewer_display_name: row.profiles?.display_name ?? null,
+		reviewer_avatar_url: row.profiles?.avatar_url ?? null,
+		profiles: undefined,
+	}));
 }
 
 export async function createMyReview(input: ReviewCreateInput): Promise<ReviewRow> {
@@ -383,12 +390,17 @@ export async function getMyReviews(limit = 50): Promise<ReviewRow[]> {
 	const uid = await requireUserId();
 	const { data, error } = await supabase
 		.from('reviews')
-		.select('*')
+		.select('*, profiles!reviewer_uid(display_name, avatar_url)')
 		.eq('reviewer_uid', uid)
 		.order('created_at', { ascending: false })
 		.limit(limit);
 	if (error) throw error;
-	return data;
+	return (data ?? []).map((row: any) => ({
+		...row,
+		reviewer_display_name: row.profiles?.display_name ?? null,
+		reviewer_avatar_url: row.profiles?.avatar_url ?? null,
+		profiles: undefined,
+	}));
 }
 
 export async function getFollowedBusinesses(): Promise<Business[]> {
