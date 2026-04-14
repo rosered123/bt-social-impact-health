@@ -409,6 +409,16 @@ export async function getAllTags(): Promise<VibeTag[]> {
 	return data;
 }
 
+export async function createTag(name: string): Promise<VibeTag> {
+	const { data, error } = await supabase
+		.from('vibe_tags')
+		.insert({ name })
+		.select('id, name')
+		.single();
+	if (error) throw error;
+	return data;
+}
+
 export async function setMyUserInterests(tagIds: number[]): Promise<void> {
 	const user_uid = await requireUserId();
 	const { error: deleteError } = await supabase.from('user_interests').delete().eq('user_uid', user_uid);
@@ -421,6 +431,15 @@ export async function setMyUserInterests(tagIds: number[]): Promise<void> {
 	const rows = tagIds.map((tag_id) => ({ user_uid, tag_id }));
 	const { error: insertError } = await supabase.from('user_interests').insert(rows);
 	if (insertError) throw insertError;
+}
+
+export async function getBusinessTags(businessUid: string): Promise<VibeTag[]> {
+	const { data, error } = await supabase
+		.from('business_tags')
+		.select('tag_id, vibe_tags(id, name)')
+		.eq('business_uid', businessUid);
+	if (error) throw error;
+	return (data ?? []).map((row: any) => row.vibe_tags).filter(Boolean);
 }
 
 export async function setMyBusinessTags(tagIds: number[]): Promise<void> {

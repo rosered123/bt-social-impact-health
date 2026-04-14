@@ -19,18 +19,18 @@ import {
 import {
   getBusinessByUid,
   getBusinessEvents,
+  getBusinessTags,
   getMyProfile,
   isActiveEventStatus,
   listReviewsForBusiness,
   type Business,
   type EventRow,
   type ReviewRow,
+  type VibeTag,
 } from '@/services/api';
 import { onEventsChanged, onProfileChanged } from '@/services/refresh-bus';
 
 // ─── Mock Data ───────────────────────────────────────────────────────────────
-const MOCK_TAGS = ['Matcha', 'Organic', 'Vegan Option'];
-
 const MOCK_REVIEWER_NAMES = [
   'Sarah Chen',
   'Mike Rodriguez',
@@ -95,6 +95,7 @@ export default function MyProfile() {
   const [business, setBusiness] = useState<Business | null>(null);
   const [events, setEvents] = useState<EventRow[]>([]);
   const [reviews, setReviews] = useState<ReviewRow[]>([]);
+  const [businessTags, setBusinessTags] = useState<VibeTag[]>([]);
   const [loading, setLoading] = useState(true);
   const [shareVisible, setShareVisible] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
@@ -103,12 +104,14 @@ export default function MyProfile() {
     try {
       const profile = await getMyProfile();
       if (!profile) return;
-      const [biz, evts, revs] = await Promise.all([
+      const [biz, evts, revs, tags] = await Promise.all([
         getBusinessByUid(profile.uid),
         getBusinessEvents(profile.uid, 20),
         listReviewsForBusiness(profile.uid, 5),
+        getBusinessTags(profile.uid),
       ]);
       setBusiness(biz);
+      setBusinessTags(tags);
       const upcoming = evts
         .filter(e => !isActiveEventStatus(e.status) && e.status !== 'closed' && e.status !== 'cancelled')
         .slice(0, 5);
@@ -193,13 +196,15 @@ export default function MyProfile() {
           </View>
 
           {/* ── Tag Pills ── */}
-          <View style={styles.tagRow}>
-            {MOCK_TAGS.map(tag => (
-              <View key={tag} style={styles.tagPill}>
-                <Text style={styles.tagText}>{tag}</Text>
-              </View>
-            ))}
-          </View>
+          {businessTags.length > 0 && (
+            <View style={styles.tagRow}>
+              {businessTags.map(tag => (
+                <View key={tag.id} style={styles.tagPill}>
+                  <Text style={styles.tagText}>{tag.name}</Text>
+                </View>
+              ))}
+            </View>
+          )}
 
           {/* ── Action Buttons ── */}
           <View style={styles.actionRow}>

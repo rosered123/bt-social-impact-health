@@ -17,9 +17,12 @@ import {
 import { router, useLocalSearchParams } from 'expo-router';
 
 import {
+  createTag,
   getAllTags,
   getBusinessByUid,
+  getBusinessTags,
   getMyProfile,
+  setMyBusinessTags,
   updateMyProfile,
   upsertMyBusiness,
   type VibeTag,
@@ -58,7 +61,11 @@ export default function EditProfile() {
         const profile = await getMyProfile();
         if (!profile || cancelled) return;
         setLocation(profile.location ?? '');
-        const [biz, tags] = await Promise.all([getBusinessByUid(profile.uid), getAllTags()]);
+        const [biz, tags, bizTags] = await Promise.all([
+          getBusinessByUid(profile.uid),
+          getAllTags(),
+          getBusinessTags(profile.uid),
+        ]);
         if (cancelled) return;
         if (biz) {
           setBusinessName(biz.business_name ?? '');
@@ -70,6 +77,7 @@ export default function EditProfile() {
           setLogoUrl(biz.logo_url ?? null);
         }
         setPopularTags(tags);
+        setVibeTags(bizTags.map(t => t.name));
       } catch {
         // show empty form on error
       } finally {
@@ -102,6 +110,18 @@ export default function EditProfile() {
     }
     setSaving(true);
     try {
+      // Resolve tag names to IDs, creating custom tags that don't exist yet
+      const tagIds: number[] = [];
+      for (const name of vibeTags) {
+        const existing = popularTags.find(t => t.name === name);
+        if (existing) {
+          tagIds.push(existing.id);
+        } else {
+          const newTag = await createTag(name);
+          tagIds.push(newTag.id);
+        }
+      }
+
       await Promise.all([
         upsertMyBusiness({
           business_name: businessName.trim(),
@@ -112,6 +132,7 @@ export default function EditProfile() {
           website: website.trim() || null,
         }),
         updateMyProfile({ location: location.trim() || null }),
+        setMyBusinessTags(tagIds),
       ]);
       notifyProfileChanged();
       setSaving(false);
