@@ -51,18 +51,21 @@ const StarRating: React.FC<{ rating: number; size?: number }> = ({ rating, size 
 );
 
 // ─── Review Item ──────────────────────────────────────────────────────────────
-const ReviewItem: React.FC<{ review: ReviewRow; index: number }> = ({ review, index }) => {
-  const name = MOCK_REVIEWER_NAMES[index % MOCK_REVIEWER_NAMES.length];
-  const initial = name.charAt(0);
+const ReviewItem: React.FC<{ review: ReviewRow }> = ({ review }) => {
+  const initial = (review.reviewer_display_name ?? review.reviewer_uid).slice(0, 1).toUpperCase();
   const date = new Date(review.created_at).toLocaleDateString();
   return (
     <View style={styles.reviewItem}>
       <View style={styles.reviewHeader}>
         <View style={styles.reviewAvatar}>
-          <Text style={styles.reviewAvatarText}>{initial}</Text>
+          {review.reviewer_avatar_url ? (
+            <Image source={{ uri: review.reviewer_avatar_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+          ) : (
+            <Text style={styles.reviewAvatarText}>{initial}</Text>
+          )}
         </View>
         <View style={styles.reviewMeta}>
-          <Text style={styles.reviewName}>{name}</Text>
+          <Text style={styles.reviewName}>{review.reviewer_display_name ?? 'Customer'}</Text>
           <StarRating rating={review.rating} />
         </View>
         <Text style={styles.reviewDate}>{date}</Text>

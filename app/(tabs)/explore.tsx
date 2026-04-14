@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -43,10 +44,10 @@ const SaveBtn: React.FC<{ saved: boolean; onToggle: () => void; dark?: boolean }
 );
 
 // ─── Grid Card (Events near you) ──────────────────────────────────────────────
-const GridCard: React.FC<{ event: PopUpEvent; onToggleSave: () => void }> = ({
-  event, onToggleSave,
+const GridCard: React.FC<{ event: PopUpEvent; onToggleSave: () => void; onPress: () => void }> = ({
+  event, onToggleSave, onPress,
 }) => (
-  <View style={styles.gridCard}>
+  <TouchableOpacity style={styles.gridCard} onPress={onPress} activeOpacity={0.85}>
     <View style={styles.gridCardImage}>
       {event.cover_url ? (
         <Image source={{ uri: event.cover_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
@@ -59,14 +60,14 @@ const GridCard: React.FC<{ event: PopUpEvent; onToggleSave: () => void }> = ({
       <Text style={styles.gridCardSub} numberOfLines={1}>{event.time}</Text>
       <Text style={styles.gridCardSub} numberOfLines={1}>{event.address}</Text>
     </View>
-  </View>
+  </TouchableOpacity>
 );
 
 // ─── Feature Card (We think you'll like) ─────────────────────────────────────
-const FeatureCard: React.FC<{ event: PopUpEvent; onToggleSave: () => void }> = ({
-  event, onToggleSave,
+const FeatureCard: React.FC<{ event: PopUpEvent; onToggleSave: () => void; onPress: () => void }> = ({
+  event, onToggleSave, onPress,
 }) => (
-  <View style={styles.featureCard}>
+  <TouchableOpacity style={styles.featureCard} onPress={onPress} activeOpacity={0.85}>
     <View style={styles.featureCardImage}>
       {event.cover_url ? (
         <Image source={{ uri: event.cover_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
@@ -84,14 +85,14 @@ const FeatureCard: React.FC<{ event: PopUpEvent; onToggleSave: () => void }> = (
         <SaveBtn saved={event.saved} onToggle={onToggleSave} dark />
       </View>
     </View>
-  </View>
+  </TouchableOpacity>
 );
 
 // ─── List Card (Popular in Austin) ───────────────────────────────────────────
-const ListCard: React.FC<{ event: PopUpEvent; onToggleSave: () => void }> = ({
-  event, onToggleSave,
+const ListCard: React.FC<{ event: PopUpEvent; onToggleSave: () => void; onPress: () => void }> = ({
+  event, onToggleSave, onPress,
 }) => (
-  <View style={styles.listCard}>
+  <TouchableOpacity style={styles.listCard} onPress={onPress} activeOpacity={0.85}>
     <View style={styles.listCardImage}>
       {event.cover_url ? (
         <Image source={{ uri: event.cover_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
@@ -105,7 +106,7 @@ const ListCard: React.FC<{ event: PopUpEvent; onToggleSave: () => void }> = ({
       </Text>
     </View>
     <SaveBtn saved={event.saved} onToggle={onToggleSave} dark />
-  </View>
+  </TouchableOpacity>
 );
 
 function formatEventTime(eventDate: string, startTime: string | null): string {
@@ -266,6 +267,7 @@ export default function Explore() {
                   key={event.id}
                   event={event}
                   onToggleSave={() => toggleSave(event.id)}
+                  onPress={() => router.push({ pathname: '/(tabs)/view_event', params: { eventId: String(event.id) } })}
                 />
               ))}
             </ScrollView>
@@ -281,6 +283,7 @@ export default function Explore() {
                 key={event.id}
                 event={event}
                 onToggleSave={() => toggleSave(event.id)}
+                onPress={() => router.push({ pathname: '/(tabs)/view_event', params: { eventId: String(event.id) } })}
               />
             ))}
           </>
@@ -296,6 +299,7 @@ export default function Explore() {
                   <ListCard
                     event={event}
                     onToggleSave={() => toggleSave(event.id)}
+                    onPress={() => router.push({ pathname: '/(tabs)/view_event', params: { eventId: String(event.id) } })}
                   />
                   {index < popular.length - 1 && <View style={styles.listDivider} />}
                 </View>
