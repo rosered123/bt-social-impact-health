@@ -1,5 +1,5 @@
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+
 import { router } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
@@ -267,15 +267,10 @@ export default function BusinessInsights() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f5d990" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFF1AD" />
 
       {/* ── Header (golden gradient) ── */}
-      <LinearGradient
-        colors={['#f5d990', '#f0c060']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.headerGradient}
-      >
+      <View style={styles.headerGradient}>
         <View style={styles.headerRow}>
           <View style={styles.headerLeft}>
             <TouchableOpacity
@@ -298,7 +293,7 @@ export default function BusinessInsights() {
             <Feather name="chevron-down" size={14} color="#333" />
           </TouchableOpacity>
         </View>
-      </LinearGradient>
+      </View>
 
       {/* Period dropdown — anchored below the header, overlays scroll content */}
       {periodOpen && (
@@ -428,6 +423,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 48,
     paddingBottom: 14,
+    backgroundColor: '#FFF1AD',
   },
   headerRow: {
     flexDirection: 'row',
@@ -631,7 +627,7 @@ const styles = StyleSheet.create({
   mentionBarTrack: {
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#e8e8e8',
+    backgroundColor: '#FFFFFF',
     overflow: 'hidden',
   },
   mentionBarFill: {
@@ -666,7 +662,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#e8e8e8',
+    backgroundColor: '#FFFFFF',
     overflow: 'hidden',
   },
   ratingBarFill: { height: '100%', backgroundColor: '#f59e0b', borderRadius: 4 },

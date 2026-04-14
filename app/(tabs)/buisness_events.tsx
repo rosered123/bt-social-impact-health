@@ -1,5 +1,5 @@
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
@@ -33,7 +33,6 @@ function getLiveDisplay(status: EventStatus): { label: string; color: string } {
   }
 }
 
-// Mock stats for display
 const MOCK_RSVPS = [87, 45, 62, 34, 91];
 const MOCK_VIEWS = [450, 360, 280, 190, 520];
 
@@ -91,12 +90,7 @@ const EventCard: React.FC<{ event: EventRow; index: number; isPast?: boolean }> 
         {isPast && <View style={styles.pastOverlay} />}
         {isLive && (
           <View style={styles.liveBadge}>
-            <LinearGradient
-              colors={['#3b5998', '#2e4a7a']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.liveBadgeBg}
-            />
+            <View style={styles.liveBadgeBg} />
             <View style={[styles.liveDot, { backgroundColor: liveDisplay.color }]} />
             <Text style={styles.liveText}>{liveDisplay.label}</Text>
           </View>
@@ -190,12 +184,7 @@ export default function BusinessEventsUpcoming() {
       <StatusBar barStyle="dark-content" backgroundColor="#f5f5f5" />
 
       {/* ── Header + Tabs (golden gradient) ── */}
-      <LinearGradient
-        colors={['#f5d990', '#f0c060']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.header}
-      >
+      <View style={styles.header}>
         <View style={styles.headerRow}>
           <Text style={styles.headerTitle}>My Events</Text>
           <TouchableOpacity
@@ -222,7 +211,7 @@ export default function BusinessEventsUpcoming() {
             </TouchableOpacity>
           ))}
         </View>
-      </LinearGradient>
+      </View>
 
       {loading ? (
         <View style={styles.loadingState}>
@@ -240,7 +229,7 @@ export default function BusinessEventsUpcoming() {
                 onPress={() => router.push('/buisness_events_drafts')}
               >
                 <View style={styles.draftIconBox}>
-                  <Feather name="file-text" size={20} color="#4a6fa5" />
+                  <Feather name="file-text" size={24} color="#2E4A7A" />
                 </View>
                 <View style={styles.draftBtnContent}>
                   <Text style={styles.draftBtnTitle}>My Drafts</Text>
@@ -296,7 +285,7 @@ export default function BusinessEventsUpcoming() {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const RADIUS = 14;
-const BLUE = '#2e4a7a';
+const BLUE = '#2E4A7A';
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#f5f5f5' },
@@ -307,6 +296,7 @@ const styles = StyleSheet.create({
   // Header
   header: {
     paddingHorizontal: 16, paddingTop: 48, paddingBottom: 14,
+    backgroundColor: '#FFF1AD',
   },
   headerRow: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -336,13 +326,13 @@ const styles = StyleSheet.create({
   // Drafts banner
   draftBtn: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#dce6f5', borderRadius: RADIUS,
+    backgroundColor: '#7AAED6', borderRadius: RADIUS,
     paddingHorizontal: 14, paddingVertical: 14,
     marginTop: 16, marginBottom: 16,
   },
   draftIconBox: {
-    width: 40, height: 40, borderRadius: 10,
-    backgroundColor: '#c5d5ee',
+    width: 53, height: 53, borderRadius: 27,
+    backgroundColor: '#C4DEF0',
     alignItems: 'center', justifyContent: 'center', marginRight: 12,
   },
   draftBtnContent: { flex: 1 },
@@ -384,6 +374,7 @@ const styles = StyleSheet.create({
   },
   liveBadgeBg: {
     ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#2E4A7A',
   },
   liveDot: { width: 8, height: 8, borderRadius: 4 },
   liveText: { fontSize: 11, fontWeight: '800', color: '#fff', letterSpacing: 0.5 },

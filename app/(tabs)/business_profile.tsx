@@ -1,5 +1,5 @@
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
@@ -25,19 +25,11 @@ import {
   listReviewsForBusiness,
   type Business,
   type EventRow,
+  type Profile,
   type ReviewRow,
   type VibeTag,
 } from '@/services/api';
 import { onEventsChanged, onProfileChanged } from '@/services/refresh-bus';
-
-// ─── Mock Data ───────────────────────────────────────────────────────────────
-const MOCK_REVIEWER_NAMES = [
-  'Sarah Chen',
-  'Mike Rodriguez',
-  'Chloe Nguyen',
-  'Alex Kim',
-  'Jordan Lee',
-];
 
 // ─── Star Rating ──────────────────────────────────────────────────────────────
 const StarRating: React.FC<{ rating: number; size?: number }> = ({ rating, size = 13 }) => (
@@ -95,6 +87,7 @@ const InfoRow: React.FC<{ icon: string; label: string; link?: boolean }> = ({ ic
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function MyProfile() {
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [business, setBusiness] = useState<Business | null>(null);
   const [events, setEvents] = useState<EventRow[]>([]);
   const [reviews, setReviews] = useState<ReviewRow[]>([]);
@@ -105,13 +98,14 @@ export default function MyProfile() {
 
   const loadProfile = useCallback(async () => {
     try {
-      const profile = await getMyProfile();
-      if (!profile) return;
+      const p = await getMyProfile();
+      if (!p) return;
+      setProfile(p);
       const [biz, evts, revs, tags] = await Promise.all([
-        getBusinessByUid(profile.uid),
-        getBusinessEvents(profile.uid, 20),
-        listReviewsForBusiness(profile.uid, 5),
-        getBusinessTags(profile.uid),
+        getBusinessByUid(p.uid),
+        getBusinessEvents(p.uid, 20),
+        listReviewsForBusiness(p.uid, 5),
+        getBusinessTags(p.uid),
       ]);
       setBusiness(biz);
       setBusinessTags(tags);
@@ -157,14 +151,9 @@ export default function MyProfile() {
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
 
         {/* ── Golden Gradient Header ── */}
-        <LinearGradient
-          colors={['#f5d990', '#f0c060']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.gradientHeader}
-        >
+        <View style={styles.gradientHeader}>
           <Text style={styles.pageTitle}>My Profile</Text>
-        </LinearGradient>
+        </View>
 
         {/* ── Cover + Avatar ── */}
         <View style={styles.coverSection}>
@@ -239,7 +228,7 @@ export default function MyProfile() {
 
           <View style={styles.divider} />
 
-          <InfoRow icon="📍" label="Austin, TX" />
+          {profile?.location ? <InfoRow icon="📍" label={profile.location} /> : null}
           {business?.phone ? <InfoRow icon="📞" label={business.phone} /> : null}
           {business?.email ? <InfoRow icon="✉️" label={business.email} /> : null}
           {business?.website ? <InfoRow icon="🌐" label={business.website} link /> : null}
@@ -287,7 +276,6 @@ export default function MyProfile() {
                     <Text style={styles.eventMetaText}>{event.location}</Text>
                   </View>
                 ) : null}
-                <Text style={styles.rsvpText}>87 RSVPs</Text>
               </View>
             </TouchableOpacity>
           ))
@@ -305,8 +293,8 @@ export default function MyProfile() {
         {reviews.length === 0 ? (
           <Text style={styles.emptyText}>No reviews yet.</Text>
         ) : (
-          reviews.map((review, idx) => (
-            <ReviewItem key={review.id} review={review} index={idx} />
+          reviews.map(review => (
+            <ReviewItem key={review.id} review={review} />
           ))
         )}
 
@@ -395,12 +383,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 48,
     paddingBottom: 14,
+    backgroundColor: '#FFF1AD',
   },
   pageTitle: { fontSize: 24, fontWeight: '900', color: '#111' },
 
   coverSection: { marginBottom: 0, paddingHorizontal: 16 },
   coverPhoto: {
-    height: 150, backgroundColor: '#e8e8e8', borderRadius: RADIUS,
+    height: 150, backgroundColor: '#FFFFFF', borderRadius: RADIUS,
     alignItems: 'center', justifyContent: 'center', marginTop: 14, overflow: 'hidden',
   },
   coverPhotoIcon: { fontSize: 28, opacity: 0.5 },
@@ -422,9 +411,9 @@ const styles = StyleSheet.create({
 
   tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
   tagPill: {
-    backgroundColor: '#fef3c7',
+    backgroundColor: '#FFF1AD',
     borderWidth: 1,
-    borderColor: '#f5d990',
+    borderColor: '#FFF1AD',
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 5,
@@ -433,19 +422,19 @@ const styles = StyleSheet.create({
 
   actionRow: { flexDirection: 'row', gap: 10 },
   editBtn: {
-    flex: 1, backgroundColor: '#2e4a7a', borderRadius: 10,
+    flex: 1, backgroundColor: '#2E4A7A', borderRadius: 10,
     paddingVertical: 10, alignItems: 'center',
   },
-  editBtnText: { color: '#e8e8e8', fontWeight: '700', fontSize: 14 },
+  editBtnText: { color: '#FFFFFF', fontWeight: '700', fontSize: 14 },
   shareBtn: {
-    flex: 1, backgroundColor: '#98b2ce', borderRadius: 10,
+    flex: 1, backgroundColor: '#7AAED6', borderRadius: 10,
     paddingVertical: 10, alignItems: 'center',
     borderWidth: 1, borderColor: '#333',
   },
   shareBtnText: { color: '#333', fontWeight: '700', fontSize: 14 },
 
   aboutCard: {
-    backgroundColor: '#e8e8e8', borderRadius: RADIUS, padding: 16,
+    backgroundColor: '#FFFFFF', borderRadius: RADIUS, padding: 16,
     marginBottom: 20, marginHorizontal: 16,
   },
   cardSectionTitle: { fontSize: 15, fontWeight: '800', color: '#111', marginBottom: 4 },
@@ -478,13 +467,12 @@ const styles = StyleSheet.create({
     shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 6, shadowOffset: { width: 0, height: 2 },
     elevation: 2,
   },
-  eventThumb: { width: 64, height: 64, borderRadius: 32, backgroundColor: '#e8e8e8', overflow: 'hidden' },
+  eventThumb: { width: 64, height: 64, borderRadius: 32, backgroundColor: '#FFFFFF', overflow: 'hidden' },
   eventInfo: { flex: 1, gap: 4 },
   eventName: { fontSize: 14, fontWeight: '800', color: '#111' },
   eventMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   eventMetaIcon: { fontSize: 12 },
   eventMetaText: { fontSize: 12, color: '#666' },
-  rsvpText: { fontSize: 11, color: '#f59e0b', fontWeight: '600', marginTop: 2 },
 
   reviewsHeader: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -501,7 +489,7 @@ const styles = StyleSheet.create({
   },
   reviewHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
   reviewAvatar: {
-    width: 36, height: 36, borderRadius: 18, backgroundColor: '#f5d990',
+    width: 36, height: 36, borderRadius: 18, backgroundColor: '#FFF1AD',
     alignItems: 'center', justifyContent: 'center', marginRight: 10,
   },
   reviewAvatarText: { fontWeight: '700', color: '#333', fontSize: 15 },
@@ -510,7 +498,7 @@ const styles = StyleSheet.create({
   reviewDate: { fontSize: 11, color: '#999' },
   reviewBody: { fontSize: 13, color: '#444', lineHeight: 18, marginBottom: 10 },
   reviewLines: { gap: 6, marginBottom: 10 },
-  reviewLine: { height: 8, backgroundColor: '#e8e8e8', borderRadius: 4, width: '100%' },
+  reviewLine: { height: 8, backgroundColor: '#FFFFFF', borderRadius: 4, width: '100%' },
   replyBtn: {},
   replyText: { fontSize: 13, color: '#555', fontWeight: '600' },
 
@@ -576,6 +564,6 @@ const ms = StyleSheet.create({
     paddingHorizontal: 14, paddingVertical: 6,
   },
   copyBtnText: { fontSize: 13, fontWeight: '600', color: '#333' },
-  copyBtnDone: { backgroundColor: '#fef3c7', borderColor: '#f5d990' },
+  copyBtnDone: { backgroundColor: '#FFF1AD', borderColor: '#FFF1AD' },
   copyBtnTextDone: { color: '#333' },
 });

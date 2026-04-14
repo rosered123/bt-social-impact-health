@@ -1,5 +1,5 @@
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -307,10 +307,10 @@ export default function UpdateStatus() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f5d990" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFF1AD" />
 
       {/* Golden gradient header */}
-      <LinearGradient colors={['#f5d990', '#f0c060']} style={styles.headerGradient}>
+      <View style={styles.headerGradient}>
         <View style={styles.headerContent}>
           <View style={styles.headerLeft}>
             <TouchableOpacity
@@ -330,12 +330,12 @@ export default function UpdateStatus() {
             <Text style={styles.headerUpdateText}>{submitting ? '...' : 'Update'}</Text>
           </TouchableOpacity>
         </View>
-      </LinearGradient>
+      </View>
 
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
 
         {/* Menu Stock Section */}
-        <LinearGradient colors={['#dde6f0', '#c8d6e8']} style={styles.menuStockWrapper}>
+        <View style={styles.menuStockWrapper}>
           {/* Section header */}
           <View style={styles.menuStockHeader}>
             <Feather name="check-square" size={18} color="#333" />
@@ -398,7 +398,7 @@ export default function UpdateStatus() {
               <Text style={styles.addProductBtnText}>+ Add</Text>
             </TouchableOpacity>
           </View>
-        </LinearGradient>
+        </View>
 
         {/* Location */}
         <View style={styles.sectionCard}>
@@ -481,9 +481,9 @@ export default function UpdateStatus() {
           activeOpacity={0.85}
           disabled={submitting}
         >
-          <LinearGradient colors={['#2e4a7a', '#3b5998']} style={styles.updateStatusGradient}>
+          <View style={styles.updateStatusGradient}>
             <Text style={styles.updateStatusBtnText}>{submitting ? 'Updating...' : 'Update Status'}</Text>
-          </LinearGradient>
+          </View>
         </TouchableOpacity>
 
         {/* End Event Button */}
@@ -512,6 +512,7 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 20,
     paddingHorizontal: 20,
+    backgroundColor: '#FFF1AD',
   },
   headerContent: {
     flexDirection: 'row',
@@ -530,7 +531,7 @@ const styles = StyleSheet.create({
     color: '#000',
   },
   headerUpdateBtn: {
-    backgroundColor: '#2e4a7a',
+    backgroundColor: '#2E4A7A',
     borderRadius: 20,
     paddingHorizontal: 22,
     paddingVertical: 8,
@@ -549,6 +550,7 @@ const styles = StyleSheet.create({
     padding: 14,
     marginTop: 16,
     marginBottom: 16,
+    backgroundColor: '#7AAED6',
   },
   menuStockHeader: {
     flexDirection: 'row',
@@ -824,6 +826,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: 'center',
     borderRadius: 14,
+    backgroundColor: '#2E4A7A',
   },
   updateStatusBtnText: {
     color: '#fff',

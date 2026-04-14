@@ -1,5 +1,5 @@
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -17,7 +17,6 @@ import {
 import { router, useLocalSearchParams } from 'expo-router';
 
 import {
-  createTag,
   getAllTags,
   getBusinessByUid,
   getBusinessTags,
@@ -110,17 +109,10 @@ export default function EditProfile() {
     }
     setSaving(true);
     try {
-      // Resolve tag names to IDs, creating custom tags that don't exist yet
-      const tagIds: number[] = [];
-      for (const name of vibeTags) {
-        const existing = popularTags.find(t => t.name === name);
-        if (existing) {
-          tagIds.push(existing.id);
-        } else {
-          const newTag = await createTag(name);
-          tagIds.push(newTag.id);
-        }
-      }
+      // Resolve tag names to IDs (only tags that exist in the vibe_tags table)
+      const tagIds = vibeTags
+        .map(name => popularTags.find(t => t.name === name)?.id)
+        .filter((id): id is number => id != null);
 
       await Promise.all([
         upsertMyBusiness({
@@ -159,12 +151,7 @@ export default function EditProfile() {
       <StatusBar barStyle="dark-content" backgroundColor="#f5f5f5" />
 
       {/* ── Header (golden gradient) ── */}
-      <LinearGradient
-        colors={['#f5d990', '#f0c060']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.header}
-      >
+      <View style={styles.header}>
         <View style={styles.headerLeft}>
           <TouchableOpacity
             style={styles.backBtn}
@@ -179,7 +166,7 @@ export default function EditProfile() {
         <TouchableOpacity style={[styles.saveHeaderBtn, saving && styles.btnDisabled]} onPress={handleSave} disabled={saving}>
           <Text style={styles.saveHeaderText}>{saving ? 'Saving…' : 'Save'}</Text>
         </TouchableOpacity>
-      </LinearGradient>
+      </View>
 
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
 
@@ -289,7 +276,7 @@ export default function EditProfile() {
 }
 
 const RADIUS = 12;
-const BLUE = '#2e4a7a';
+const BLUE = '#2E4A7A';
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#f5f5f5' },
@@ -298,7 +285,7 @@ const styles = StyleSheet.create({
   // Header
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 16, paddingTop: 48, paddingBottom: 12, backgroundColor: '#f5f5f5',
+    paddingHorizontal: 16, paddingTop: 48, paddingBottom: 12, backgroundColor: '#FFF1AD',
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', flexShrink: 1 },
   backBtn: { marginRight: 10 },
@@ -314,7 +301,7 @@ const styles = StyleSheet.create({
   // Cover photo + avatar
   coverSection: { marginTop: 16, marginBottom: 16 },
   coverPhoto: {
-    height: 140, backgroundColor: '#e8e8e8', borderRadius: RADIUS,
+    height: 140, backgroundColor: '#FFFFFF', borderRadius: RADIUS,
     overflow: 'hidden', alignItems: 'center', justifyContent: 'center',
   },
   coverBtn: {
@@ -366,15 +353,15 @@ const styles = StyleSheet.create({
   // Tags
   tagsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
   tag: {
-    backgroundColor: '#fef3c7', borderRadius: 20,
+    backgroundColor: '#FFF1AD', borderRadius: 20,
     paddingHorizontal: 14, paddingVertical: 6,
-    borderWidth: 1, borderColor: '#f5d990',
+    borderWidth: 1, borderColor: '#FFF1AD',
   },
   tagText: { color: '#333', fontSize: 13, fontWeight: '600' },
   popularTag: {
-    backgroundColor: '#fef3c7', borderRadius: 20,
+    backgroundColor: '#FFF1AD', borderRadius: 20,
     paddingHorizontal: 14, paddingVertical: 6,
-    borderWidth: 1, borderColor: '#f5d990',
+    borderWidth: 1, borderColor: '#FFF1AD',
   },
   popularTagText: { color: '#555', fontSize: 13, fontWeight: '600' },
 

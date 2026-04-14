@@ -1,5 +1,5 @@
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
@@ -92,12 +92,7 @@ export default function BusinessEventsDrafts() {
       <StatusBar barStyle="dark-content" backgroundColor="#f5f5f5" />
 
       {/* ── Header (golden gradient) ── */}
-      <LinearGradient
-        colors={['#f5d990', '#f0c060']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.header}
-      >
+      <View style={styles.header}>
         <View style={styles.headerRow}>
           <TouchableOpacity
             style={styles.backBtn}
@@ -112,7 +107,7 @@ export default function BusinessEventsDrafts() {
         <Text style={styles.subtitle}>
           {drafts.length} draft{drafts.length !== 1 ? 's' : ''} waiting to be published
         </Text>
-      </LinearGradient>
+      </View>
 
       {loading ? (
         <View style={styles.loadingState}>
@@ -155,6 +150,7 @@ const styles = StyleSheet.create({
   // Header
   header: {
     paddingHorizontal: 16, paddingTop: 48, paddingBottom: 14,
+    backgroundColor: '#FFF1AD',
   },
   headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
   backBtn: { marginRight: 12 },
@@ -188,5 +184,5 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
   },
   statusText: { fontSize: 13, fontWeight: '600', color: '#888' },
-  continueText: { fontSize: 13, fontWeight: '700', color: '#4a6fa5' },
+  continueText: { fontSize: 13, fontWeight: '700', color: '#7AAED6' },
 });

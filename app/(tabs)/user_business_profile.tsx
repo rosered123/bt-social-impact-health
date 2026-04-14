@@ -259,7 +259,7 @@ export default function UserBusinessProfile() {
   );
 }
 
-const CARD_BG = '#e8e8e8';
+const CARD_BG = '#FFFFFF';
 const RADIUS = 12;
 
 const styles = StyleSheet.create({
