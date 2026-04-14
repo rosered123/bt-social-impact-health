@@ -28,6 +28,8 @@ import {
 } from '@/services/api';
 import { onEventsChanged, onProfileChanged } from '@/services/refresh-bus';
 
+const BLUE = '#2E4A7A';
+
 function formatTime(dbTime: string | null | undefined): string {
   if (!dbTime) return '—';
   const [hStr, mStr] = dbTime.split(':');
@@ -119,7 +121,7 @@ export default function BusinessDashboard() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFF14D" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFF1AD" />
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
 
         {/* ── Header (golden gradient) ── */}
@@ -135,20 +137,22 @@ export default function BusinessDashboard() {
             <Feather name="settings" size={26} color="#000" />
           </TouchableOpacity>
 
-          {/* Stat pills */}
-          <View style={styles.statPillRow}>
-            <View style={styles.statPill}>
-              <Text style={styles.statPillValue}>{String(followerCount)}</Text>
-              <Text style={styles.statPillLabel}>Followers</Text>
+          {/* Stat boxes */}
+          <View style={styles.statBoxRow}>
+            <View style={styles.statBox}>
+              <Text style={styles.statBoxValue}>{String(followerCount)}</Text>
+              <Text style={styles.statBoxLabel}>Followers</Text>
             </View>
-            <View style={styles.statPill}>
-              <Text style={styles.statPillValue}>—</Text>
-              <Text style={styles.statPillLabel}>Views Today</Text>
+            <View style={styles.statBox}>
+              <Text style={styles.statBoxValue}>—</Text>
+              <Text style={styles.statBoxLabel}>Views Today</Text>
             </View>
-            <View style={styles.statPill}>
-              <Text style={styles.statPillValue}>{avgRating}</Text>
-              <Text style={styles.statPillLabel}>Rating</Text>
-              <Feather name="star" size={17} color="#f5c518" style={styles.statPillStar} />
+            <View style={styles.statBox}>
+              <View style={styles.statBoxValueRow}>
+                <Text style={styles.statBoxValue}>{avgRating}</Text>
+                <Feather name="star" size={16} color="#f5c518" />
+              </View>
+              <Text style={styles.statBoxLabel}>Rating</Text>
             </View>
           </View>
         </View>
@@ -291,7 +295,7 @@ export default function BusinessDashboard() {
             style={styles.viewAllBtn}
           >
             <Text style={styles.viewAllText}>View all</Text>
-            <Feather name="chevron-right" size={18} color="#4169e1" />
+            <Feather name="chevron-right" size={18} color={BLUE} />
           </TouchableOpacity>
         </View>
 
@@ -325,59 +329,141 @@ export default function BusinessDashboard() {
   );
 }
 
+const RADIUS = 14;
+
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#f5f5f5' },
   scroll: { flex: 1, paddingHorizontal: 16 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 16, paddingBottom: 16, marginHorizontal: -16, paddingHorizontal: 16, backgroundColor: '#FFF14D' },
-  headerSub: { fontSize: 12, color: '#666', fontWeight: '500' },
-  headerTitle: { fontSize: 22, fontWeight: '800', color: '#111', marginTop: 2 },
-  headerIcons: { flexDirection: 'row', gap: 8 },
-  iconBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#ddd', alignItems: 'center', justifyContent: 'center' },
-  errorText: { color: '#ef4444', marginBottom: 12, fontSize: 13 },
-  profileCard: { backgroundColor: CARD_BG, borderRadius: RADIUS, padding: 14, marginBottom: 20 },
-  profileTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  profileAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#ccc', alignItems: 'center', justifyContent: 'center', marginRight: 10 },
-  profileInfo: { flex: 1 },
-  profileName: { fontSize: 15, fontWeight: '700', color: '#111' },
-  ratingRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
-  profileRating: { fontSize: 12, fontWeight: '600', color: '#333' },
-  profileReviews: { fontSize: 12, color: '#777' },
-  profileActions: { flexDirection: 'row', gap: 8 },
-  outlineBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#bbb', borderRadius: 8, paddingVertical: 8 },
-  outlineBtnText: { fontSize: 12, fontWeight: '600', color: '#333' },
-  filledBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#07345F', borderRadius: 8, paddingVertical: 8 },
-  filledBtnText: { fontSize: 12, fontWeight: '600', color: '#fff' },
+
+  // Header
+  header: {
+    flexDirection: 'row', flexWrap: 'wrap',
+    justifyContent: 'space-between', alignItems: 'flex-start',
+    paddingTop: 48, paddingBottom: 16,
+    marginHorizontal: -16, paddingHorizontal: 16,
+    backgroundColor: '#FFF1AD',
+  },
+  headerTextWrap: { flex: 1 },
+  headerWelcome: { fontSize: 14, color: '#555', fontWeight: '500' },
+  headerTitle: { fontSize: 22, fontWeight: '800', color: '#111', marginTop: 2, marginBottom: 12 },
+  gearBtn: {
+    width: 40, height: 40, borderRadius: 20,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  statBoxRow: {
+    flexDirection: 'row', gap: 8,
+    width: '100%', marginTop: 14,
+  },
+  statBox: {
+    flex: 1, alignItems: 'flex-start', justifyContent: 'center',
+    backgroundColor: BLUE, borderRadius: 12,
+    paddingVertical: 12, paddingHorizontal: 14,
+  },
+  statBoxValue: { fontSize: 20, fontWeight: '900', color: '#fff' },
+  statBoxValueRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  statBoxLabel: { fontSize: 12, fontWeight: '500', color: 'rgba(255,255,255,0.75)', marginTop: 2 },
+
+  errorText: { color: '#ef4444', marginBottom: 12, fontSize: 13, marginTop: 8 },
+
+  // Live Now card
+  liveCard: {
+    backgroundColor: '#fff', borderRadius: RADIUS,
+    padding: 16, marginTop: 16, marginBottom: 16,
+    shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 8, shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  liveTopRow: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start',
+    marginBottom: 14,
+  },
+  liveTitleCol: { flex: 1 },
+  liveTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  liveDot: { width: 10, height: 10, borderRadius: 5 },
+  liveTitle: { fontSize: 18, fontWeight: '800', color: '#111' },
+  liveSubtitle: { fontSize: 11, color: '#888', marginTop: 2, marginLeft: 18 },
+  updateBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: BLUE, borderRadius: 10,
+    paddingHorizontal: 16, paddingVertical: 9,
+  },
+  updateBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  subCardRow: { flexDirection: 'row', gap: 8 },
+  subCard: {
+    flex: 1, backgroundColor: '#f5f5f5', borderRadius: 10,
+    padding: 10, alignItems: 'center',
+  },
+  subCardLabel: { fontSize: 11, fontWeight: '600', color: '#888', marginBottom: 3 },
+  subCardValue: { fontSize: 13, fontWeight: '700', color: '#333' },
+
+  // Pre-Order banner
+  preOrderBanner: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: '#7AAED6', borderRadius: RADIUS,
+    paddingHorizontal: 16, paddingVertical: 16,
+    marginBottom: 20,
+  },
+  preOrderText: { flex: 1, marginLeft: 12 },
+  preOrderTitle: { fontSize: 15, fontWeight: '700', color: '#111' },
+  preOrderSub: { fontSize: 12, color: '#333', marginTop: 2 },
+  preOrderBadge: {
+    width: 30, height: 30, borderRadius: 15,
+    backgroundColor: BLUE, alignItems: 'center', justifyContent: 'center',
+  },
+  preOrderBadgeText: { color: '#fff', fontSize: 14, fontWeight: '800' },
+
+  // Section title
   sectionTitle: { fontSize: 17, fontWeight: '800', color: '#111', marginBottom: 10 },
-  rightNowCard: { backgroundColor: CARD_BG, borderRadius: RADIUS, padding: 14, marginBottom: 20 },
-  rightNowTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  rightNowLabel: { fontSize: 11, fontWeight: '800', color: '#666', letterSpacing: 0.8 },
-  updateBtn: { backgroundColor: '#07345F', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 7 },
-  updateBtnText: { color: '#fff', fontWeight: '700', fontSize: 12 },
-  liveBadgeRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
-  liveDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#22c55e' },
-  liveText: { fontSize: 14, fontWeight: '800', color: '#111', letterSpacing: 0.5 },
-  rightNowDetail: { fontSize: 13, color: '#555', fontWeight: '500' },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 },
-  statCard: { width: '47.5%', backgroundColor: CARD_BG, borderRadius: RADIUS, padding: 14, gap: 3 },
-  statValue: { fontSize: 22, fontWeight: '900', color: '#111', marginTop: 4 },
-  statLabel: { fontSize: 13, fontWeight: '600', color: '#333' },
-  statSub: { fontSize: 11, color: '#777' },
-  actionCard: { width: '47.5%', backgroundColor: CARD_BG, borderRadius: RADIUS, padding: 14, gap: 4 },
-  actionLabel: { fontSize: 14, fontWeight: '700', color: '#111', marginTop: 4 },
-  actionSub: { fontSize: 11, color: '#777' },
-  starsRow: { flexDirection: 'row', gap: 1 },
-  star: { fontSize: 13 },
-  starFilled: { color: '#f59e0b' },
-  starEmpty: { color: '#ddd' },
-  reviewItem: { backgroundColor: CARD_BG, borderRadius: RADIUS, padding: 14, marginBottom: 12 },
-  reviewHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
-  reviewAvatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#bbb', alignItems: 'center', justifyContent: 'center', marginRight: 10 },
-  reviewAvatarText: { fontWeight: '700', color: '#555', fontSize: 15 },
-  reviewMeta: { flex: 1 },
-  reviewName: { fontWeight: '700', fontSize: 14, color: '#111' },
-  reviewDate: { fontSize: 11, color: '#999' },
-  reviewBody: { fontSize: 13, color: '#444', lineHeight: 18 },
-  reviewBodyPlaceholder: { gap: 6 },
-  reviewLine: { height: 8, backgroundColor: '#ccc', borderRadius: 4, width: '100%' },
+
+  // Today's Activity grid
+  activityGrid: {
+    flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20,
+  },
+  activityCard: {
+    width: '47.5%' as any, backgroundColor: '#fff',
+    borderRadius: RADIUS, borderWidth: 1, borderColor: '#e5e7eb',
+    padding: 14, gap: 3,
+  },
+  activityLabel: { fontSize: 13, fontWeight: '600', color: '#555' },
+  activityValue: { fontSize: 24, fontWeight: '900', color: '#111', marginTop: 4 },
+  activitySub: { fontSize: 11, color: '#888' },
+  trendRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+  trendText: { fontSize: 12, fontWeight: '600', color: '#22c55e' },
+
+  // Quick Actions
+  quickActionRow: {
+    flexDirection: 'row', gap: 12, marginBottom: 24,
+  },
+  quickActionItem: { alignItems: 'center', gap: 8 },
+  quickActionIcon: {
+    width: 56, height: 56, borderRadius: 16,
+    backgroundColor: BLUE, alignItems: 'center', justifyContent: 'center',
+  },
+  quickActionLabel: { fontSize: 12, fontWeight: '600', color: '#333' },
+
+  // Upcoming Events
+  eventsHeader: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    marginBottom: 10,
+  },
+  viewAllBtn: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  viewAllText: { fontSize: 13, fontWeight: '600', color: BLUE },
+  eventCard: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: '#fff', borderRadius: RADIUS,
+    padding: 12, marginBottom: 12,
+    shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
+  },
+  eventThumb: {
+    width: 56, height: 56, borderRadius: 28,
+    backgroundColor: '#ddd', overflow: 'hidden', marginRight: 12,
+  },
+  eventInfo: { flex: 1 },
+  eventName: { fontSize: 15, fontWeight: '700', color: '#111', marginBottom: 3 },
+  eventMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 2 },
+  eventDate: { fontSize: 12, color: '#696969' },
+  eventRsvps: { fontSize: 13, fontWeight: '700', color: BLUE },
+  eventRsvpsLabel: { fontWeight: '400', color: '#888' },
+
   emptyText: { color: '#888', fontSize: 13, marginBottom: 16 },
 });
