@@ -1,5 +1,5 @@
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
@@ -123,12 +123,7 @@ export default function BusinessDashboard() {
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
 
         {/* ── Header (golden gradient) ── */}
-        <LinearGradient
-          colors={['#f5d990', '#f0c060']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.header}
-        >
+        <View style={styles.header}>
           <View style={styles.headerTextWrap}>
             <Text style={styles.headerWelcome}>Welcome back</Text>
             <Text style={styles.headerTitle}>{businessName} 👋</Text>
@@ -156,20 +151,25 @@ export default function BusinessDashboard() {
               <Feather name="star" size={17} color="#f5c518" style={styles.statPillStar} />
             </View>
           </View>
-        </LinearGradient>
+        </View>
 
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
         {/* ── Live Now Card ── */}
         <View style={styles.liveCard}>
           <View style={styles.liveTopRow}>
-            <View style={styles.liveTitleRow}>
+            <View style={styles.liveTitleCol}>
+              <View style={styles.liveTitleRow}>
+                {liveEvent ? (
+                  <View style={[styles.liveDot, { backgroundColor: getRightNowDisplay(liveEvent.status).color }]} />
+                ) : (
+                  <View style={[styles.liveDot, { backgroundColor: '#3b82f6' }]} />
+                )}
+                <Text style={styles.liveTitle}>Live Now</Text>
+              </View>
               {liveEvent ? (
-                <View style={[styles.liveDot, { backgroundColor: getRightNowDisplay(liveEvent.status).color }]} />
-              ) : (
-                <View style={[styles.liveDot, { backgroundColor: '#3b82f6' }]} />
-              )}
-              <Text style={styles.liveTitle}>Live Now</Text>
+                <Text style={styles.liveSubtitle}>Tap to update status</Text>
+              ) : null}
             </View>
             {liveEvent ? (
               <TouchableOpacity
@@ -181,20 +181,16 @@ export default function BusinessDashboard() {
                   })
                 }
               >
-                <LinearGradient
-                  colors={['#5179be', '#415e8f']}
-                  style={styles.updateBtn}
-                >
+                <View style={styles.updateBtn}>
                   <Feather name="radio" size={18} color="#fff" />
                   <Text style={styles.updateBtnText}>Update</Text>
-                </LinearGradient>
+                </View>
               </TouchableOpacity>
             ) : null}
           </View>
 
           {liveEvent ? (
             <>
-              <Text style={styles.liveSubtitle}>Tap to update status</Text>
               <View style={styles.subCardRow}>
                 <View style={styles.subCard}>
                   <Text style={styles.subCardLabel}>Hours</Text>
@@ -217,12 +213,7 @@ export default function BusinessDashboard() {
 
         {/* ── Pre-Order Active Banner ── */}
         <TouchableOpacity activeOpacity={0.85} onPress={() => router.push('/(tabs)/pre_orders')}>
-          <LinearGradient
-            colors={['rgb(208,235,255)', 'rgb(104,138,196)']}
-            start={{ x: 0, y: 0.5 }}
-            end={{ x: 1, y: 0.5 }}
-            style={styles.preOrderBanner}
-          >
+          <View style={styles.preOrderBanner}>
             <Feather name="shopping-bag" size={24} color="#000" />
             <View style={styles.preOrderText}>
               <Text style={styles.preOrderTitle}>Pre-Order Active</Text>
@@ -231,7 +222,7 @@ export default function BusinessDashboard() {
             <View style={styles.preOrderBadge}>
               <Text style={styles.preOrderBadgeText}>12</Text>
             </View>
-          </LinearGradient>
+          </View>
         </TouchableOpacity>
 
         {/* ── Today's Activity ── */}
@@ -274,12 +265,9 @@ export default function BusinessDashboard() {
             activeOpacity={0.75}
             onPress={() => router.push('/(tabs)/business_insights')}
           >
-            <LinearGradient
-              colors={['#7aaed6', '#3966b3']}
-              style={styles.quickActionIcon}
-            >
+            <View style={styles.quickActionIcon}>
               <MaterialCommunityIcons name="chart-line" size={30} color="#fff" />
-            </LinearGradient>
+            </View>
             <Text style={styles.quickActionLabel}>Insights</Text>
           </TouchableOpacity>
 
@@ -288,12 +276,9 @@ export default function BusinessDashboard() {
             activeOpacity={0.75}
             onPress={() => router.push('/(tabs)/create_business_event?from=dashboard')}
           >
-            <LinearGradient
-              colors={['#c5e1f6', '#6f93d1']}
-              style={styles.quickActionIcon}
-            >
+            <View style={styles.quickActionIcon}>
               <Feather name="calendar" size={26} color="#fff" />
-            </LinearGradient>
+            </View>
             <Text style={styles.quickActionLabel}>Create Event</Text>
           </TouchableOpacity>
         </View>
@@ -349,6 +334,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 30,
     paddingTop: 24,
     paddingBottom: 30,
+    backgroundColor: '#FFF1AD',
   },
   headerTextWrap: { flex: 1 },
   headerWelcome: { fontSize: 18, color: '#000', fontWeight: '400' },
@@ -366,7 +352,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   statPill: {
-    backgroundColor: '#2e4a7a',
+    backgroundColor: '#2E4A7A',
     borderRadius: 7,
     paddingHorizontal: 16,
     paddingVertical: 13,
@@ -418,6 +404,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  liveTitleCol: {
+    flex: 1,
+  },
   liveTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -434,9 +423,10 @@ const styles = StyleSheet.create({
     color: '#000',
   },
   liveSubtitle: {
-    fontSize: 14,
-    color: '#000',
-    marginTop: 4,
+    fontSize: 11,
+    color: '#888',
+    marginTop: 2,
+    marginLeft: 26,
   },
   updateBtn: {
     flexDirection: 'row',
@@ -445,6 +435,7 @@ const styles = StyleSheet.create({
     borderRadius: 100,
     paddingHorizontal: 20,
     paddingVertical: 8,
+    backgroundColor: '#2E4A7A',
   },
   updateBtnText: {
     color: '#fff',
@@ -489,6 +480,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 16,
     paddingVertical: 14,
+    backgroundColor: '#7AAED6',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.25,
@@ -513,7 +505,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#2e4a7a',
+    backgroundColor: '#2E4A7A',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -598,6 +590,7 @@ const styles = StyleSheet.create({
     borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#7AAED6',
     borderWidth: 1,
     borderColor: '#d8d8d8',
     shadowColor: '#000',

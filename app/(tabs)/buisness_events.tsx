@@ -1,3 +1,5 @@
+import { Feather } from '@expo/vector-icons';
+
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
@@ -9,6 +11,7 @@ import {
   StatusBar,
   ActivityIndicator,
   Alert,
+  Image,
 } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { listMyEvents, updateMyEvent, isActiveEventStatus, type EventRow, type EventStatus } from '@/services/api';
@@ -30,12 +33,15 @@ function getLiveDisplay(status: EventStatus): { label: string; color: string } {
   }
 }
 
+const MOCK_RSVPS = [87, 45, 62, 34, 91];
+const MOCK_VIEWS = [450, 360, 280, 190, 520];
+
 // ─── Filter Tabs ──────────────────────────────────────────────────────────────
-const TABS = ['Upcoming', 'Live now', 'Past'] as const;
+const TABS = ['Upcoming', 'Live Now', 'Past'] as const;
 type Tab = (typeof TABS)[number];
 
 // ─── Event Card ───────────────────────────────────────────────────────────────
-const EventCard: React.FC<{ event: EventRow }> = ({ event }) => {
+const EventCard: React.FC<{ event: EventRow; index: number; isPast?: boolean }> = ({ event, index, isPast }) => {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const isLive = isActiveEventStatus(event.status);
@@ -46,7 +52,7 @@ const EventCard: React.FC<{ event: EventRow }> = ({ event }) => {
   const handleSetLive = () => {
     Alert.alert(
       'Set this event as live?',
-      `"${event.event_name}" will move to the Live now tab.`,
+      `"${event.event_name}" will move to the Live Now tab.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -67,23 +73,49 @@ const EventCard: React.FC<{ event: EventRow }> = ({ event }) => {
     );
   };
 
+  const rsvps = MOCK_RSVPS[index % MOCK_RSVPS.length];
+  const views = MOCK_VIEWS[index % MOCK_VIEWS.length];
+
   return (
-    <View style={styles.eventCard}>
-      <View style={styles.eventImageTop}>
+    <TouchableOpacity
+      style={styles.eventCard}
+      activeOpacity={0.9}
+      onPress={() => router.push({ pathname: '/view_event', params: { eventId: String(event.id) } })}
+    >
+      {/* Cover image */}
+      <View style={styles.eventCover}>
+        {event.cover_url ? (
+          <Image source={{ uri: event.cover_url }} style={[StyleSheet.absoluteFill, isPast && { opacity: 0.5 }]} resizeMode="cover" />
+        ) : null}
+        {isPast && <View style={styles.pastOverlay} />}
         {isLive && (
           <View style={styles.liveBadge}>
+            <View style={styles.liveBadgeBg} />
             <View style={[styles.liveDot, { backgroundColor: liveDisplay.color }]} />
             <Text style={styles.liveText}>{liveDisplay.label}</Text>
           </View>
         )}
       </View>
-      <View style={styles.eventImageBar} />
+
+      {/* Event info */}
       <View style={styles.eventBody}>
-        <View style={styles.eventBodyHeader}>
-          <Text style={styles.eventName}>{event.event_name}</Text>
+        <Text style={[styles.eventName, isPast && styles.pastText]}>{event.event_name}</Text>
+        <Text style={[styles.eventDetail, isPast && styles.pastDetailText]}>
+          {event.event_date}
+          {event.start_time ? `  |  ${event.start_time}` : ''}
+          {event.end_time ? ` – ${event.end_time}` : ''}
+        </Text>
+        {event.location ? (
+          <Text style={[styles.eventDetail, isPast && styles.pastDetailText]}>{event.location}</Text>
+        ) : null}
+
+        <View style={styles.statsRow}>
+          <Text style={[styles.statValue, isPast && styles.pastStatValue]}>{rsvps} <Text style={[styles.statLabel, isPast && styles.pastStatLabel]}>RSVPs</Text></Text>
+          <Text style={[styles.statValue, isPast && styles.pastStatValue]}>{views} <Text style={[styles.statLabel, isPast && styles.pastStatLabel]}>Views</Text></Text>
+          <View style={{ flex: 1 }} />
           {isLive ? (
             <TouchableOpacity
-              style={styles.updateBtn}
+              style={styles.actionBtn}
               activeOpacity={0.85}
               onPress={() =>
                 router.push({
@@ -92,42 +124,21 @@ const EventCard: React.FC<{ event: EventRow }> = ({ event }) => {
                 })
               }
             >
-              <Text style={styles.updateBtnText}>Update</Text>
+              <Text style={styles.actionBtnText}>Update</Text>
             </TouchableOpacity>
           ) : canGoLive ? (
             <TouchableOpacity
-              style={[styles.updateBtn, busy && { opacity: 0.5 }]}
+              style={[styles.actionBtn, busy && { opacity: 0.5 }]}
               activeOpacity={0.85}
               disabled={busy}
               onPress={handleSetLive}
             >
-              <Text style={styles.updateBtnText}>{busy ? '…' : 'Set Live'}</Text>
+              <Text style={styles.actionBtnText}>{busy ? '…' : 'Set Live'}</Text>
             </TouchableOpacity>
           ) : null}
         </View>
-        <View style={styles.eventDetailRow}>
-          <Text style={styles.detailIcon}>📅</Text>
-          <Text style={styles.eventDetail}>
-            {event.event_date}
-            {event.start_time ? `  |  ${event.start_time}` : ''}
-            {event.end_time ? `–${event.end_time}` : ''}
-          </Text>
-        </View>
-        {event.location ? (
-          <View style={styles.eventDetailRow}>
-            <Text style={styles.detailIcon}>📍</Text>
-            <Text style={styles.eventDetail}>{event.location}</Text>
-          </View>
-        ) : null}
-        <View style={styles.divider} />
-        <View style={styles.statsRow}>
-          <View style={styles.statItem}>
-            <Text style={styles.statIcon}>📌</Text>
-            <Text style={styles.statText}>{event.status}</Text>
-          </View>
-        </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 };
 
@@ -149,8 +160,6 @@ export default function BusinessEventsUpcoming() {
     }
   }, []);
 
-  // Refetch when the screen gains focus (may not always fire for hidden tab
-  // screens — refresh-bus subscription below is the reliable path).
   useFocusEffect(
     useCallback(() => {
       fetchEvents();
@@ -174,32 +183,34 @@ export default function BusinessEventsUpcoming() {
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="dark-content" backgroundColor="#f5f5f5" />
 
-      {/* ── Header ── */}
+      {/* ── Header + Tabs (golden gradient) ── */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>My Events</Text>
-        <TouchableOpacity
-          style={styles.createBtn}
-          activeOpacity={0.85}
-          onPress={() => router.push('/create_business_event?from=events')}
-        >
-          <Text style={styles.createBtnText}>Create +</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* ── Filter Tabs ── */}
-      <View style={styles.tabsRow}>
-        {TABS.map(tab => (
+        <View style={styles.headerRow}>
+          <Text style={styles.headerTitle}>My Events</Text>
           <TouchableOpacity
-            key={tab}
-            style={[styles.tab, activeTab === tab && styles.tabActive]}
-            onPress={() => setActiveTab(tab)}
-            activeOpacity={0.75}
+            style={styles.createBtn}
+            activeOpacity={0.85}
+            onPress={() => router.push('/create_business_event?from=events')}
           >
-            <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-              {tab}
-            </Text>
+            <Text style={styles.createBtnText}>+ Create</Text>
           </TouchableOpacity>
-        ))}
+        </View>
+
+        {/* Filter Tabs */}
+        <View style={styles.tabsRow}>
+          {TABS.map(tab => (
+            <TouchableOpacity
+              key={tab}
+              style={[styles.tab, activeTab === tab && styles.tabActive]}
+              onPress={() => setActiveTab(tab)}
+              activeOpacity={0.75}
+            >
+              <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
+                {tab}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
 
       {loading ? (
@@ -211,39 +222,43 @@ export default function BusinessEventsUpcoming() {
 
           {activeTab === 'Upcoming' && (
             <>
+              {/* My Drafts banner */}
               <TouchableOpacity
                 style={styles.draftBtn}
                 activeOpacity={0.75}
                 onPress={() => router.push('/buisness_events_drafts')}
               >
                 <View style={styles.draftIconBox}>
-                  <Text style={styles.draftIcon}>📄</Text>
+                  <Feather name="file-text" size={24} color="#2E4A7A" />
                 </View>
                 <View style={styles.draftBtnContent}>
-                  <Text style={styles.draftBtnTitle}>My drafts</Text>
+                  <Text style={styles.draftBtnTitle}>My Drafts</Text>
                   <Text style={styles.draftBtnSub}>
                     {drafts.length} draft{drafts.length !== 1 ? 's' : ''} waiting to be published
                   </Text>
+                </View>
+                <View style={styles.draftBadge}>
+                  <Text style={styles.draftBadgeText}>{drafts.length}</Text>
                 </View>
               </TouchableOpacity>
 
               {upcomingEvents.length === 0 ? (
                 <Text style={styles.emptyText}>No upcoming events yet. Create one!</Text>
               ) : (
-                upcomingEvents.map(event => (
-                  <EventCard key={event.id} event={event} />
+                upcomingEvents.map((event, idx) => (
+                  <EventCard key={event.id} event={event} index={idx} />
                 ))
               )}
             </>
           )}
 
-          {activeTab === 'Live now' && (
+          {activeTab === 'Live Now' && (
             <>
               {liveEvents.length === 0 ? (
                 <Text style={styles.emptyText}>No live events right now.</Text>
               ) : (
-                liveEvents.map(event => (
-                  <EventCard key={event.id} event={event} />
+                liveEvents.map((event, idx) => (
+                  <EventCard key={event.id} event={event} index={idx} />
                 ))
               )}
             </>
@@ -254,8 +269,8 @@ export default function BusinessEventsUpcoming() {
               {pastEvents.length === 0 ? (
                 <Text style={styles.emptyText}>No past events yet.</Text>
               ) : (
-                pastEvents.map(event => (
-                  <EventCard key={event.id} event={event} />
+                pastEvents.map((event, idx) => (
+                  <EventCard key={event.id} event={event} index={idx} isPast />
                 ))
               )}
             </>
@@ -269,8 +284,8 @@ export default function BusinessEventsUpcoming() {
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
-const CARD_BG = '#ebebeb';
-const RADIUS = 12;
+const RADIUS = 14;
+const BLUE = '#2E4A7A';
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#f5f5f5' },
@@ -278,104 +293,106 @@ const styles = StyleSheet.create({
   loadingState: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   emptyText: { textAlign: 'center', color: '#888', fontSize: 14, marginTop: 32 },
 
+  // Header
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 12,
+    paddingHorizontal: 16, paddingTop: 48, paddingBottom: 14,
+    backgroundColor: '#FFF1AD',
   },
-  headerTitle: { fontSize: 22, fontWeight: '800', color: '#111' },
+  headerRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  headerTitle: { fontSize: 24, fontWeight: '900', color: '#111' },
   createBtn: {
-    backgroundColor: '#222',
-    borderRadius: 10,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
+    backgroundColor: BLUE, borderRadius: 20,
+    paddingHorizontal: 18, paddingVertical: 9,
   },
   createBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
 
+  // Filter tabs
   tabsRow: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
     gap: 8,
-    marginBottom: 16,
   },
   tab: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: CARD_BG,
+    flex: 1, alignItems: 'center',
+    paddingVertical: 9, borderRadius: 20,
+    backgroundColor: '#fff', borderWidth: 1, borderColor: '#d1d5db',
   },
-  tabActive: { backgroundColor: '#222' },
+  tabActive: { backgroundColor: BLUE, borderColor: BLUE },
   tabText: { fontSize: 13, fontWeight: '600', color: '#555' },
   tabTextActive: { color: '#fff' },
 
+  // Drafts banner
   draftBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#D9D9D9',
-    borderWidth: 1,
-    borderColor: '#696969',
-    borderRadius: 8,
-    height: 66,
-    paddingHorizontal: 14,
-    marginBottom: 14,
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: '#7AAED6', borderRadius: RADIUS,
+    paddingHorizontal: 14, paddingVertical: 14,
+    marginTop: 16, marginBottom: 16,
   },
   draftIconBox: {
-    width: 40, height: 40, borderRadius: 8, backgroundColor: '#c0c0c0',
+    width: 53, height: 53, borderRadius: 27,
+    backgroundColor: '#C4DEF0',
     alignItems: 'center', justifyContent: 'center', marginRight: 12,
   },
-  draftIcon: { fontSize: 20 },
   draftBtnContent: { flex: 1 },
   draftBtnTitle: { fontSize: 15, fontWeight: '700', color: '#111', marginBottom: 2 },
-  draftBtnSub: { fontSize: 12, color: '#666', fontWeight: '500' },
+  draftBtnSub: { fontSize: 12, color: '#555', fontWeight: '500' },
+  draftBadge: {
+    width: 26, height: 26, borderRadius: 13,
+    backgroundColor: BLUE, alignItems: 'center', justifyContent: 'center',
+  },
+  draftBadgeText: { color: '#fff', fontSize: 13, fontWeight: '700' },
 
+  // Event card
+  eventCard: {
+    backgroundColor: '#fff', borderRadius: RADIUS, marginTop: 16, marginBottom: 16,
+    overflow: 'hidden',
+    shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 8, shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  eventCover: {
+    height: 180, backgroundColor: '#ddd',
+  },
+  eventBody: { padding: 14 },
+  eventName: { fontSize: 18, fontWeight: '800', color: '#111', marginBottom: 4 },
+  eventDetail: { fontSize: 14, color: '#555', marginBottom: 2 },
+  statsRow: {
+    flexDirection: 'row', gap: 28, marginTop: 10,
+    paddingTop: 10, borderTopWidth: 1, borderTopColor: '#eee',
+  },
+  statValue: { fontSize: 15, fontWeight: '800', color: BLUE },
+  statLabel: { fontWeight: '400', color: '#888' },
+
+  // Live badge
   liveBadge: {
     position: 'absolute', top: 10, right: 10,
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 12,
+    borderRadius: 12,
     paddingHorizontal: 10, paddingVertical: 5, gap: 6,
+    overflow: 'hidden',
   },
-  liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#22c55e' },
+  liveBadgeBg: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#2E4A7A',
+  },
+  liveDot: { width: 8, height: 8, borderRadius: 4 },
   liveText: { fontSize: 11, fontWeight: '800', color: '#fff', letterSpacing: 0.5 },
 
-  eventCard: {
-    backgroundColor: '#D9D9D9', borderRadius: 10, marginBottom: 14, overflow: 'hidden',
+  // Past event styles
+  pastOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(180,180,180,0.4)',
   },
-  eventImageTop: {
-    height: 83, backgroundColor: '#ADADAD',
-    borderTopLeftRadius: 10, borderTopRightRadius: 10,
-  },
-  eventImageBar: { height: 37, backgroundColor: '#ADADAD' },
-  eventBody: { paddingHorizontal: 14, paddingVertical: 10 },
-  eventBodyHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  eventName: { fontSize: 18, fontWeight: '700', color: '#000', flexShrink: 1 },
-  eventDetailRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
-  detailIcon: { fontSize: 16 },
-  eventDetail: { fontSize: 15, fontWeight: '400', color: '#454545' },
-  divider: { height: 1, backgroundColor: '#929292', marginTop: 8, marginBottom: 10 },
-  statsRow: { flexDirection: 'row', gap: 28 },
-  statItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  statIcon: { fontSize: 16 },
-  statText: { fontSize: 15, fontWeight: '700', color: '#000', textTransform: 'capitalize' },
+  pastText: { color: '#888' },
+  pastDetailText: { color: '#aaa' },
+  pastStatValue: { color: '#999' },
+  pastStatLabel: { color: '#bbb' },
 
-  // Update Button (live events)
-  updateBtn: {
-    backgroundColor: '#222',
-    borderRadius: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    marginLeft: 8,
+  // Update / Set Live button (in stats row)
+  actionBtn: {
+    backgroundColor: BLUE, borderRadius: 8,
+    paddingHorizontal: 14, paddingVertical: 6,
   },
-  updateBtnText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 12,
-  },
+  actionBtnText: { color: '#fff', fontWeight: '700', fontSize: 12 },
 });

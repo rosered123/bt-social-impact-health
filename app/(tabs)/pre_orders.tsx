@@ -1,5 +1,5 @@
 import { Feather } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+
 import React, { useState } from 'react';
 import {
   View,
@@ -93,7 +93,7 @@ const INITIAL_ORDERS: Order[] = [
 type FilterTab = 'All' | 'Pending' | 'Ready' | 'Done';
 
 const STATUS_BADGE_COLORS: Record<OrderStatus, { bg: string; text: string }> = {
-  Pending: { bg: '#fef3c7', text: '#f59e0b' },
+  Pending: { bg: '#FFF1AD', text: '#f59e0b' },
   Ready: { bg: '#dbeafe', text: '#3b82f6' },
   Done: { bg: '#f3f4f6', text: '#9ca3af' },
 };
@@ -134,14 +134,9 @@ export default function PreOrders() {
           onPress={() => advanceStatus(order.id)}
           activeOpacity={0.8}
         >
-          <LinearGradient
-            colors={['#2e4a7a', '#4a6a9a', '#2e4a7a']}
-            start={{ x: 0, y: 0.5 }}
-            end={{ x: 1, y: 0.5 }}
-            style={styles.actionBtnGradient}
-          >
+          <View style={styles.actionBtnGradient}>
             <Text style={styles.actionBtnText}>{label}</Text>
-          </LinearGradient>
+          </View>
         </TouchableOpacity>
       );
     }
@@ -154,10 +149,10 @@ export default function PreOrders() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f5d990" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFF1AD" />
 
       {/* Golden gradient header */}
-      <LinearGradient colors={['#f5d990', '#f0c060']} style={styles.headerGradient}>
+      <View style={styles.headerGradient}>
         <View style={styles.headerContent}>
           <View style={styles.headerLeft}>
             <TouchableOpacity
@@ -171,7 +166,7 @@ export default function PreOrders() {
           </View>
         </View>
         <Text style={styles.headerSubtitle}>Have a Sip of Matcha · Today, 11AM–3PM</Text>
-      </LinearGradient>
+      </View>
 
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
 
@@ -270,6 +265,7 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 20,
     paddingHorizontal: 20,
+    backgroundColor: '#FFF1AD',
   },
   headerContent: {
     flexDirection: 'row',
@@ -304,7 +300,7 @@ const styles = StyleSheet.create({
   },
   statPill: {
     flex: 1,
-    backgroundColor: '#2e4a7a',
+    backgroundColor: '#2E4A7A',
     borderRadius: 14,
     paddingVertical: 14,
     alignItems: 'center',
@@ -333,10 +329,10 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 10,
     alignItems: 'center',
-    backgroundColor: '#e8e8e8',
+    backgroundColor: '#FFFFFF',
   },
   filterTabSelected: {
-    backgroundColor: '#2e4a7a',
+    backgroundColor: '#2E4A7A',
   },
   filterTabText: {
     fontSize: 12,
@@ -445,6 +441,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 16,
     paddingVertical: 8,
+    backgroundColor: '#2E4A7A',
   },
   actionBtnText: {
     color: '#fff',
