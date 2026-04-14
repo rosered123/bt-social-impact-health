@@ -123,8 +123,20 @@ export default function CustomerPreorder() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f5f5f5" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFF1AD" />
 
+      {/* ── Yellow Navbar ── */}
+      <View style={styles.navbar}>
+        <TouchableOpacity style={styles.navBtn} onPress={goBack}>
+          <Text style={styles.navBtnText}>←</Text>
+        </TouchableOpacity>
+        {/* <Text style={styles.navTitle} numberOfLines={1}>
+          {business?.business_name ?? 'Pre-Order'}
+        </Text> */}
+        <View style={{ width: 36 }} />
+      </View>
+
+      <View style={styles.content}>
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color="#333" />
@@ -132,16 +144,12 @@ export default function CustomerPreorder() {
       ) : (
         <ScrollView showsVerticalScrollIndicator={false}>
 
-          {/* ── Cover + Avatar (same as user_business_profile) ── */}
+          {/* ── Cover + Avatar ── */}
           <View style={styles.coverSection}>
             <View style={styles.coverPhoto}>
               {business?.logo_url ? (
                 <Image source={{ uri: business.logo_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
               ) : null}
-              {/* Back button overlaid on cover */}
-              <TouchableOpacity style={styles.backBtn} onPress={goBack}>
-                <Text style={styles.backIcon}>←</Text>
-              </TouchableOpacity>
             </View>
             <View style={styles.avatarWrapper}>
               <View style={styles.avatar}>
@@ -235,6 +243,7 @@ export default function CustomerPreorder() {
           <View style={{ height: 120 }} />
         </ScrollView>
       )}
+      </View>
 
       {/* ── Sticky order bar ── */}
       {cartItems.length > 0 ? (
@@ -256,8 +265,13 @@ const CARD_BG = '#ffffff';
 const RADIUS = 12;
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#f5f5f5' },
+  safe: { flex: 1, backgroundColor: '#FFF1AD' },
+  content: { flex: 1, backgroundColor: '#f5f5f5' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  navbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#FFF1AD', margin: 20 },
+  navBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(0,0,0,0.08)', alignItems: 'center', justifyContent: 'center' },
+  navBtnText: { fontSize: 18, color: '#111' },
+  navTitle: { flex: 1, textAlign: 'center', fontSize: 16, fontWeight: '800', color: '#111', marginHorizontal: 8 },
 
   // Cover + Avatar (mirrors user_business_profile)
   coverSection: { marginBottom: 0 },
@@ -265,13 +279,6 @@ const styles = StyleSheet.create({
     height: 150, backgroundColor: '#d0d0d0',
     overflow: 'hidden',
   },
-  backBtn: {
-    position: 'absolute', top: 12, left: 12,
-    width: 36, height: 36, borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.85)',
-    alignItems: 'center', justifyContent: 'center',
-  },
-  backIcon: { fontSize: 18, color: '#111' },
   avatarWrapper: { marginTop: -36, marginLeft: 16 },
   avatar: {
     width: 72, height: 72, borderRadius: 36,

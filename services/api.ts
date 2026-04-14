@@ -421,6 +421,16 @@ export async function getAllTags(): Promise<VibeTag[]> {
 	return data;
 }
 
+export async function getMyUserInterests(): Promise<number[]> {
+	const user_uid = await requireUserId();
+	const { data, error } = await supabase
+		.from('user_interests')
+		.select('tag_id')
+		.eq('user_uid', user_uid);
+	if (error) throw error;
+	return (data ?? []).map((row: any) => row.tag_id as number);
+}
+
 export async function setMyUserInterests(tagIds: number[]): Promise<void> {
 	const user_uid = await requireUserId();
 	const { error: deleteError } = await supabase.from('user_interests').delete().eq('user_uid', user_uid);
