@@ -104,17 +104,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="map.fill" color={color} />,
         }}
       />
-      <Tabs.Screen
-        name="add_review"
-        options={
-          isBusiness
-            ? { href: null }
-            : {
-                title: 'Write Review',
-                tabBarIcon: ({ color }) => <IconSymbol size={28} name="square.and.pencil" color={color} />,
-              }
-        }
-      />
+      <Tabs.Screen name="add_review" options={{ href: null }} />
       <Tabs.Screen name="view_event" options={{ href: null }} />
       <Tabs.Screen name="user_business_profile" options={{ href: null }} />
 
