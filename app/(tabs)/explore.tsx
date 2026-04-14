@@ -214,7 +214,7 @@ export default function Explore() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFF14D" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFF1AD" />
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
 
         {/* ── Header ── */}
@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
   scroll: { flex: 1, paddingHorizontal: 16 },
 
   // Header
-  header: { paddingTop: 16, paddingBottom: 12, marginHorizontal: -16, paddingHorizontal: 16, backgroundColor: '#FFF14D' },
+  header: { paddingTop: 16, paddingBottom: 12, marginHorizontal: -16, paddingHorizontal: 16, backgroundColor: '#FFF1AD' },
   headerTitle: { fontSize: 22, fontWeight: '900', color: '#111' },
 
   // Search

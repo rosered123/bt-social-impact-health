@@ -75,6 +75,7 @@ export default function ViewEvent() {
   const [sentiment, setSentiment] = useState<{ label: string; pct: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState(false);
+  const [rsvped, setRsvped] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -187,6 +188,14 @@ export default function ViewEvent() {
           {/* ── Action Buttons ── */}
           <View style={styles.actionRow}>
             <TouchableOpacity
+              style={[styles.actionBtn, rsvped && styles.actionBtnActive]}
+              onPress={() => setRsvped(r => !r)}
+            >
+              <Text style={[styles.actionBtnText, rsvped && styles.actionBtnTextActive]}>
+                {rsvped ? 'RSVPed ✓' : 'RSVP'}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
               style={styles.actionBtn}
               onPress={() => router.push({ pathname: '/(tabs)/add_review', params: { businessUid: event.host_uid, eventId: String(event.id) } })}
             >
@@ -200,7 +209,7 @@ export default function ViewEvent() {
           {/* ── Event Overview ── */}
           {event.story ? (
             <>
-              <Text style={styles.sectionTitle}>Event Overview from business</Text>
+              <Text style={[styles.sectionTitle, { marginBottom: 10 }]}>Event Overview from business</Text>
               <Text style={styles.overviewText}>{event.story}</Text>
             </>
           ) : null}
@@ -213,7 +222,22 @@ export default function ViewEvent() {
           {/* ── Menu / Products ── */}
           {inventory.length > 0 ? (
             <>
-              <Text style={styles.sectionTitle}>Menu</Text>
+              <View style={styles.sectionTitleRow}>
+                <Text style={styles.sectionTitle}>Menu</Text>
+                <TouchableOpacity
+                  style={styles.preOrderBtn}
+                  onPress={() => router.navigate({
+                    pathname: '/(tabs)/customer_preorder',
+                    params: {
+                      eventId: String(event.id),
+                      eventName: event.event_name,
+                      businessUid: event.host_uid,
+                    },
+                  })}
+                >
+                  <Text style={styles.preOrderBtnText}>Pre Order</Text>
+                </TouchableOpacity>
+              </View>
               <View style={styles.card}>
                 {inventory.map((item, index) => (
                   <View key={item.id} style={[styles.menuRow, index < inventory.length - 1 && styles.menuRowBorder]}>
@@ -235,7 +259,7 @@ export default function ViewEvent() {
           {/* ── What Customers Are Saying ── */}
           {sentiment.length > 0 ? (
             <>
-              <Text style={styles.sectionTitle}>What customers are saying</Text>
+              <Text style={[styles.sectionTitle, { marginBottom: 10 }]}>What customers are saying</Text>
               <View style={styles.card}>
                 {sentiment.map((s, index) => (
                   <View key={s.label} style={[styles.sentimentRow, index < sentiment.length - 1 && styles.menuRowBorder]}>
@@ -298,11 +322,16 @@ const styles = StyleSheet.create({
   actionRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
   actionBtn: {
     flex: 1, borderRadius: 10, paddingVertical: 10,
-    alignItems: 'center', backgroundColor: '#85E4FF',
+    alignItems: 'center', backgroundColor: '#7AAED6',
   },
-  actionBtnText: { fontSize: 14, fontWeight: '700', color: '#07345F' },
+  actionBtnActive: { backgroundColor: '#2E4A7A' },
+  actionBtnText: { fontSize: 14, fontWeight: '700', color: '#2E4A7A' },
+  actionBtnTextActive: { color: '#fff' },
 
-  sectionTitle: { fontSize: 16, fontWeight: '800', color: '#111', marginBottom: 10 },
+  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
+  sectionTitle: { fontSize: 16, fontWeight: '800', color: '#111' },
+  preOrderBtn: { backgroundColor: '#2E4A7A', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 6 },
+  preOrderBtnText: { color: '#fff', fontWeight: '700', fontSize: 12 },
   overviewText: { fontSize: 13, color: '#444', lineHeight: 19, marginBottom: 20 },
 
   notifBanner: {

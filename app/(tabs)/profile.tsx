@@ -123,7 +123,7 @@ export default function Profile() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFF14D" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFF1AD" />
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} style={styles.scroll}>
 
         <View style={styles.headerRow}>
@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: BG },
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 24 },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingBottom: 22, marginHorizontal: -16, paddingHorizontal: 16, backgroundColor: '#FFF14D' },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingBottom: 22, marginHorizontal: -16, paddingHorizontal: 16, backgroundColor: '#FFF1AD' },
   greeting: { fontSize: 22, fontWeight: '800', color: '#111', marginBottom: 4 },
   locationRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   location: { fontSize: 20, color: '#222' },
