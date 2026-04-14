@@ -1,7 +1,9 @@
+import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
   SafeAreaView,
   ScrollView,
   StatusBar,
@@ -14,32 +16,26 @@ import {
 
 import { listBusinessesForCollaborate, type Business } from '@/services/api';
 
-type Tab = 'discover' | 'requests';
+type Tab = 'discover' | 'requests' | 'partners';
 
 type RequestStatus = 'none' | 'pending' | 'accepted';
 
 // NOTE: There is no `collaboration_requests` table in the DB yet, so we keep
-// request state in memory for the current session. When that table is added
-// this can be swapped out for real API calls without touching the UI.
+// request state in memory for the current session.
 type RequestMap = Record<string, RequestStatus>;
 
-// Incoming co-host invite from another vendor. Mocked for now until a
-// `collaboration_requests` table exists; the layout mirrors what a real row
-// would carry so it's a 1:1 swap later.
 type IncomingRequest = {
   id: string;
   from: Business;
   eventName: string;
-  eventDate: string; // 'MM-DD-YYYY'
-  startTime: string; // '1 PM'
-  endTime: string; // '4 PM'
+  eventDate: string;
+  startTime: string;
+  endTime: string;
   address: string;
   message: string;
   status: 'pending' | 'accepted' | 'declined';
 };
 
-// Sample incoming invites built on top of real fetched businesses so the
-// Requests tab has a realistic preview until the backend is wired up.
 const MOCK_INVITE_SEEDS: ReadonlyArray<Omit<IncomingRequest, 'id' | 'from'>> = [
   {
     eventName: 'Spring Night Market',
@@ -69,19 +65,7 @@ function buildMockIncomingRequests(businesses: Business[]): IncomingRequest[] {
   }));
 }
 
-const StarRating: React.FC<{ rating: number; size?: number }> = ({ rating, size = 12 }) => (
-  <View style={styles.starsRow}>
-    {[1, 2, 3, 4, 5].map(i => (
-      <Text
-        key={i}
-        style={[{ fontSize: size }, i <= Math.round(rating) ? styles.starFilled : styles.starEmpty]}
-      >
-        ★
-      </Text>
-    ))}
-  </View>
-);
-
+// ─── Vendor Card (Discover tab) ──────────────────────────────────────────────
 const VendorCard: React.FC<{
   business: Business;
   status: RequestStatus;
@@ -99,22 +83,25 @@ const VendorCard: React.FC<{
     <View style={styles.vendorCard}>
       <View style={styles.vendorTop}>
         <View style={styles.vendorAvatar}>
-          <Text style={styles.vendorAvatarText}>
-            {(business.business_name ?? 'V').slice(0, 1).toUpperCase()}
-          </Text>
+          {business.logo_url ? (
+            <Image source={{ uri: business.logo_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+          ) : (
+            <Text style={styles.vendorAvatarText}>
+              {(business.business_name ?? 'V').slice(0, 1).toUpperCase()}
+            </Text>
+          )}
         </View>
         <View style={styles.vendorInfo}>
           <Text style={styles.vendorName} numberOfLines={1}>
             {business.business_name || 'Vendor name'}
           </Text>
-          <Text style={styles.vendorDesc} numberOfLines={2}>
+          <Text style={styles.vendorDesc} numberOfLines={1}>
             {description}
           </Text>
           <View style={styles.vendorMetaRow}>
-            <StarRating rating={business.avg_rating ?? 0} />
+            <Text style={styles.starIcon}>★</Text>
             <Text style={styles.vendorMetaText}> {rating}</Text>
-            <Text style={styles.vendorMetaDot}>·</Text>
-            <Text style={styles.vendorMetaText}>{followers} followers</Text>
+            <Text style={styles.vendorFollowers}>   {followers} followers</Text>
           </View>
         </View>
       </View>
@@ -132,6 +119,7 @@ const VendorCard: React.FC<{
           onPress={onSendRequest}
           disabled={status !== 'none'}
         >
+          <Feather name="users" size={13} color="#fff" style={{ marginRight: 5 }} />
           <Text style={styles.filledBtnText}>{sendLabel}</Text>
         </TouchableOpacity>
       </View>
@@ -139,6 +127,7 @@ const VendorCard: React.FC<{
   );
 };
 
+// ─── Request Card ────────────────────────────────────────────────────────────
 const IncomingRequestCard: React.FC<{
   request: IncomingRequest;
   onAccept: () => void;
@@ -153,27 +142,28 @@ const IncomingRequestCard: React.FC<{
 
   return (
     <View style={styles.requestCard}>
-      {/* Vendor header */}
       <View style={styles.requestHeader}>
         <View style={styles.vendorAvatar}>
-          <Text style={styles.vendorAvatarText}>
-            {(from.business_name ?? 'V').slice(0, 1).toUpperCase()}
-          </Text>
+          {from.logo_url ? (
+            <Image source={{ uri: from.logo_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+          ) : (
+            <Text style={styles.vendorAvatarText}>
+              {(from.business_name ?? 'V').slice(0, 1).toUpperCase()}
+            </Text>
+          )}
         </View>
         <View style={styles.vendorInfo}>
           <Text style={styles.vendorName} numberOfLines={1}>
             {from.business_name || 'Vendor name'}
           </Text>
           <View style={styles.vendorMetaRow}>
-            <StarRating rating={from.avg_rating ?? 0} />
+            <Text style={styles.starIcon}>★</Text>
             <Text style={styles.vendorMetaText}> {rating}</Text>
-            <Text style={styles.vendorMetaDot}>·</Text>
-            <Text style={styles.vendorMetaText}>{followers} followers</Text>
+            <Text style={styles.vendorFollowers}>   {followers} followers</Text>
           </View>
         </View>
       </View>
 
-      {/* Event details */}
       <View style={styles.eventBlock}>
         <Text style={styles.eventName} numberOfLines={1}>{request.eventName}</Text>
         <Text style={styles.eventDetail}>
@@ -182,10 +172,8 @@ const IncomingRequestCard: React.FC<{
         <Text style={styles.eventDetail}>📍 {request.address}</Text>
       </View>
 
-      {/* Message */}
       <Text style={styles.requestMessage}>&ldquo;{request.message}&rdquo;</Text>
 
-      {/* Actions */}
       {resolved ? (
         <View style={[styles.resolvedBadge, accepted ? styles.resolvedAccepted : styles.resolvedDeclined]}>
           <Text style={styles.resolvedBadgeText}>
@@ -194,18 +182,10 @@ const IncomingRequestCard: React.FC<{
         </View>
       ) : (
         <View style={styles.requestActions}>
-          <TouchableOpacity
-            style={styles.declineBtn}
-            activeOpacity={0.75}
-            onPress={onDecline}
-          >
+          <TouchableOpacity style={styles.declineBtn} activeOpacity={0.75} onPress={onDecline}>
             <Text style={styles.declineBtnText}>Decline</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.acceptBtn}
-            activeOpacity={0.85}
-            onPress={onAccept}
-          >
+          <TouchableOpacity style={styles.acceptBtn} activeOpacity={0.85} onPress={onAccept}>
             <Text style={styles.acceptBtnText}>Accept</Text>
           </TouchableOpacity>
         </View>
@@ -214,6 +194,7 @@ const IncomingRequestCard: React.FC<{
   );
 };
 
+// ─── Main Screen ─────────────────────────────────────────────────────────────
 export default function CollaboratePage() {
   const [tab, setTab] = useState<Tab>('discover');
   const [search, setSearch] = useState('');
@@ -249,6 +230,8 @@ export default function CollaboratePage() {
       return name.includes(q) || desc.includes(q);
     });
   }, [businesses, search]);
+
+  const pendingCount = incoming.filter(r => r.status === 'pending').length;
 
   const handleSendRequest = (uid: string) => {
     setRequests(prev => ({ ...prev, [uid]: 'pending' }));
@@ -333,6 +316,10 @@ export default function CollaboratePage() {
     );
   };
 
+  const renderPartners = () => {
+    return <Text style={styles.emptyText}>No partners yet.</Text>;
+  };
+
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="dark-content" backgroundColor="#f5f5f5" />
@@ -341,17 +328,10 @@ export default function CollaboratePage() {
         contentContainerStyle={{ paddingBottom: 32 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* ── Header ── */}
+        {/* ── Yellow Header Section ── */}
+        <View style={styles.yellowSection}>
         <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backBtn}
-            activeOpacity={0.75}
-            onPress={() => router.back()}
-          >
-            <Text style={styles.backBtnIcon}>‹</Text>
-          </TouchableOpacity>
           <Text style={styles.headerTitle}>Collaborate</Text>
-          <View style={styles.backBtn} />
         </View>
 
         {/* ── Tabs ── */}
@@ -365,131 +345,176 @@ export default function CollaboratePage() {
               Discover
             </Text>
           </TouchableOpacity>
+          <View>
+            <TouchableOpacity
+              style={[styles.tabBtn, tab === 'requests' && styles.tabBtnActive]}
+              activeOpacity={0.8}
+              onPress={() => setTab('requests')}
+            >
+              <Text style={[styles.tabText, tab === 'requests' && styles.tabTextActive]}>
+                Request
+              </Text>
+            </TouchableOpacity>
+            {pendingCount > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{pendingCount}</Text>
+              </View>
+            )}
+          </View>
           <TouchableOpacity
-            style={[styles.tabBtn, tab === 'requests' && styles.tabBtnActive]}
+            style={[styles.tabBtn, tab === 'partners' && styles.tabBtnActive]}
             activeOpacity={0.8}
-            onPress={() => setTab('requests')}
+            onPress={() => setTab('partners')}
           >
-            <Text style={[styles.tabText, tab === 'requests' && styles.tabTextActive]}>
-              Requests
+            <Text style={[styles.tabText, tab === 'partners' && styles.tabTextActive]}>
+              Partners
             </Text>
           </TouchableOpacity>
         </View>
 
         {/* ── Search ── */}
-        {tab === 'discover' ? (
-          <View style={styles.searchWrap}>
-            <Text style={styles.searchIcon}>🔍</Text>
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search vendors..."
-              placeholderTextColor="#999"
-              value={search}
-              onChangeText={setSearch}
-              autoCorrect={false}
-              autoCapitalize="none"
-            />
-          </View>
-        ) : null}
+        <View style={styles.searchWrap}>
+          <Feather name="search" size={16} color="#999" style={{ marginRight: 8 }} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search vendors..."
+            placeholderTextColor="#999"
+            value={search}
+            onChangeText={setSearch}
+            autoCorrect={false}
+            autoCapitalize="none"
+          />
+        </View>
+        </View>
 
-        {/* ── List ── */}
+        {/* ── Content ── */}
         <View style={styles.list}>
-          {tab === 'discover' ? renderDiscover() : renderRequests()}
+          {tab === 'discover' ? renderDiscover() : tab === 'requests' ? renderRequests() : renderPartners()}
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const CARD_BG = '#ebebeb';
-const RADIUS = 12;
+// ─── Styles ──────────────────────────────────────────────────────────────────
+const RADIUS = 14;
+const NAVY = '#2E4A7A';
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#f5f5f5' },
   scroll: { flex: 1, paddingHorizontal: 16 },
   centered: { alignItems: 'center', justifyContent: 'center', paddingVertical: 40 },
+
+  // Yellow section
+  yellowSection: {
+    backgroundColor: '#FFF1AD',
+    marginHorizontal: -16,
+    paddingHorizontal: 16,
+    paddingBottom: 4,
+  },
+
+  // Header
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     paddingTop: 16,
-    marginBottom: 16,
+    marginBottom: 14,
   },
-  backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#ddd',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backBtnIcon: { fontSize: 22, fontWeight: '700', color: '#333', lineHeight: 24 },
-  headerTitle: { fontSize: 22, fontWeight: '800', color: '#111' },
+  headerTitle: { fontSize: 24, fontWeight: '900', color: '#111' },
+
+  // Tabs
   tabsRow: {
     flexDirection: 'row',
-    backgroundColor: CARD_BG,
-    borderRadius: RADIUS,
-    padding: 4,
+    gap: 8,
     marginBottom: 14,
   },
   tabBtn: {
-    flex: 1,
+    paddingHorizontal: 20,
     paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
     alignItems: 'center',
-    borderRadius: 8,
   },
-  tabBtnActive: { backgroundColor: '#fff' },
-  tabText: { fontSize: 14, fontWeight: '600', color: '#666' },
-  tabTextActive: { color: '#111', fontWeight: '800' },
+  tabBtnActive: {
+    backgroundColor: NAVY,
+    borderColor: NAVY,
+  },
+  tabText: { fontSize: 13, fontWeight: '600', color: '#555' },
+  tabTextActive: { color: '#fff' },
+
+  // Badge
+  badge: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#ef4444',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeText: { color: '#fff', fontSize: 10, fontWeight: '700' },
+
+  // Search
   searchWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: CARD_BG,
+    backgroundColor: '#FFFFFF',
     borderRadius: RADIUS,
-    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    paddingHorizontal: 14,
     marginBottom: 16,
   },
-  searchIcon: { fontSize: 14, marginRight: 8, color: '#666' },
   searchInput: {
     flex: 1,
     paddingVertical: 12,
     fontSize: 14,
     color: '#111',
   },
-  list: { gap: 12 },
+
+  // List
+  list: { gap: 0 },
+
+  // Vendor Card
   vendorCard: {
-    backgroundColor: CARD_BG,
+    backgroundColor: '#FFF1AD',
     borderRadius: RADIUS,
-    padding: 14,
-    marginBottom: 12,
+    padding: 16,
+    marginBottom: 14,
   },
   vendorTop: { flexDirection: 'row', marginBottom: 12 },
   vendorAvatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: '#ccc',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#d0d0d0',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
+    overflow: 'hidden',
   },
-  vendorAvatarText: { fontSize: 18, fontWeight: '700', color: '#555' },
+  vendorAvatarText: { fontSize: 20, fontWeight: '700', color: '#555' },
   vendorInfo: { flex: 1, justifyContent: 'center' },
-  vendorName: { fontSize: 15, fontWeight: '700', color: '#111' },
-  vendorDesc: { fontSize: 12, color: '#666', marginTop: 2, lineHeight: 16 },
-  vendorMetaRow: { flexDirection: 'row', alignItems: 'center', marginTop: 6 },
-  vendorMetaText: { fontSize: 12, color: '#555', fontWeight: '600' },
-  vendorMetaDot: { fontSize: 12, color: '#999', marginHorizontal: 6 },
-  vendorActions: { flexDirection: 'row', gap: 8 },
+  vendorName: { fontSize: 16, fontWeight: '800', color: '#111' },
+  vendorDesc: { fontSize: 12, color: '#666', marginTop: 2 },
+  vendorMetaRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
+  starIcon: { color: '#f59e0b', fontSize: 13 },
+  vendorMetaText: { fontSize: 12, color: '#333', fontWeight: '600' },
+  vendorFollowers: { fontSize: 12, color: '#555' },
+
+  // Action buttons
+  vendorActions: { flexDirection: 'row', gap: 10 },
   outlineBtn: {
     flex: 1,
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
     borderColor: '#bbb',
-    borderRadius: 8,
+    borderRadius: 20,
     paddingVertical: 9,
+    backgroundColor: '#FFFFFF',
   },
   outlineBtnText: { fontSize: 12, fontWeight: '700', color: '#333' },
   filledBtn: {
@@ -497,28 +522,32 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#333',
-    borderRadius: 8,
+    backgroundColor: NAVY,
+    borderRadius: 20,
     paddingVertical: 9,
   },
-  filledBtnDisabled: { backgroundColor: '#888' },
+  filledBtnDisabled: { opacity: 0.6 },
   filledBtnText: { fontSize: 12, fontWeight: '700', color: '#fff' },
-  starsRow: { flexDirection: 'row', gap: 1 },
-  starFilled: { color: '#f59e0b' },
-  starEmpty: { color: '#ccc' },
+
+  // Error / empty
   errorText: { color: '#ef4444', fontSize: 13, textAlign: 'center', paddingVertical: 20 },
   emptyText: { color: '#888', fontSize: 13, textAlign: 'center', paddingVertical: 20 },
+
+  // Requests tab
   requestsSectionTitle: {
     fontSize: 14,
     fontWeight: '800',
     color: '#111',
+    marginTop: 12, 
     marginBottom: 12,
   },
   requestCard: {
-    backgroundColor: CARD_BG,
+    backgroundColor: '#FFFFFF',
     borderRadius: RADIUS,
     padding: 14,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#e5e5e5',
   },
   requestHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
   eventBlock: {
@@ -544,7 +573,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1.5,
     borderColor: '#bbb',
-    borderRadius: 8,
+    borderRadius: 20,
     paddingVertical: 9,
   },
   declineBtnText: { fontSize: 12, fontWeight: '700', color: '#333' },
@@ -552,8 +581,8 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#333',
-    borderRadius: 8,
+    backgroundColor: NAVY,
+    borderRadius: 20,
     paddingVertical: 9,
   },
   acceptBtnText: { fontSize: 12, fontWeight: '700', color: '#fff' },

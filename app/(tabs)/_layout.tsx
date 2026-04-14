@@ -59,6 +59,17 @@ export default function TabLayout() {
       <Tabs.Screen name="update_status" options={{ href: null }} />
       <Tabs.Screen name="pre_orders" options={{ href: null }} />
       <Tabs.Screen
+        name="collaborate"
+        options={
+          isBusiness
+            ? {
+                title: 'Collaborate',
+                tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.2.fill" color={color} />,
+              }
+            : { href: null }
+        }
+      />
+      <Tabs.Screen
         name="business_profile"
         options={
           isBusiness
@@ -72,7 +83,6 @@ export default function TabLayout() {
       <Tabs.Screen name="edit_profile" options={{ href: null }} />
       <Tabs.Screen name="public_business_profile" options={{ href: null }} />
       <Tabs.Screen name="business_insights" options={{ href: null }} />
-      <Tabs.Screen name="collaborate" options={{ href: null }} />
       <Tabs.Screen name="settings" options={{ href: null }} />
 
       <Tabs.Screen
@@ -131,13 +141,7 @@ export default function TabLayout() {
         }
       />
 
-      <Tabs.Screen
-        name="map"
-        options={{
-          title: 'Map',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="map.fill" color={color} />,
-        }}
-      />
+      <Tabs.Screen name="map" options={{ href: null }} />
       <Tabs.Screen name="buisness_events_drafts" options={{ href: null }} />
       <Tabs.Screen name="index" options={{ href: null }} />
     </Tabs>
