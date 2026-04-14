@@ -96,7 +96,7 @@ export default function AddReview() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFF14D" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFF1AD" />
 
       <View style={styles.navbar}>
         <TouchableOpacity style={styles.backBtn} onPress={() => eventId
@@ -203,7 +203,7 @@ const RADIUS = 12;
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#f5f5f5' },
   scroll: { flex: 1, paddingHorizontal: 16 },
-  navbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#FFF14D' },
+  navbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#FFF1AD' },
   backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#e0e0e0', alignItems: 'center', justifyContent: 'center' },
   backIcon: { fontSize: 18, color: '#333' },
   navTitle: { fontSize: 18, fontWeight: '800', color: '#111' },
@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
   charCount: { fontSize: 11, color: '#aaa', textAlign: 'right', marginTop: 6 },
   tagsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
   tag: { borderWidth: 1.5, borderColor: '#ccc', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7, backgroundColor: '#fff' },
-  tagSelected: { backgroundColor: '#07345F', borderColor: '#07345F' },
+  tagSelected: { backgroundColor: '#2E4A7A', borderColor: '#2E4A7A' },
   tagText: { fontSize: 12, color: '#555', fontWeight: '500' },
   tagTextSelected: { color: '#fff', fontWeight: '700' },
   recommendRow: { flexDirection: 'row', gap: 12, marginTop: 4 },
@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
   recommendEmoji: { fontSize: 18 },
   recommendText: { fontSize: 14, fontWeight: '700', color: '#555' },
   recommendTextSelected: { color: '#111' },
-  submitBtn: { backgroundColor: '#07345F', borderRadius: RADIUS, paddingVertical: 16, alignItems: 'center', marginBottom: 10 },
+  submitBtn: { backgroundColor: '#2E4A7A', borderRadius: RADIUS, paddingVertical: 16, alignItems: 'center', marginBottom: 10 },
   submitBtnDisabled: { backgroundColor: '#bbb' },
   submitBtnText: { color: '#fff', fontSize: 16, fontWeight: '800' },
   submitHint: { fontSize: 12, color: '#999', textAlign: 'center', marginBottom: 4 },
