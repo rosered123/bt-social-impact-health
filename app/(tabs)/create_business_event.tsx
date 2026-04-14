@@ -135,7 +135,7 @@ export default function CreateEvent() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f5f5f5" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFF14D" />
 
       <View style={styles.navbar}>
         <TouchableOpacity style={styles.backBtn} onPress={goBack}>
@@ -261,12 +261,12 @@ const RADIUS = 12;
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#f5f5f5' },
   scroll: { flex: 1, paddingHorizontal: 16 },
-  navbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
+  navbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#FFF14D' },
   backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#e0e0e0', alignItems: 'center', justifyContent: 'center' },
   backIcon: { fontSize: 18, color: '#333' },
   navTitle: { fontSize: 18, fontWeight: '800', color: '#111' },
-  saveDraftBtn: { backgroundColor: '#222', borderRadius: 10, paddingHorizontal: 16, paddingVertical: 8 },
-  saveDraftText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  saveDraftBtn: { backgroundColor: '#85E4FF', borderRadius: 10, paddingHorizontal: 16, paddingVertical: 8 },
+  saveDraftText: { color: '#07345F', fontWeight: '700', fontSize: 13 },
   coverPhotoBox: { borderWidth: 2, borderColor: '#ccc', borderStyle: 'dashed', borderRadius: RADIUS, alignItems: 'center', justifyContent: 'center', paddingVertical: 32, marginBottom: 14, backgroundColor: CARD_BG },
   coverPhotoIcon: { fontSize: 28, marginBottom: 6 },
   coverPhotoText: { fontSize: 13, color: '#666', fontWeight: '500' },
@@ -297,8 +297,8 @@ const styles = StyleSheet.create({
   customTagLabel: { fontSize: 12, fontWeight: '600', color: '#555', marginBottom: 6 },
   customTagRow: { flexDirection: 'row', gap: 8 },
   customTagInput: { flex: 1, backgroundColor: '#fff', borderRadius: 8, borderWidth: 1.5, borderColor: '#d0d0d0', paddingHorizontal: 12, paddingVertical: 8, fontSize: 13, color: '#333' },
-  addTagBtn: { backgroundColor: '#333', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 8, justifyContent: 'center' },
-  addTagBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  addTagBtn: { backgroundColor: '#85E4FF', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 8, justifyContent: 'center' },
+  addTagBtnText: { color: '#07345F', fontWeight: '700', fontSize: 13 },
   sectionHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   sectionIcon: { fontSize: 16 },
   sectionTitle: { fontSize: 15, fontWeight: '700', color: '#111' },
@@ -307,6 +307,6 @@ const styles = StyleSheet.create({
   checkboxChecked: { backgroundColor: '#222', borderColor: '#222' },
   checkmark: { color: '#fff', fontSize: 12, fontWeight: '900' },
   checkboxLabel: { flex: 1, fontSize: 13, color: '#333' },
-  createBtn: { backgroundColor: '#222', borderRadius: RADIUS, paddingVertical: 16, alignItems: 'center', marginTop: 4 },
+  createBtn: { backgroundColor: '#07345F', borderRadius: RADIUS, paddingVertical: 16, alignItems: 'center', marginTop: 4 },
   createBtnText: { color: '#fff', fontSize: 16, fontWeight: '800' },
 });

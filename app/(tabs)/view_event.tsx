@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
+  Image,
   SafeAreaView,
   ScrollView,
   StatusBar,
@@ -144,8 +145,11 @@ export default function ViewEvent() {
 
         {/* ── Cover Image ── */}
         <View style={styles.cover}>
+          {event.cover_url ? (
+            <Image source={{ uri: event.cover_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+          ) : null}
           <View style={styles.coverActions}>
-            <TouchableOpacity style={styles.coverBtn} onPress={() => router.back()}>
+            <TouchableOpacity style={styles.coverBtn} onPress={() => router.navigate('/(tabs)/explore')}>
               <Text style={styles.coverBtnText}>←</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.coverBtn} onPress={() => setSaved(s => !s)}>
@@ -293,11 +297,10 @@ const styles = StyleSheet.create({
 
   actionRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
   actionBtn: {
-    flex: 1, borderWidth: 1.5, borderColor: '#bbb',
-    borderRadius: 10, paddingVertical: 10,
-    alignItems: 'center', backgroundColor: '#f0f0f0',
+    flex: 1, borderRadius: 10, paddingVertical: 10,
+    alignItems: 'center', backgroundColor: '#85E4FF',
   },
-  actionBtnText: { fontSize: 14, fontWeight: '700', color: '#333' },
+  actionBtnText: { fontSize: 14, fontWeight: '700', color: '#07345F' },
 
   sectionTitle: { fontSize: 16, fontWeight: '800', color: '#111', marginBottom: 10 },
   overviewText: { fontSize: 13, color: '#444', lineHeight: 19, marginBottom: 20 },

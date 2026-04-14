@@ -131,7 +131,7 @@ export default function BusinessDashboard() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f5f5f5" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFF14D" />
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
 
         {/* ── Header ── */}
@@ -232,7 +232,7 @@ const RADIUS = 12;
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#f5f5f5' },
   scroll: { flex: 1, paddingHorizontal: 16 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 16, marginBottom: 16 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 16, paddingBottom: 16, marginHorizontal: -16, paddingHorizontal: 16, backgroundColor: '#FFF14D' },
   headerSub: { fontSize: 12, color: '#666', fontWeight: '500' },
   headerTitle: { fontSize: 22, fontWeight: '800', color: '#111', marginTop: 2 },
   headerIcons: { flexDirection: 'row', gap: 8 },
@@ -249,13 +249,13 @@ const styles = StyleSheet.create({
   profileActions: { flexDirection: 'row', gap: 8 },
   outlineBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#bbb', borderRadius: 8, paddingVertical: 8 },
   outlineBtnText: { fontSize: 12, fontWeight: '600', color: '#333' },
-  filledBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#333', borderRadius: 8, paddingVertical: 8 },
+  filledBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#07345F', borderRadius: 8, paddingVertical: 8 },
   filledBtnText: { fontSize: 12, fontWeight: '600', color: '#fff' },
   sectionTitle: { fontSize: 17, fontWeight: '800', color: '#111', marginBottom: 10 },
   rightNowCard: { backgroundColor: CARD_BG, borderRadius: RADIUS, padding: 14, marginBottom: 20 },
   rightNowTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
   rightNowLabel: { fontSize: 11, fontWeight: '800', color: '#666', letterSpacing: 0.8 },
-  updateBtn: { backgroundColor: '#222', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 7 },
+  updateBtn: { backgroundColor: '#07345F', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 7 },
   updateBtnText: { color: '#fff', fontWeight: '700', fontSize: 12 },
   liveBadgeRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
   liveDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#22c55e' },

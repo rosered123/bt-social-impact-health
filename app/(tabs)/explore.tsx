@@ -214,7 +214,7 @@ export default function Explore() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f5f5f5" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFF14D" />
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
 
         {/* ── Header ── */}
@@ -267,7 +267,7 @@ export default function Explore() {
                   key={event.id}
                   event={event}
                   onToggleSave={() => toggleSave(event.id)}
-                  onPress={() => router.push({ pathname: '/(tabs)/view_event', params: { eventId: String(event.id) } })}
+                  onPress={() => router.navigate({ pathname: '/(tabs)/view_event', params: { eventId: String(event.id) } })}
                 />
               ))}
             </ScrollView>
@@ -283,7 +283,7 @@ export default function Explore() {
                 key={event.id}
                 event={event}
                 onToggleSave={() => toggleSave(event.id)}
-                onPress={() => router.push({ pathname: '/(tabs)/view_event', params: { eventId: String(event.id) } })}
+                onPress={() => router.navigate({ pathname: '/(tabs)/view_event', params: { eventId: String(event.id) } })}
               />
             ))}
           </>
@@ -299,7 +299,7 @@ export default function Explore() {
                   <ListCard
                     event={event}
                     onToggleSave={() => toggleSave(event.id)}
-                    onPress={() => router.push({ pathname: '/(tabs)/view_event', params: { eventId: String(event.id) } })}
+                    onPress={() => router.navigate({ pathname: '/(tabs)/view_event', params: { eventId: String(event.id) } })}
                   />
                   {index < popular.length - 1 && <View style={styles.listDivider} />}
                 </View>
@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
   scroll: { flex: 1, paddingHorizontal: 16 },
 
   // Header
-  header: { paddingTop: 16, marginBottom: 12 },
+  header: { paddingTop: 16, paddingBottom: 12, marginHorizontal: -16, paddingHorizontal: 16, backgroundColor: '#FFF14D' },
   headerTitle: { fontSize: 22, fontWeight: '900', color: '#111' },
 
   // Search

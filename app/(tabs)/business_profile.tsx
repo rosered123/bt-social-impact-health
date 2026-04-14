@@ -1,5 +1,5 @@
-import { router } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -82,7 +82,7 @@ export default function MyProfile() {
   const [reviews, setReviews] = useState<ReviewRow[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     let cancelled = false;
     (async () => {
       try {
@@ -104,7 +104,7 @@ export default function MyProfile() {
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, []));
 
   const onSignOut = async () => {
     try {
@@ -128,7 +128,7 @@ export default function MyProfile() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f5f5f5" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFF14D" />
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
 
         <Text style={styles.pageTitle}>My Profile</Text>
@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
   scroll: { flex: 1, paddingHorizontal: 16 },
   emptyText: { fontSize: 13, color: '#888', marginBottom: 16 },
 
-  pageTitle: { fontSize: 24, fontWeight: '900', color: '#111', marginTop: 16, marginBottom: 14 },
+  pageTitle: { fontSize: 24, fontWeight: '900', color: '#111', paddingTop: 16, paddingBottom: 14, marginHorizontal: -16, paddingHorizontal: 16, backgroundColor: '#FFF14D' },
 
   coverSection: { marginBottom: 0 },
   coverPhoto: {
@@ -297,15 +297,15 @@ const styles = StyleSheet.create({
 
   actionRow: { flexDirection: 'row', gap: 10 },
   followBtn: {
-    flex: 1, backgroundColor: '#555', borderRadius: 10,
+    flex: 1, backgroundColor: '#07345F', borderRadius: 10,
     paddingVertical: 10, alignItems: 'center',
   },
   followBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
   shareBtn: {
-    flex: 1, backgroundColor: '#555', borderRadius: 10,
+    flex: 1, backgroundColor: '#85E4FF', borderRadius: 10,
     paddingVertical: 10, alignItems: 'center',
   },
-  shareBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  shareBtnText: { color: '#07345F', fontWeight: '700', fontSize: 14 },
 
   card: { backgroundColor: CARD_BG, borderRadius: RADIUS, padding: 16, marginBottom: 20 },
   cardSectionTitle: { fontSize: 15, fontWeight: '800', color: '#111', marginBottom: 4 },

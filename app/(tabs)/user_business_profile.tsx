@@ -1,14 +1,15 @@
 import { useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-  SafeAreaView,
-  StatusBar,
   ActivityIndicator,
+  Image,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 import {
@@ -80,9 +81,11 @@ export default function UserBusinessProfile() {
   useEffect(() => {
     if (!businessUid) {
       setLoading(false);
-      setError('No business selected.');
+      setError(null);
       return;
     }
+    setLoading(true);
+    setError(null);
     let cancelled = false;
     (async () => {
       try {
@@ -143,19 +146,23 @@ export default function UserBusinessProfile() {
   const avgRating = business.avg_rating != null ? Number(business.avg_rating).toFixed(1) : '—';
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} backgroundColor="#f5f5f5">
       <StatusBar barStyle="dark-content" backgroundColor="#f5f5f5" />
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
 
-        <Text style={styles.pageTitle}>Business Profile</Text>
-
-        <View style={styles.coverSection}>
+        <View style={styles.coverSection} >
           <View style={styles.coverPhoto}>
-            <Text style={styles.coverPhotoIcon}>🖼</Text>
+            {business.logo_url ? (
+              <Image source={{ uri: business.logo_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+            ) : null}
           </View>
           <View style={styles.avatarWrapper}>
             <View style={styles.avatar}>
-              <Text style={styles.avatarIcon}>🖼</Text>
+              {business.logo_url ? (
+                <Image source={{ uri: business.logo_url }} style={styles.avatarImage} resizeMode="cover" />
+              ) : (
+                <Text style={styles.avatarIcon}>🖼</Text>
+              )}
             </View>
           </View>
         </View>
@@ -266,6 +273,7 @@ const styles = StyleSheet.create({
   avatarWrapper: { marginTop: -36, marginLeft: 12 },
   avatar: { width: 72, height: 72, borderRadius: 36, backgroundColor: '#d0d0d0', borderWidth: 3, borderColor: '#f5f5f5', alignItems: 'center', justifyContent: 'center' },
   avatarIcon: { fontSize: 22, opacity: 0.5 },
+  avatarImage: { width: '100%', height: '100%', borderRadius: 36 },
   profileInfo: { paddingTop: 8, marginBottom: 16 },
   businessName: { fontSize: 22, fontWeight: '900', color: '#111', marginBottom: 6 },
   statsRow: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 10 },
@@ -273,12 +281,12 @@ const styles = StyleSheet.create({
   ratingText: { fontSize: 13, color: '#444', fontWeight: '500' },
   followersText: { fontSize: 13, color: '#444', fontWeight: '600' },
   actionRow: { flexDirection: 'row', gap: 10 },
-  followBtn: { flex: 1, backgroundColor: '#555', borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
+  followBtn: { flex: 1, backgroundColor: '#07345F', borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
   followingBtn: { backgroundColor: '#f0f0f0', borderWidth: 1.5, borderColor: '#bbb' },
   followBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
   followingBtnText: { color: '#333' },
-  shareBtn: { flex: 1, backgroundColor: '#f0f0f0', borderRadius: 10, paddingVertical: 10, alignItems: 'center', borderWidth: 1.5, borderColor: '#ccc' },
-  shareBtnText: { color: '#333', fontWeight: '700', fontSize: 14 },
+  shareBtn: { flex: 1, backgroundColor: '#85E4FF', borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
+  shareBtnText: { color: '#07345F', fontWeight: '700', fontSize: 14 },
   card: { backgroundColor: CARD_BG, borderRadius: RADIUS, padding: 16, marginBottom: 20 },
   cardSectionTitle: { fontSize: 15, fontWeight: '800', color: '#111', marginBottom: 4 },
   cardBody: { fontSize: 13, color: '#555', lineHeight: 19, marginBottom: 4 },
