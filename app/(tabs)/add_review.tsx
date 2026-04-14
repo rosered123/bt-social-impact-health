@@ -108,6 +108,7 @@ export default function AddReview() {
         <View style={{ width: 36 }} />
       </View>
 
+      <View style={styles.content}>
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
 
         <View style={styles.businessCard}>
@@ -193,6 +194,7 @@ export default function AddReview() {
 
         <View style={{ height: 40 }} />
       </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
@@ -201,7 +203,8 @@ const CARD_BG = '#ebebeb';
 const RADIUS = 12;
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#f5f5f5' },
+  safe: { flex: 1, backgroundColor: '#FFF1AD' },
+  content: { flex: 1, backgroundColor: '#f5f5f5' },
   scroll: { flex: 1, paddingHorizontal: 16 },
   navbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#FFF1AD' },
   backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#e0e0e0', alignItems: 'center', justifyContent: 'center' },

@@ -145,7 +145,7 @@ function statusColor(status: string): string {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#f5f5f5' },
+  safe: { flex: 1, backgroundColor: '#FFF1AD' },
   header: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 10, backgroundColor: '#FFF1AD' },
   title: { fontSize: 24, fontWeight: '900', color: '#111' },
   subtitle: { fontSize: 13, color: '#666', marginTop: 2 },

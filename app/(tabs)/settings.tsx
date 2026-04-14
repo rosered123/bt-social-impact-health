@@ -1,47 +1,56 @@
-import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  Switch,
-  StyleSheet,
-  SafeAreaView,
-  StatusBar,
   Alert,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 import { useAuth } from '@/providers/auth-provider';
 
-type SettingsRowProps = {
-  icon: React.ComponentProps<typeof Feather>['name'];
-  label: string;
-  onPress?: () => void;
-  showArrow?: boolean;
-  trailing?: React.ReactNode;
-};
+function SectionHeader({ title }: { title: string }) {
+  return <Text style={styles.sectionHeader}>{title}</Text>;
+}
 
-const SettingsRow: React.FC<SettingsRowProps> = ({ icon, label, onPress, showArrow = true, trailing }) => (
-  <TouchableOpacity
-    style={styles.row}
-    onPress={onPress}
-    activeOpacity={onPress ? 0.7 : 1}
-    disabled={!onPress}
-  >
-    <View style={styles.rowIconCircle}>
-      <Feather name={icon} size={20} color="#000" />
+function RowItem({ icon, label, onPress }: { icon: string; label: string; onPress?: () => void }) {
+  return (
+    <TouchableOpacity style={styles.row} onPress={onPress} activeOpacity={onPress ? 0.7 : 1} disabled={!onPress}>
+      <View style={styles.rowLeft}>
+        <Text style={styles.rowIcon}>{icon}</Text>
+        <Text style={styles.rowLabel}>{label}</Text>
+      </View>
+      {onPress && <Text style={styles.rowChevron}>›</Text>}
+    </TouchableOpacity>
+  );
+}
+
+function ToggleRow({ icon, label, value, onToggle }: { icon: string; label: string; value: boolean; onToggle: (v: boolean) => void }) {
+  return (
+    <View style={styles.row}>
+      <View style={styles.rowLeft}>
+        <Text style={styles.rowIcon}>{icon}</Text>
+        <Text style={styles.rowLabel}>{label}</Text>
+      </View>
+      <Switch
+        value={value}
+        onValueChange={onToggle}
+        trackColor={{ false: '#d0d0d0', true: '#2E4A7A' }}
+        thumbColor="#fff"
+      />
     </View>
-    <Text style={styles.rowLabel}>{label}</Text>
-    {trailing ?? (showArrow ? <Feather name="chevron-right" size={20} color="#999" /> : null)}
-  </TouchableOpacity>
-);
+  );
+}
 
 export default function Settings() {
   const { signOut } = useAuth();
-  const [pushNotifications, setPushNotifications] = useState(false);
-  const [paymentNotifications, setPaymentNotifications] = useState(false);
+  const [pushNotifs, setPushNotifs] = useState(true);
+  const [paymentNotifs, setPaymentNotifs] = useState(false);
 
   const handleSignOut = () => {
     Alert.alert('Log Out', 'Are you sure you want to log out?', [
@@ -52,6 +61,7 @@ export default function Settings() {
         onPress: async () => {
           try {
             await signOut();
+            router.replace('/auth');
           } catch {
             Alert.alert('Error', 'Failed to log out.');
           }
@@ -62,165 +72,102 @@ export default function Settings() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor="#efefef" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFF1AD" />
 
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-          <Feather name="arrow-left" size={24} color="#000" />
+      <View style={styles.navbar}>
+        <TouchableOpacity style={styles.navBtn} onPress={() => router.back()}>
+          <Text style={styles.navBtnText}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Settings</Text>
-        <View style={{ width: 24 }} />
+        <Text style={styles.navTitle}>Settings</Text>
+        <View style={{ width: 36 }} />
       </View>
-      <View style={styles.headerDivider} />
 
-      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
-        {/* Business Settings */}
-        <Text style={styles.sectionLabel}>Business Settings</Text>
-        <View style={styles.card}>
-          <SettingsRow
-            icon="user"
-            label="Edit Business Profile"
-            onPress={() => router.push('/(tabs)/edit_profile?from=settings')}
-          />
-          <View style={styles.divider} />
-          <SettingsRow icon="credit-card" label="Payment Methods" />
-          <View style={styles.divider} />
-          <SettingsRow icon="lock" label="Security & Privacy" />
-          <View style={styles.divider} />
-          <SettingsRow icon="shield" label="Account Type" />
-        </View>
+      <View style={styles.content}>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
 
-        {/* Notifications */}
-        <Text style={styles.sectionLabel}>Notifications</Text>
-        <View style={styles.card}>
-          <SettingsRow
-            icon="bell"
-            label="Push Notifications"
-            showArrow={false}
-            trailing={
-              <Switch
-                value={pushNotifications}
-                onValueChange={setPushNotifications}
-                trackColor={{ false: '#d8d8d8', true: '#22c55e' }}
-                thumbColor="#fff"
-              />
-            }
-          />
-          <View style={styles.divider} />
-          <SettingsRow
-            icon="credit-card"
-            label="Payment Methods"
-            showArrow={false}
-            trailing={
-              <Switch
-                value={paymentNotifications}
-                onValueChange={setPaymentNotifications}
-                trackColor={{ false: '#d8d8d8', true: '#22c55e' }}
-                thumbColor="#fff"
-              />
-            }
-          />
-        </View>
+          <SectionHeader title="Profile Settings" />
+          <View style={styles.card}>
+            <RowItem icon="✦" label="Edit Interests" onPress={() => router.navigate('/(tabs)/edit_interests')} />
+            <View style={styles.separator} />
+            <RowItem icon="💳" label="Payment Methods" onPress={() => {}} />
+            <View style={styles.separator} />
+            <RowItem icon="🔒" label="Security & Privacy" onPress={() => {}} />
+            <View style={styles.separator} />
+            <RowItem icon="🛡️" label="Account Type" onPress={() => {}} />
+          </View>
 
-        {/* Support */}
-        <Text style={styles.sectionLabel}>Support</Text>
-        <View style={styles.card}>
-          <SettingsRow icon="help-circle" label="Help Center" />
-          <View style={styles.divider} />
-          <SettingsRow icon="file-text" label="Terms & Privacy" />
-        </View>
+          <SectionHeader title="Notifications" />
+          <View style={styles.card}>
+            <ToggleRow icon="🔔" label="Push Notifications" value={pushNotifs} onToggle={setPushNotifs} />
+            <View style={styles.separator} />
+            <ToggleRow icon="💳" label="Payment Methods" value={paymentNotifs} onToggle={setPaymentNotifs} />
+          </View>
 
-        {/* Log Out */}
-        <TouchableOpacity style={styles.logOutCard} onPress={handleSignOut} activeOpacity={0.75}>
-          <Feather name="log-out" size={20} color="red" style={{ marginRight: 14 }} />
-          <Text style={styles.logOutText}>Log Out</Text>
-        </TouchableOpacity>
+          <SectionHeader title="Support" />
+          <View style={styles.card}>
+            <RowItem icon="❓" label="Help Center" onPress={() => {}} />
+            <View style={styles.separator} />
+            <RowItem icon="📄" label="Terms & Privacy" onPress={() => {}} />
+          </View>
 
-        <View style={{ height: 32 }} />
-      </ScrollView>
+          <TouchableOpacity style={styles.signOutRow} onPress={handleSignOut} activeOpacity={0.8}>
+            <Text style={styles.signOutIcon}>↪</Text>
+            <Text style={styles.signOutText}>Log Out</Text>
+          </TouchableOpacity>
+
+        </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#efefef' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#fff',
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 14,
+  safe: { flex: 1, backgroundColor: '#FFF1AD' },
+  content: { flex: 1, backgroundColor: '#f0f0f0' },
+  navbar: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 16, paddingVertical: 12,
+    backgroundColor: '#FFF1AD',
   },
-  headerTitle: { fontSize: 24, fontWeight: '600', color: '#000' },
-  headerDivider: { height: 1, backgroundColor: '#d8d8d8' },
-  scroll: { flex: 1, paddingHorizontal: 16 },
+  navBtn: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: 'rgba(0,0,0,0.08)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  navBtnText: { fontSize: 18, color: '#111' },
+  navTitle: { fontSize: 20, fontWeight: '900', color: '#111' },
 
-  sectionLabel: {
-    fontSize: 18,
-    fontWeight: '500',
-    color: '#000',
-    marginTop: 15,
-    marginBottom: 8,
+  scrollContent: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 32 },
+
+  sectionHeader: {
+    fontSize: 12, fontWeight: '700', color: '#888',
+    textTransform: 'uppercase', letterSpacing: 0.8,
+    marginBottom: 8, marginTop: 16, marginLeft: 4,
   },
 
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    borderWidth: 1.2,
-    borderColor: '#d8d8d8',
-    paddingVertical: 6,
-    paddingHorizontal: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12.5,
-    elevation: 3,
+    backgroundColor: '#fff', borderRadius: 14,
+    marginBottom: 4,
+    overflow: 'hidden',
   },
+  separator: { height: 1, backgroundColor: '#f0f0f0', marginLeft: 52 },
 
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
+    flexDirection: 'row', alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16, paddingVertical: 14,
   },
-  rowIconCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 16,
-  },
-  rowLabel: {
-    flex: 1,
-    fontSize: 18,
-    fontWeight: '400',
-    color: '#000',
-  },
+  rowLeft: { flexDirection: 'row', alignItems: 'center', gap: 14, flex: 1 },
+  rowIcon: { fontSize: 18, width: 24, textAlign: 'center' },
+  rowLabel: { fontSize: 15, color: '#111', fontWeight: '500' },
+  rowChevron: { fontSize: 22, color: '#bbb', fontWeight: '300' },
 
-  divider: {
-    height: 1,
-    backgroundColor: '#FFFFFF',
+  signOutRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 14,
+    backgroundColor: '#fff', borderRadius: 14,
+    paddingHorizontal: 16, paddingVertical: 14,
+    marginTop: 16,
   },
-
-  logOutCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    borderWidth: 1.2,
-    borderColor: '#d8d8d8',
-    paddingVertical: 12,
-    paddingHorizontal: 28,
-    marginTop: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12.5,
-    elevation: 3,
-  },
-  logOutText: { fontSize: 18, fontWeight: '400', color: 'red' },
+  signOutIcon: { fontSize: 18, width: 24, textAlign: 'center', color: '#ef4444' },
+  signOutText: { fontSize: 15, fontWeight: '700', color: '#ef4444' },
 });
