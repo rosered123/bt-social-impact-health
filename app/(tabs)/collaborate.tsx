@@ -430,16 +430,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 20,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#c5e1f6',
     borderWidth: 1,
-    borderColor: '#d1d5db',
+    borderColor: '#c5e1f6',
     alignItems: 'center',
   },
   tabBtnActive: {
     backgroundColor: NAVY,
     borderColor: NAVY,
   },
-  tabText: { fontSize: 13, fontWeight: '600', color: '#555' },
+  tabText: { fontSize: 13, fontWeight: '600', color: '#000' },
   tabTextActive: { color: '#fff' },
 
   // Badge

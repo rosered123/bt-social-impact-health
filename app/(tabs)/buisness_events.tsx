@@ -317,22 +317,23 @@ const styles = StyleSheet.create({
   tab: {
     flex: 1, alignItems: 'center',
     paddingVertical: 9, borderRadius: 20,
-    backgroundColor: '#fff', borderWidth: 1, borderColor: '#d1d5db',
+    backgroundColor: '#c5e1f6', borderWidth: 1, borderColor: '#c5e1f6',
   },
   tabActive: { backgroundColor: BLUE, borderColor: BLUE },
-  tabText: { fontSize: 13, fontWeight: '600', color: '#555' },
+  tabText: { fontSize: 13, fontWeight: '600', color: '#000' },
   tabTextActive: { color: '#fff' },
 
   // Drafts banner
   draftBtn: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#7AAED6', borderRadius: RADIUS,
-    paddingHorizontal: 14, paddingVertical: 14,
+    backgroundColor: '#cbe7fd', borderRadius: RADIUS, 
+    borderWidth: 1, borderColor: '#7aaed6',
+    paddingHorizontal: 14, paddingVertical: 12,
     marginTop: 16, marginBottom: 16,
   },
   draftIconBox: {
     width: 53, height: 53, borderRadius: 27,
-    backgroundColor: '#C4DEF0',
+    backgroundColor: '#83bfec',
     alignItems: 'center', justifyContent: 'center', marginRight: 12,
   },
   draftBtnContent: { flex: 1 },
@@ -348,7 +349,7 @@ const styles = StyleSheet.create({
   eventCard: {
     backgroundColor: '#fff', borderRadius: RADIUS, marginTop: 16, marginBottom: 16,
     overflow: 'hidden',
-    shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 8, shadowOffset: { width: 0, height: 2 },
+    shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 2.5, shadowOffset: { width: 0, height: 2 },
     elevation: 2,
   },
   eventCover: {

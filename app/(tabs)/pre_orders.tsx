@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 10,
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#e3e9f5',
   },
   filterTabSelected: {
     backgroundColor: '#2E4A7A',
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
   filterTabText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#666',
+    color: '#2E4A7A',
   },
   filterTabTextSelected: {
     color: '#fff',
@@ -362,8 +362,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
+    shadowOpacity: 0.25,
+    shadowRadius: 2.5,
     elevation: 2,
   },
   orderHeader: {

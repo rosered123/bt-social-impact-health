@@ -551,6 +551,10 @@ const styles = StyleSheet.create({
     marginTop: 16,
     marginBottom: 16,
     backgroundColor: '#7AAED6',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 2.5,
   },
   menuStockHeader: {
     flexDirection: 'row',
@@ -669,8 +673,8 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
+    shadowOpacity: 0.25,
+    shadowRadius: 2.5,
     elevation: 2,
   },
   sectionTitle: {
@@ -806,8 +810,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
+    shadowOpacity: 0.25,
+    shadowRadius: 2.5,
     elevation: 2,
   },
   pushNotifLabel: {
