@@ -411,6 +411,8 @@ const styles = StyleSheet.create({
     marginHorizontal: -16,
     paddingHorizontal: 16,
     paddingBottom: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: '#B4B4B4',
   },
 
   // Header
@@ -427,19 +429,20 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   tabBtn: {
+    flex: 1, 
     paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#c5e1f6',
     borderWidth: 1,
-    borderColor: '#d1d5db',
+    borderColor: '#c5e1f6',
     alignItems: 'center',
   },
   tabBtnActive: {
     backgroundColor: NAVY,
     borderColor: NAVY,
   },
-  tabText: { fontSize: 13, fontWeight: '600', color: '#555' },
+  tabText: { fontSize: 14, fontWeight: '300', color: '#000' },
   tabTextActive: { color: '#fff' },
 
   // Badge

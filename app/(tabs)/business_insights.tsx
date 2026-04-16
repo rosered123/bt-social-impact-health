@@ -424,6 +424,8 @@ const styles = StyleSheet.create({
     paddingTop: 48,
     paddingBottom: 14,
     backgroundColor: '#FFF1AD',
+    borderBottomWidth: 1,
+    borderBottomColor: '#B4B4B4',
   },
   headerRow: {
     flexDirection: 'row',

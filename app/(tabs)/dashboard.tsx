@@ -1,4 +1,5 @@
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
@@ -184,11 +185,17 @@ export default function BusinessDashboard() {
                     params: { eventId: String(liveEvent.id) },
                   })
                 }
+                style={styles.updateBtnWrap}
               >
-                <View style={styles.updateBtn}>
+                <LinearGradient
+                  colors={['#3E5F8D', '#648EC9', '#3E5F8D']}
+                  start={{ x: 0, y: 0.5 }}
+                  end={{ x: 1, y: 0.5 }}
+                  style={styles.updateBtn}
+                >
                   <Feather name="radio" size={18} color="#fff" />
                   <Text style={styles.updateBtnText}>Update</Text>
-                </View>
+                </LinearGradient>
               </TouchableOpacity>
             ) : null}
           </View>
@@ -216,8 +223,13 @@ export default function BusinessDashboard() {
         </View>
 
         {/* ── Pre-Order Active Banner ── */}
-        <TouchableOpacity activeOpacity={0.85} onPress={() => router.push('/(tabs)/pre_orders')}>
-          <View style={styles.preOrderBanner}>
+        <TouchableOpacity activeOpacity={0.85} onPress={() => router.push('/(tabs)/pre_orders')} style={styles.preOrderBannerWrap}>
+          <LinearGradient
+            colors={['#cde7fd', '#7998cc']}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+            style={styles.preOrderBanner}
+          >
             <Feather name="shopping-bag" size={24} color="#000" />
             <View style={styles.preOrderText}>
               <Text style={styles.preOrderTitle}>Pre-Order Active</Text>
@@ -226,7 +238,7 @@ export default function BusinessDashboard() {
             <View style={styles.preOrderBadge}>
               <Text style={styles.preOrderBadgeText}>12</Text>
             </View>
-          </View>
+          </LinearGradient>
         </TouchableOpacity>
 
         {/* ── Today's Activity ── */}
@@ -269,9 +281,14 @@ export default function BusinessDashboard() {
             activeOpacity={0.75}
             onPress={() => router.push('/(tabs)/business_insights')}
           >
-            <View style={styles.quickActionIcon}>
+            <LinearGradient
+              colors={['#6ea1cf', '#3f6db7']}
+              start={{ x: 0.5, y: 0 }}
+              end={{ x: 0.5, y: 1 }}
+              style={styles.quickActionIcon}
+            >
               <MaterialCommunityIcons name="chart-line" size={30} color="#fff" />
-            </View>
+            </LinearGradient>
             <Text style={styles.quickActionLabel}>Insights</Text>
           </TouchableOpacity>
 
@@ -280,9 +297,14 @@ export default function BusinessDashboard() {
             activeOpacity={0.75}
             onPress={() => router.push('/(tabs)/create_business_event?from=dashboard')}
           >
-            <View style={styles.quickActionIcon}>
+            <LinearGradient
+              colors={['#b9d5f0', '#779ad5']}
+              start={{ x: 0.5, y: 0 }}
+              end={{ x: 0.5, y: 1 }}
+              style={styles.quickActionIcon}
+            >
               <Feather name="calendar" size={26} color="#fff" />
-            </View>
+            </LinearGradient>
             <Text style={styles.quickActionLabel}>Create Event</Text>
           </TouchableOpacity>
         </View>
@@ -342,6 +364,8 @@ const styles = StyleSheet.create({
     paddingTop: 48, paddingBottom: 16,
     marginHorizontal: -16, paddingHorizontal: 16,
     backgroundColor: '#FFF1AD',
+    borderBottomWidth: 1,
+    borderBottomColor: '#B4B4B4',
   },
   headerTextWrap: { flex: 1 },
   headerWelcome: { fontSize: 14, color: '#555', fontWeight: '500' },
@@ -373,18 +397,57 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   liveTopRow: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start',
-    marginBottom: 14,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  liveTitleCol: { flex: 1 },
-  liveTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  liveDot: { width: 10, height: 10, borderRadius: 5 },
-  liveTitle: { fontSize: 18, fontWeight: '800', color: '#111' },
-  liveSubtitle: { fontSize: 11, color: '#888', marginTop: 2, marginLeft: 18 },
+  liveTitleCol: {
+    flex: 1,
+  },
+  liveTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  liveDot: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+  },
+  liveTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#000',
+  },
+  liveSubtitle: {
+    fontSize: 11,
+    color: '#888',
+    marginTop: 2,
+    marginLeft: 26,
+  },
+  updateBtnWrap: {
+    borderRadius: 50,
+    overflow: 'hidden',
+  },
   updateBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: BLUE, borderRadius: 10,
-    paddingHorizontal: 16, paddingVertical: 9,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 50,
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+  },
+  updateBtnText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '500',
+  },
+
+  // ── Sub-cards (Hours / Location / Stock) ──
+  subCardRow: {
+    flexDirection: 'row',
+    gap: 11,
+    marginTop: 14,
   },
   updateBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
   subCardRow: { flexDirection: 'row', gap: 8 },
@@ -395,19 +458,53 @@ const styles = StyleSheet.create({
   subCardLabel: { fontSize: 11, fontWeight: '600', color: '#888', marginBottom: 3 },
   subCardValue: { fontSize: 13, fontWeight: '700', color: '#333' },
 
-  // Pre-Order banner
-  preOrderBanner: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#7AAED6', borderRadius: RADIUS,
-    paddingHorizontal: 16, paddingVertical: 16,
-    marginBottom: 20,
+  // ── Pre-Order Banner ──
+  preOrderBannerWrap: {
+    marginHorizontal: 16,
+    marginTop: 18,
+    borderRadius: 14,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.15,
+    shadowRadius: 5,
+    elevation: 4,
   },
-  preOrderText: { flex: 1, marginLeft: 12 },
-  preOrderTitle: { fontSize: 15, fontWeight: '700', color: '#111' },
-  preOrderSub: { fontSize: 12, color: '#333', marginTop: 2 },
+  preOrderBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderWidth: 1,
+    borderColor: '#C5D3E3',
+  },
+  preOrderText: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  preOrderTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#000',
+  },
+  preOrderSub: {
+    fontSize: 14,
+    color: '#000',
+    marginTop: 2,
+  },
   preOrderBadge: {
-    width: 30, height: 30, borderRadius: 15,
-    backgroundColor: BLUE, alignItems: 'center', justifyContent: 'center',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#ea3333',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  preOrderBadgeText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '500',
   },
   preOrderBadgeText: { color: '#fff', fontSize: 14, fontWeight: '800' },
 
@@ -435,8 +532,24 @@ const styles = StyleSheet.create({
   },
   quickActionItem: { alignItems: 'center', gap: 8 },
   quickActionIcon: {
-    width: 56, height: 56, borderRadius: 16,
-    backgroundColor: BLUE, alignItems: 'center', justifyContent: 'center',
+    width: 60,
+    height: 60,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#C5D3E3',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  quickActionLabel: {
+    fontSize: 16,
+    fontWeight: '400',
+    color: '#000',
+    marginTop: 5,
   },
   quickActionLabel: { fontSize: 12, fontWeight: '600', color: '#333' },
 

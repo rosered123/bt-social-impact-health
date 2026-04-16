@@ -384,6 +384,8 @@ const styles = StyleSheet.create({
     paddingTop: 48,
     paddingBottom: 14,
     backgroundColor: '#FFF1AD',
+    borderBottomWidth: 1,
+    borderBottomColor: '#B4B4B4',
   },
   pageTitle: { fontSize: 24, fontWeight: '900', color: '#111' },
 
@@ -413,7 +415,7 @@ const styles = StyleSheet.create({
   tagPill: {
     backgroundColor: '#FFF1AD',
     borderWidth: 1,
-    borderColor: '#FFF1AD',
+    borderColor: '#e2dbd5',
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 5,
@@ -425,16 +427,17 @@ const styles = StyleSheet.create({
     flex: 1, backgroundColor: '#2E4A7A', borderRadius: 10,
     paddingVertical: 10, alignItems: 'center',
   },
-  editBtnText: { color: '#FFFFFF', fontWeight: '700', fontSize: 14 },
+  editBtnText: { color: '#FFFFFF', fontWeight: '600', fontSize: 14 },
   shareBtn: {
     flex: 1, backgroundColor: '#7AAED6', borderRadius: 10,
     paddingVertical: 10, alignItems: 'center',
-    borderWidth: 1, borderColor: '#333',
+    borderWidth: 1, borderColor: '#7AAED6',
   },
-  shareBtnText: { color: '#333', fontWeight: '700', fontSize: 14 },
+  shareBtnText: { color: '#2E4A7A', fontWeight: '600', fontSize: 14 },
 
   aboutCard: {
-    backgroundColor: '#FFFFFF', borderRadius: RADIUS, padding: 16,
+    backgroundColor: '#f1eae4', borderRadius: RADIUS, 
+    borderColor: '#e2dbd5', borderWidth: 1, padding: 16,
     marginBottom: 20, marginHorizontal: 16,
   },
   cardSectionTitle: { fontSize: 15, fontWeight: '800', color: '#111', marginBottom: 4 },
@@ -458,7 +461,7 @@ const styles = StyleSheet.create({
     marginBottom: 12, paddingHorizontal: 16,
   },
   sectionTitle: { fontSize: 18, fontWeight: '900', color: '#111' },
-  viewAllText: { fontSize: 13, color: '#f59e0b', fontWeight: '600' },
+  viewAllText: { fontSize: 16, color: '#4169e1', fontWeight: '300' },
 
   eventCard: {
     flexDirection: 'row', backgroundColor: '#fff', borderRadius: RADIUS,
