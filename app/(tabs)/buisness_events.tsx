@@ -348,11 +348,11 @@ const styles = StyleSheet.create({
   },
   tab: {
     flex: 1, alignItems: 'center',
-    paddingVertical: 9, borderRadius: 20,
+    paddingVertical: 7, borderRadius: 20,
     backgroundColor: '#c5e1f6', borderWidth: 1, borderColor: '#c5e1f6',
   },
   tabActive: { backgroundColor: BLUE, borderColor: BLUE },
-  tabText: { fontSize: 13, fontWeight: '600', color: '#000' },
+  tabText: { fontSize: 14, fontWeight: '400', color: '#000' },
   tabTextActive: { color: '#fff' },
 
   // Drafts banner
