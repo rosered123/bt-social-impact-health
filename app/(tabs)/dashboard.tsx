@@ -375,17 +375,22 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   statBoxRow: {
-    flexDirection: 'row', gap: 8,
+    flexDirection: 'row', gap: 10,
     width: '100%', marginTop: 14,
   },
   statBox: {
     flex: 1, alignItems: 'flex-start', justifyContent: 'center',
-    backgroundColor: BLUE, borderRadius: 12,
-    paddingVertical: 12, paddingHorizontal: 14,
+    backgroundColor: BLUE, borderRadius: 7,
+    paddingVertical: 16, paddingHorizontal: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
   },
-  statBoxValue: { fontSize: 20, fontWeight: '900', color: '#fff' },
+  statBoxValue: { fontSize: 24, fontWeight: '900', color: '#fff' },
   statBoxValueRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  statBoxLabel: { fontSize: 12, fontWeight: '500', color: 'rgba(255,255,255,0.75)', marginTop: 2 },
+  statBoxLabel: { fontSize: 13, fontWeight: '500', color: 'rgba(255,255,255,0.75)', marginTop: 3 },
 
   errorText: { color: '#ef4444', marginBottom: 12, fontSize: 13, marginTop: 8 },
 
@@ -393,7 +398,7 @@ const styles = StyleSheet.create({
   liveCard: {
     backgroundColor: '#fff', borderRadius: RADIUS,
     padding: 16, marginTop: 16, marginBottom: 16,
-    shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 8, shadowOffset: { width: 0, height: 2 },
+    shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 5, shadowOffset: { width: 0, height: 2 },
     elevation: 2,
   },
   liveTopRow: {
@@ -449,8 +454,7 @@ const styles = StyleSheet.create({
     gap: 11,
     marginTop: 14,
   },
-  updateBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
-  subCardRow: { flexDirection: 'row', gap: 8 },
+  
   subCard: {
     flex: 1, backgroundColor: '#f5f5f5', borderRadius: 10,
     padding: 10, alignItems: 'center',
@@ -460,24 +464,19 @@ const styles = StyleSheet.create({
 
   // ── Pre-Order Banner ──
   preOrderBannerWrap: {
-    marginHorizontal: 16,
-    marginTop: 18,
-    borderRadius: 14,
+    marginTop: 6,
+    marginBottom: 14,
+    borderRadius: 16,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.15,
-    shadowRadius: 5,
+    shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 5, shadowOffset: { width: 0, height: 2 },
     elevation: 4,
   },
   preOrderBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 14,
+    borderRadius: 16,
     paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderWidth: 1,
-    borderColor: '#C5D3E3',
+    paddingVertical: 16,
   },
   preOrderText: {
     flex: 1,
@@ -506,7 +505,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '500',
   },
-  preOrderBadgeText: { color: '#fff', fontSize: 14, fontWeight: '800' },
 
   // Section title
   sectionTitle: { fontSize: 17, fontWeight: '800', color: '#111', marginBottom: 10 },
@@ -516,9 +514,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20,
   },
   activityCard: {
-    width: '47.5%' as any, backgroundColor: '#fff',
-    borderRadius: RADIUS, borderWidth: 1, borderColor: '#e5e7eb',
-    padding: 14, gap: 3,
+    width: '48%',
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    borderWidth: 0.8,
+    borderColor: '#d8d8d8',
+    padding: 18,
+    height: 82,
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 2.5,
+    elevation: 2,
   },
   activityLabel: { fontSize: 13, fontWeight: '600', color: '#555' },
   activityValue: { fontSize: 24, fontWeight: '900', color: '#111', marginTop: 4 },
@@ -541,7 +549,7 @@ const styles = StyleSheet.create({
     borderColor: '#C5D3E3',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 3,
   },
@@ -551,7 +559,6 @@ const styles = StyleSheet.create({
     color: '#000',
     marginTop: 5,
   },
-  quickActionLabel: { fontSize: 12, fontWeight: '600', color: '#333' },
 
   // Upcoming Events
   eventsHeader: {
@@ -564,8 +571,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: '#fff', borderRadius: RADIUS,
     padding: 12, marginBottom: 12,
-    shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, shadowOffset: { width: 0, height: 1 },
-    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 5,
+    elevation: 4,
   },
   eventThumb: {
     width: 56, height: 56, borderRadius: 28,
