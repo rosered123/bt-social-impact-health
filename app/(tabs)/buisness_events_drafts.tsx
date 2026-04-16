@@ -151,6 +151,8 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 16, paddingTop: 48, paddingBottom: 14,
     backgroundColor: '#FFF1AD',
+    borderBottomWidth: 1,
+    borderBottomColor: '#B4B4B4',
   },
   headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
   backBtn: { marginRight: 12 },
@@ -184,5 +186,5 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
   },
   statusText: { fontSize: 13, fontWeight: '600', color: '#888' },
-  continueText: { fontSize: 13, fontWeight: '700', color: '#7AAED6' },
+  continueText: { fontSize: 13, fontWeight: '600', color: '#2E4A7A' },
 });

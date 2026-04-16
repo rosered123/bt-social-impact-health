@@ -1,4 +1,5 @@
 import { Feather } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import React, { useCallback, useEffect, useState } from 'react';
 import {
@@ -89,11 +90,15 @@ const EventCard: React.FC<{ event: EventRow; index: number; isPast?: boolean }> 
         ) : null}
         {isPast && <View style={styles.pastOverlay} />}
         {isLive && (
-          <View style={styles.liveBadge}>
-            <View style={styles.liveBadgeBg} />
+          <LinearGradient
+            colors={['#3E5F8D', '#648EC9', '#3E5F8D']}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+            style={styles.liveBadge}
+          >
             <View style={[styles.liveDot, { backgroundColor: liveDisplay.color }]} />
             <Text style={styles.liveText}>{liveDisplay.label}</Text>
-          </View>
+          </LinearGradient>
         )}
       </View>
 
@@ -115,7 +120,7 @@ const EventCard: React.FC<{ event: EventRow; index: number; isPast?: boolean }> 
           <View style={{ flex: 1 }} />
           {isLive ? (
             <TouchableOpacity
-              style={styles.actionBtn}
+              style={styles.actionBtnWrap}
               activeOpacity={0.85}
               onPress={() =>
                 router.push({
@@ -124,16 +129,30 @@ const EventCard: React.FC<{ event: EventRow; index: number; isPast?: boolean }> 
                 })
               }
             >
-              <Text style={styles.actionBtnText}>Update</Text>
+              <LinearGradient
+                colors={['#3E5F8D', '#648EC9', '#3E5F8D']}
+                start={{ x: 0, y: 0.5 }}
+                end={{ x: 1, y: 0.5 }}
+                style={styles.actionBtn}
+              >
+                <Text style={styles.actionBtnText}>Update</Text>
+              </LinearGradient>
             </TouchableOpacity>
           ) : canGoLive ? (
             <TouchableOpacity
-              style={[styles.actionBtn, busy && { opacity: 0.5 }]}
+              style={[styles.actionBtnWrap, busy && { opacity: 0.5 }]}
               activeOpacity={0.85}
               disabled={busy}
               onPress={handleSetLive}
             >
-              <Text style={styles.actionBtnText}>{busy ? '…' : 'Set Live'}</Text>
+              <LinearGradient
+                colors={['#3E5F8D', '#648EC9', '#3E5F8D']}
+                start={{ x: 0, y: 0.5 }}
+                end={{ x: 1, y: 0.5 }}
+                style={styles.actionBtn}
+              >
+                <Text style={styles.actionBtnText}>{busy ? '…' : 'Set Live'}</Text>
+              </LinearGradient>
             </TouchableOpacity>
           ) : null}
         </View>
@@ -188,11 +207,18 @@ export default function BusinessEventsUpcoming() {
         <View style={styles.headerRow}>
           <Text style={styles.headerTitle}>My Events</Text>
           <TouchableOpacity
-            style={styles.createBtn}
+            style={styles.createBtnWrap}
             activeOpacity={0.85}
             onPress={() => router.push('/create_business_event?from=events')}
           >
-            <Text style={styles.createBtnText}>+ Create</Text>
+            <LinearGradient
+              colors={['#3E5F8D', '#648EC9', '#3E5F8D']}
+              start={{ x: 0, y: 0.5 }}
+              end={{ x: 1, y: 0.5 }}
+              style={styles.createBtn}
+            >
+              <Text style={styles.createBtnText}>+ Create</Text>
+            </LinearGradient>
           </TouchableOpacity>
         </View>
 
@@ -297,15 +323,21 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 16, paddingTop: 48, paddingBottom: 14,
     backgroundColor: '#FFF1AD',
+    borderBottomWidth: 1,
+    borderBottomColor: '#B4B4B4',
   },
   headerRow: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     marginBottom: 12,
   },
   headerTitle: { fontSize: 24, fontWeight: '900', color: '#111' },
+  createBtnWrap: {
+    borderRadius: 50,
+    overflow: 'hidden',
+  },
   createBtn: {
-    backgroundColor: BLUE, borderRadius: 20,
-    paddingHorizontal: 18, paddingVertical: 9,
+    borderRadius: 50,
+    paddingHorizontal: 18, paddingVertical: 6,
   },
   createBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
 
@@ -328,8 +360,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: '#cbe7fd', borderRadius: RADIUS, 
     borderWidth: 1, borderColor: '#7aaed6',
-    paddingHorizontal: 14, paddingVertical: 12,
-    marginTop: 16, marginBottom: 16,
+    paddingHorizontal: 14, paddingVertical: 8,
+    marginTop: 16, marginBottom: 8,
   },
   draftIconBox: {
     width: 53, height: 53, borderRadius: 27,
@@ -349,7 +381,7 @@ const styles = StyleSheet.create({
   eventCard: {
     backgroundColor: '#fff', borderRadius: RADIUS, marginTop: 16, marginBottom: 16,
     overflow: 'hidden',
-    shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 2.5, shadowOffset: { width: 0, height: 2 },
+    shadowColor: '#000', shadowOpacity: 0.5, shadowRadius: 5, shadowOffset: { width: 0, height: 2 },
     elevation: 2,
   },
   eventCover: {
@@ -362,23 +394,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row', gap: 28, marginTop: 10,
     paddingTop: 10, borderTopWidth: 1, borderTopColor: '#eee',
   },
-  statValue: { fontSize: 15, fontWeight: '800', color: BLUE },
+  statValue: { fontSize: 15, fontWeight: '500', color: '#000' },
   statLabel: { fontWeight: '400', color: '#888' },
 
   // Live badge
   liveBadge: {
     position: 'absolute', top: 10, right: 10,
     flexDirection: 'row', alignItems: 'center',
-    borderRadius: 12,
-    paddingHorizontal: 10, paddingVertical: 5, gap: 6,
+    borderRadius: 50,
+    paddingHorizontal: 12, paddingVertical: 6, gap: 6,
     overflow: 'hidden',
   },
-  liveBadgeBg: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#2E4A7A',
-  },
-  liveDot: { width: 8, height: 8, borderRadius: 4 },
-  liveText: { fontSize: 11, fontWeight: '800', color: '#fff', letterSpacing: 0.5 },
+  liveDot: { width: 10, height: 10, borderRadius: 5 },
+  liveText: { fontSize: 13, fontWeight: '700', color: '#fff', letterSpacing: 0.5 },
 
   // Past event styles
   pastOverlay: {
@@ -391,8 +419,12 @@ const styles = StyleSheet.create({
   pastStatLabel: { color: '#bbb' },
 
   // Update / Set Live button (in stats row)
+  actionBtnWrap: {
+    borderRadius: 50,
+    overflow: 'hidden',
+  },
   actionBtn: {
-    backgroundColor: BLUE, borderRadius: 8,
+    borderRadius: 50,
     paddingHorizontal: 14, paddingVertical: 6,
   },
   actionBtnText: { color: '#fff', fontWeight: '700', fontSize: 12 },

@@ -384,6 +384,8 @@ const styles = StyleSheet.create({
     paddingTop: 48,
     paddingBottom: 14,
     backgroundColor: '#FFF1AD',
+    borderBottomWidth: 1,
+    borderBottomColor: '#B4B4B4',
   },
   pageTitle: { fontSize: 24, fontWeight: '900', color: '#111' },
 
@@ -425,13 +427,13 @@ const styles = StyleSheet.create({
     flex: 1, backgroundColor: '#2E4A7A', borderRadius: 10,
     paddingVertical: 10, alignItems: 'center',
   },
-  editBtnText: { color: '#FFFFFF', fontWeight: '700', fontSize: 14 },
+  editBtnText: { color: '#FFFFFF', fontWeight: '600', fontSize: 14 },
   shareBtn: {
     flex: 1, backgroundColor: '#7AAED6', borderRadius: 10,
     paddingVertical: 10, alignItems: 'center',
     borderWidth: 1, borderColor: '#7AAED6',
   },
-  shareBtnText: { color: '#333', fontWeight: '700', fontSize: 14 },
+  shareBtnText: { color: '#2E4A7A', fontWeight: '600', fontSize: 14 },
 
   aboutCard: {
     backgroundColor: '#f1eae4', borderRadius: RADIUS, 

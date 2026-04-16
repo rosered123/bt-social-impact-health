@@ -1,4 +1,5 @@
 import { Feather } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import React, { useState } from 'react';
 import {
@@ -134,9 +135,14 @@ export default function PreOrders() {
           onPress={() => advanceStatus(order.id)}
           activeOpacity={0.8}
         >
-          <View style={styles.actionBtnGradient}>
+          <LinearGradient
+            colors={['#3E5F8D', '#648EC9', '#3E5F8D']}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+            style={styles.actionBtnGradient}
+          >
             <Text style={styles.actionBtnText}>{label}</Text>
-          </View>
+          </LinearGradient>
         </TouchableOpacity>
       );
     }
@@ -266,6 +272,8 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
     paddingHorizontal: 20,
     backgroundColor: '#FFF1AD',
+    borderBottomWidth: 1,
+    borderBottomColor: '#B4B4B4',
   },
   headerContent: {
     flexDirection: 'row',
@@ -295,15 +303,21 @@ const styles = StyleSheet.create({
   /* Stat Pills */
   statRow: {
     flexDirection: 'row',
+    justifyContent: 'center',
     gap: 10,
     marginTop: 14,
   },
   statPill: {
-    flex: 1,
     backgroundColor: '#2E4A7A',
-    borderRadius: 14,
-    paddingVertical: 14,
-    alignItems: 'center',
+    borderRadius: 7,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    minWidth: 93,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12.5,
+    elevation: 6,
   },
   statValue: {
     fontSize: 20,
@@ -327,7 +341,7 @@ const styles = StyleSheet.create({
   filterTab: {
     flex: 1,
     paddingVertical: 10,
-    borderRadius: 10,
+    borderRadius: 50,
     alignItems: 'center',
     backgroundColor: '#e3e9f5',
   },
@@ -397,7 +411,7 @@ const styles = StyleSheet.create({
     color: '#999',
   },
   statusBadge: {
-    borderRadius: 8,
+    borderRadius: 50,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
@@ -434,14 +448,13 @@ const styles = StyleSheet.create({
     color: '#111',
   },
   actionBtn: {
-    borderRadius: 10,
+    borderRadius: 50,
     overflow: 'hidden',
   },
   actionBtnGradient: {
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#2E4A7A',
+    borderRadius: 50,
+    paddingHorizontal: 20,
+    paddingVertical: 6,
   },
   actionBtnText: {
     color: '#fff',

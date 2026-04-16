@@ -1,4 +1,5 @@
 import { Feather } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import React, { useEffect, useState } from 'react';
 import {
@@ -327,7 +328,14 @@ export default function UpdateStatus() {
             onPress={handleUpdate}
             disabled={submitting}
           >
-            <Text style={styles.headerUpdateText}>{submitting ? '...' : 'Update'}</Text>
+            <LinearGradient
+              colors={['#3E5F8D', '#648EC9', '#3E5F8D']}
+              start={{ x: 0, y: 0.5 }}
+              end={{ x: 1, y: 0.5 }}
+              style={styles.headerUpdateGradient}
+            >
+              <Text style={styles.headerUpdateText}>{submitting ? '...' : 'Update'}</Text>
+            </LinearGradient>
           </TouchableOpacity>
         </View>
       </View>
@@ -481,9 +489,14 @@ export default function UpdateStatus() {
           activeOpacity={0.85}
           disabled={submitting}
         >
-          <View style={styles.updateStatusGradient}>
+          <LinearGradient
+            colors={['#3E5F8D', '#648EC9', '#3E5F8D']}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+            style={styles.updateStatusGradient}
+          >
             <Text style={styles.updateStatusBtnText}>{submitting ? 'Updating...' : 'Update Status'}</Text>
-          </View>
+          </LinearGradient>
         </TouchableOpacity>
 
         {/* End Event Button */}
@@ -513,6 +526,8 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
     paddingHorizontal: 20,
     backgroundColor: '#FFF1AD',
+    borderBottomWidth: 1,
+    borderBottomColor: '#B4B4B4',
   },
   headerContent: {
     flexDirection: 'row',
@@ -531,8 +546,11 @@ const styles = StyleSheet.create({
     color: '#000',
   },
   headerUpdateBtn: {
-    backgroundColor: '#2E4A7A',
-    borderRadius: 20,
+    borderRadius: 50,
+    overflow: 'hidden',
+  },
+  headerUpdateGradient: {
+    borderRadius: 50,
     paddingHorizontal: 22,
     paddingVertical: 8,
   },
@@ -773,6 +791,13 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 4,
     gap: 6,
+    borderWidth: 1,
+    borderColor: '#d8d8d8',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 2,
   },
   statusBtnSelected: {},
   statusDot: {
@@ -822,15 +847,14 @@ const styles = StyleSheet.create({
 
   /* Update Status Button */
   updateStatusBtn: {
-    borderRadius: 14,
+    borderRadius: 50,
     overflow: 'hidden',
     marginBottom: 10,
   },
   updateStatusGradient: {
     paddingVertical: 16,
     alignItems: 'center',
-    borderRadius: 14,
-    backgroundColor: '#2E4A7A',
+    borderRadius: 50,
   },
   updateStatusBtnText: {
     color: '#fff',
@@ -843,7 +867,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderWidth: 1.5,
     borderColor: '#ef4444',
-    borderRadius: 14,
+    borderRadius: 50,
     paddingVertical: 14,
     alignItems: 'center',
     marginBottom: 8,

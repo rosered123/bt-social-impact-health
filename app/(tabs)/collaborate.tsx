@@ -411,6 +411,8 @@ const styles = StyleSheet.create({
     marginHorizontal: -16,
     paddingHorizontal: 16,
     paddingBottom: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: '#B4B4B4',
   },
 
   // Header

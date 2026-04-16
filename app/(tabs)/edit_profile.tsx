@@ -1,4 +1,5 @@
 import { Feather } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import React, { useEffect, useState } from 'react';
 import {
@@ -164,7 +165,14 @@ export default function EditProfile() {
           <Text style={styles.headerTitle}>Edit Business Profile</Text>
         </View>
         <TouchableOpacity style={[styles.saveHeaderBtn, saving && styles.btnDisabled]} onPress={handleSave} disabled={saving}>
-          <Text style={styles.saveHeaderText}>{saving ? 'Saving…' : 'Save'}</Text>
+          <LinearGradient
+            colors={['#3E5F8D', '#648EC9', '#3E5F8D']}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+            style={styles.saveHeaderGradient}
+          >
+            <Text style={styles.saveHeaderText}>{saving ? 'Saving…' : 'Save'}</Text>
+          </LinearGradient>
         </TouchableOpacity>
       </View>
 
@@ -265,8 +273,15 @@ export default function EditProfile() {
         </View>
 
         {/* ── Save Changes ── */}
-        <TouchableOpacity style={[styles.saveBtn, saving && styles.btnDisabled]} onPress={handleSave} disabled={saving} activeOpacity={0.85}>
-          <Text style={styles.saveBtnText}>{saving ? 'Saving…' : 'Save Changes'}</Text>
+        <TouchableOpacity style={[styles.saveBtnWrap, saving && styles.btnDisabled]} onPress={handleSave} disabled={saving} activeOpacity={0.85}>
+          <LinearGradient
+            colors={['#3E5F8D', '#648EC9', '#3E5F8D']}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+            style={styles.saveBtn}
+          >
+            <Text style={styles.saveBtnText}>{saving ? 'Saving…' : 'Save Changes'}</Text>
+          </LinearGradient>
         </TouchableOpacity>
 
         <View style={{ height: 40 }} />
@@ -286,13 +301,18 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: 16, paddingTop: 48, paddingBottom: 12, backgroundColor: '#FFF1AD',
+    borderBottomWidth: 1, borderBottomColor: '#B4B4B4',
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', flexShrink: 1 },
   backBtn: { marginRight: 10 },
   backIcon: { fontSize: 24, fontWeight: '700', color: '#111' },
   headerTitle: { fontSize: 22, fontWeight: '800', color: '#111', flexShrink: 1 },
   saveHeaderBtn: {
-    backgroundColor: BLUE, borderRadius: 20,
+    borderRadius: 50,
+    overflow: 'hidden',
+  },
+  saveHeaderGradient: {
+    borderRadius: 50,
     paddingHorizontal: 20, paddingVertical: 8,
   },
   saveHeaderText: { color: '#fff', fontWeight: '700', fontSize: 14 },
@@ -376,9 +396,14 @@ const styles = StyleSheet.create({
   addTagBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
 
   // Save button
+  saveBtnWrap: {
+    borderRadius: 50,
+    overflow: 'hidden',
+    marginTop: 20,
+  },
   saveBtn: {
-    backgroundColor: BLUE, borderRadius: 28,
-    paddingVertical: 16, alignItems: 'center', marginTop: 20,
+    borderRadius: 50,
+    paddingVertical: 16, alignItems: 'center',
   },
   saveBtnText: { color: '#fff', fontWeight: '800', fontSize: 16 },
 });

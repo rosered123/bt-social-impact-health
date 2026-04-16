@@ -1,4 +1,5 @@
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
@@ -180,11 +181,17 @@ export default function BusinessDashboard() {
                     params: { eventId: String(liveEvent.id) },
                   })
                 }
+                style={styles.updateBtnWrap}
               >
-                <View style={styles.updateBtn}>
+                <LinearGradient
+                  colors={['#3E5F8D', '#648EC9', '#3E5F8D']}
+                  start={{ x: 0, y: 0.5 }}
+                  end={{ x: 1, y: 0.5 }}
+                  style={styles.updateBtn}
+                >
                   <Feather name="radio" size={18} color="#fff" />
                   <Text style={styles.updateBtnText}>Update</Text>
-                </View>
+                </LinearGradient>
               </TouchableOpacity>
             ) : null}
           </View>
@@ -212,8 +219,13 @@ export default function BusinessDashboard() {
         </View>
 
         {/* ── Pre-Order Active Banner ── */}
-        <TouchableOpacity activeOpacity={0.85} onPress={() => router.push('/(tabs)/pre_orders')}>
-          <View style={styles.preOrderBanner}>
+        <TouchableOpacity activeOpacity={0.85} onPress={() => router.push('/(tabs)/pre_orders')} style={styles.preOrderBannerWrap}>
+          <LinearGradient
+            colors={['#cde7fd', '#7998cc']}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+            style={styles.preOrderBanner}
+          >
             <Feather name="shopping-bag" size={24} color="#000" />
             <View style={styles.preOrderText}>
               <Text style={styles.preOrderTitle}>Pre-Order Active</Text>
@@ -222,7 +234,7 @@ export default function BusinessDashboard() {
             <View style={styles.preOrderBadge}>
               <Text style={styles.preOrderBadgeText}>12</Text>
             </View>
-          </View>
+          </LinearGradient>
         </TouchableOpacity>
 
         {/* ── Today's Activity ── */}
@@ -265,9 +277,14 @@ export default function BusinessDashboard() {
             activeOpacity={0.75}
             onPress={() => router.push('/(tabs)/business_insights')}
           >
-            <View style={styles.quickActionIcon}>
+            <LinearGradient
+              colors={['#6ea1cf', '#3f6db7']}
+              start={{ x: 0.5, y: 0 }}
+              end={{ x: 0.5, y: 1 }}
+              style={styles.quickActionIcon}
+            >
               <MaterialCommunityIcons name="chart-line" size={30} color="#fff" />
-            </View>
+            </LinearGradient>
             <Text style={styles.quickActionLabel}>Insights</Text>
           </TouchableOpacity>
 
@@ -276,9 +293,14 @@ export default function BusinessDashboard() {
             activeOpacity={0.75}
             onPress={() => router.push('/(tabs)/create_business_event?from=dashboard')}
           >
-            <View style={styles.quickActionIcon}>
+            <LinearGradient
+              colors={['#b9d5f0', '#779ad5']}
+              start={{ x: 0.5, y: 0 }}
+              end={{ x: 0.5, y: 1 }}
+              style={styles.quickActionIcon}
+            >
               <Feather name="calendar" size={26} color="#fff" />
-            </View>
+            </LinearGradient>
             <Text style={styles.quickActionLabel}>Create Event</Text>
           </TouchableOpacity>
         </View>
@@ -335,6 +357,8 @@ const styles = StyleSheet.create({
     paddingTop: 24,
     paddingBottom: 30,
     backgroundColor: '#FFF1AD',
+    borderBottomWidth: 1,
+    borderBottomColor: '#B4B4B4',
   },
   headerTextWrap: { flex: 1 },
   headerWelcome: { fontSize: 18, color: '#000', fontWeight: '400' },
@@ -428,14 +452,17 @@ const styles = StyleSheet.create({
     marginTop: 2,
     marginLeft: 26,
   },
+  updateBtnWrap: {
+    borderRadius: 50,
+    overflow: 'hidden',
+  },
   updateBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    borderRadius: 100,
+    borderRadius: 50,
     paddingHorizontal: 20,
     paddingVertical: 8,
-    backgroundColor: '#2E4A7A',
   },
   updateBtnText: {
     color: '#fff',
@@ -472,20 +499,25 @@ const styles = StyleSheet.create({
   },
 
   // ── Pre-Order Banner ──
+  preOrderBannerWrap: {
+    marginHorizontal: 16,
+    marginTop: 18,
+    borderRadius: 14,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.15,
+    shadowRadius: 5,
+    elevation: 4,
+  },
   preOrderBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: 16,
-    marginTop: 18,
-    borderRadius: 10,
+    borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    backgroundColor: '#7AAED6',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.25,
-    shadowRadius: 5,
-    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#C5D3E3',
   },
   preOrderText: {
     flex: 1,
@@ -590,12 +622,11 @@ const styles = StyleSheet.create({
     borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#7AAED6',
     borderWidth: 1,
-    borderColor: '#d8d8d8',
+    borderColor: '#C5D3E3',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.15,
     shadowRadius: 4,
     elevation: 3,
   },
