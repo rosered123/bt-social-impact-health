@@ -214,7 +214,8 @@ export default function Explore() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f5f5f5" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFF1AD" />
+      <View style={styles.content}>
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
 
         {/* ── Header ── */}
@@ -310,6 +311,7 @@ export default function Explore() {
 
         <View style={{ height: 32 }} />
       </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
@@ -319,11 +321,12 @@ const CARD_BG = '#FFFFFF';
 const RADIUS = 12;
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#f5f5f5' },
+  safe: { flex: 1, backgroundColor: '#FFF1AD' },
+  content: { flex: 1, backgroundColor: '#f5f5f5' },
   scroll: { flex: 1, paddingHorizontal: 16 },
 
   // Header
-  header: { paddingTop: 16, marginBottom: 12 },
+  header: { paddingTop: 16, paddingBottom: 12, marginHorizontal: -16, paddingHorizontal: 16, backgroundColor: '#FFF1AD' },
   headerTitle: { fontSize: 22, fontWeight: '900', color: '#111' },
 
   // Search

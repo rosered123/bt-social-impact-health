@@ -84,6 +84,7 @@ export default function TabLayout() {
       <Tabs.Screen name="public_business_profile" options={{ href: null }} />
       <Tabs.Screen name="business_insights" options={{ href: null }} />
       <Tabs.Screen name="settings" options={{ href: null }} />
+      <Tabs.Screen name="edit_interests" options={{ href: null }} />
 
       <Tabs.Screen
         name="explore"
@@ -97,6 +98,17 @@ export default function TabLayout() {
         }
       />
       <Tabs.Screen
+        name="map"
+        options={{
+          title: 'Map',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="map.fill" color={color} />,
+        }}
+      />
+      <Tabs.Screen name="add_review" options={{ href: null }} />
+      <Tabs.Screen name="view_event" options={{ href: null }} />
+      <Tabs.Screen name="user_business_profile" options={{ href: null }} />
+
+      <Tabs.Screen
         name="profile"
         options={
           isBusiness
@@ -107,41 +119,7 @@ export default function TabLayout() {
               }
         }
       />
-      <Tabs.Screen
-        name="add_review"
-        options={
-          isBusiness
-            ? { href: null }
-            : {
-                title: 'Write Review',
-                tabBarIcon: ({ color }) => <IconSymbol size={28} name="square.and.pencil" color={color} />,
-              }
-        }
-      />
-      <Tabs.Screen
-        name="view_event"
-        options={
-          isBusiness
-            ? { href: null }
-            : {
-                title: 'View Event',
-                tabBarIcon: ({ color }) => <IconSymbol size={28} name="calendar" color={color} />,
-              }
-        }
-      />
-      <Tabs.Screen
-        name="user_business_profile"
-        options={
-          isBusiness
-            ? { href: null }
-            : {
-                title: 'Business',
-                tabBarIcon: ({ color }) => <IconSymbol size={28} name="building.2.fill" color={color} />,
-              }
-        }
-      />
-
-      <Tabs.Screen name="map" options={{ href: null }} />
+      <Tabs.Screen name="customer_preorder" options={{ href: null }} />
       <Tabs.Screen name="buisness_events_drafts" options={{ href: null }} />
       <Tabs.Screen name="index" options={{ href: null }} />
     </Tabs>

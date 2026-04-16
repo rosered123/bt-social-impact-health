@@ -1,15 +1,15 @@
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  Image,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-  SafeAreaView,
-  StatusBar,
   ActivityIndicator,
+  Image,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 import {
@@ -72,8 +72,9 @@ const InfoRow: React.FC<{ icon: string; label: string; link?: boolean }> = ({ ic
 
 export default function UserBusinessProfile() {
   // Accept businessUid via route param, fallback handled in UI
-  const params = useLocalSearchParams<{ businessUid?: string }>();
+  const params = useLocalSearchParams<{ businessUid?: string; fromEventId?: string }>();
   const businessUid = params.businessUid;
+  const fromEventId = params.fromEventId;
 
   const [business, setBusiness] = useState<Business | null>(null);
   const [events, setEvents] = useState<EventRow[]>([]);
@@ -86,9 +87,11 @@ export default function UserBusinessProfile() {
   useEffect(() => {
     if (!businessUid) {
       setLoading(false);
-      setError('No business selected.');
+      setError(null);
       return;
     }
+    setLoading(true);
+    setError(null);
     let cancelled = false;
     (async () => {
       try {
@@ -150,18 +153,32 @@ export default function UserBusinessProfile() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f5f5f5" />
-      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFF1AD" />
 
-        <Text style={styles.pageTitle}>Business Profile</Text>
+      {/* ── Yellow Navbar ── */}
+      <View style={styles.navbar}>
+        <TouchableOpacity style={styles.navBtn} onPress={() => fromEventId ? router.push({ pathname: '/(tabs)/view_event', params: { eventId: fromEventId } }) : router.back()}>
+          <Text style={styles.navBtnText}>←</Text>
+        </TouchableOpacity>
+        <View style={{ width: 36 }} />
+      </View>
+
+      <View style={styles.content}>
+      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
 
         <View style={styles.coverSection}>
           <View style={styles.coverPhoto}>
-            <Text style={styles.coverPhotoIcon}>🖼</Text>
+            {business.logo_url ? (
+              <Image source={{ uri: business.logo_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+            ) : null}
           </View>
           <View style={styles.avatarWrapper}>
             <View style={styles.avatar}>
-              <Text style={styles.avatarIcon}>🖼</Text>
+              {business.logo_url ? (
+                <Image source={{ uri: business.logo_url }} style={styles.avatarImage} resizeMode="cover" />
+              ) : (
+                <Text style={styles.avatarIcon}>🖼</Text>
+              )}
             </View>
           </View>
         </View>
@@ -219,8 +236,13 @@ export default function UserBusinessProfile() {
           <>
             <Text style={styles.sectionTitle}>Upcoming Events</Text>
             {events.map(event => (
-              <TouchableOpacity key={event.id} style={styles.eventCard} activeOpacity={0.8}>
-                <View style={styles.eventThumb} />
+              <TouchableOpacity key={event.id} style={styles.eventCard} activeOpacity={0.8}
+                onPress={() => router.navigate({ pathname: '/(tabs)/view_event', params: { eventId: String(event.id) } })}>
+                <View style={styles.eventThumb}>
+                  {event.cover_url ? (
+                    <Image source={{ uri: event.cover_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+                  ) : null}
+                </View>
                 <View style={styles.eventInfo}>
                   <Text style={styles.eventName}>{event.event_name}</Text>
                   <View style={styles.eventMetaRow}>
@@ -255,6 +277,7 @@ export default function UserBusinessProfile() {
 
         <View style={{ height: 32 }} />
       </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
@@ -263,15 +286,21 @@ const CARD_BG = '#FFFFFF';
 const RADIUS = 12;
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#f5f5f5' },
+  safe: { flex: 1, backgroundColor: '#FFF1AD' },
+  content: { flex: 1, backgroundColor: '#f5f5f5' },
+  navbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#FFF1AD', margin: 20 },
+  navBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(0,0,0,0.08)', alignItems: 'center', justifyContent: 'center' },
+  navBtnText: { fontSize: 18, color: '#111' },
+  navTitle: { flex: 1, textAlign: 'center', fontSize: 16, fontWeight: '800', color: '#111', marginHorizontal: 8 },
   scroll: { flex: 1, paddingHorizontal: 16 },
   pageTitle: { fontSize: 24, fontWeight: '900', color: '#111', marginTop: 16, marginBottom: 14 },
-  coverSection: { marginBottom: 0 },
+  coverSection: { marginBottom: 0, marginTop: 18 },
   coverPhoto: { height: 150, backgroundColor: CARD_BG, borderRadius: RADIUS, alignItems: 'center', justifyContent: 'center' },
   coverPhotoIcon: { fontSize: 28, opacity: 0.5 },
   avatarWrapper: { marginTop: -36, marginLeft: 12 },
   avatar: { width: 72, height: 72, borderRadius: 36, backgroundColor: '#d0d0d0', borderWidth: 3, borderColor: '#f5f5f5', alignItems: 'center', justifyContent: 'center' },
   avatarIcon: { fontSize: 22, opacity: 0.5 },
+  avatarImage: { width: '100%', height: '100%', borderRadius: 36 },
   profileInfo: { paddingTop: 8, marginBottom: 16 },
   businessName: { fontSize: 22, fontWeight: '900', color: '#111', marginBottom: 6 },
   statsRow: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 10 },
@@ -279,12 +308,12 @@ const styles = StyleSheet.create({
   ratingText: { fontSize: 13, color: '#444', fontWeight: '500' },
   followersText: { fontSize: 13, color: '#444', fontWeight: '600' },
   actionRow: { flexDirection: 'row', gap: 10 },
-  followBtn: { flex: 1, backgroundColor: '#555', borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
+  followBtn: { flex: 1, backgroundColor: '#2E4A7A', borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
   followingBtn: { backgroundColor: '#f0f0f0', borderWidth: 1.5, borderColor: '#bbb' },
   followBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
   followingBtnText: { color: '#333' },
-  shareBtn: { flex: 1, backgroundColor: '#f0f0f0', borderRadius: 10, paddingVertical: 10, alignItems: 'center', borderWidth: 1.5, borderColor: '#ccc' },
-  shareBtnText: { color: '#333', fontWeight: '700', fontSize: 14 },
+  shareBtn: { flex: 1, backgroundColor: '#7AAED6', borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
+  shareBtnText: { color: '#2E4A7A', fontWeight: '700', fontSize: 14 },
   card: { backgroundColor: CARD_BG, borderRadius: RADIUS, padding: 16, marginBottom: 20 },
   cardSectionTitle: { fontSize: 15, fontWeight: '800', color: '#111', marginBottom: 4 },
   cardBody: { fontSize: 13, color: '#555', lineHeight: 19, marginBottom: 4 },
@@ -295,7 +324,7 @@ const styles = StyleSheet.create({
   infoLabelLink: { color: '#4f7df0', fontWeight: '500' },
   sectionTitle: { fontSize: 18, fontWeight: '900', color: '#111', marginBottom: 12 },
   eventCard: { flexDirection: 'row', backgroundColor: CARD_BG, borderRadius: RADIUS, padding: 12, marginBottom: 14, gap: 12, alignItems: 'center' },
-  eventThumb: { width: 64, height: 64, borderRadius: 10, backgroundColor: '#c8c8c8' },
+  eventThumb: { width: 64, height: 64, borderRadius: 10, backgroundColor: '#c8c8c8', overflow: 'hidden' },
   eventInfo: { flex: 1, gap: 4 },
   eventName: { fontSize: 14, fontWeight: '800', color: '#111' },
   eventMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },

@@ -1,9 +1,9 @@
-import { router, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { router, useFocusEffect, useGlobalSearchParams } from 'expo-router';
+import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
-  SafeAreaView,
+  Image,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   getBusinessByUid,
@@ -22,10 +23,14 @@ import {
   type InventoryItem,
   type ReviewRow,
 } from '@/services/api';
+import {
+  isEventSaved,
+  saveEvent,
+  unsaveEvent,
+} from '@/services/saved-events';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// ─── Availability ─────────────────────────────────────────────────────────────
 const AVAIL_LABEL: Record<string, string> = {
   full_stock: 'Full stock',
   low_stock: 'Low stock',
@@ -41,7 +46,6 @@ const AVAIL_COLOR: Record<string, string> = {
   closed_today: '#ef4444',
 };
 
-// ─── Sentiment derived from reviews ──────────────────────────────────────────
 const SENTIMENT_KEYWORDS = [
   { label: 'Quick Service', words: ['quick', 'fast', 'speedy', 'efficient'] },
   { label: 'Crowded', words: ['crowded', 'busy', 'packed', 'full', 'long line'] },
@@ -65,8 +69,7 @@ function computeSentiment(reviews: ReviewRow[]): { label: string; pct: number }[
 }
 
 export default function ViewEvent() {
-  const params = useLocalSearchParams<{ eventId?: string }>();
-  const eventId = params.eventId ? Number(params.eventId) : null;
+  const params = useGlobalSearchParams<{ eventId?: string }>();
 
   const [event, setEvent] = useState<EventRow | null>(null);
   const [business, setBusiness] = useState<Business | null>(null);
@@ -74,14 +77,28 @@ export default function ViewEvent() {
   const [sentiment, setSentiment] = useState<{ label: string; pct: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState(false);
+  const [rsvped, setRsvped] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
+    const eventId = params.eventId ? Number(params.eventId) : null;
+
     if (!eventId) {
       setLoading(false);
       setError('No event selected.');
       return;
     }
+
+    // Reset state for fresh load on each focus
+    setLoading(true);
+    setError(null);
+    setEvent(null);
+    setBusiness(null);
+    setInventory([]);
+    setSentiment([]);
+    setSaved(isEventSaved(eventId));
+    setRsvped(false);
+
     let cancelled = false;
     (async () => {
       try {
@@ -106,20 +123,24 @@ export default function ViewEvent() {
       }
     })();
     return () => { cancelled = true; };
-  }, [eventId]);
+  }, [params.eventId]));
 
   if (loading) {
     return (
-      <SafeAreaView style={[styles.safe, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color="#333" />
+      <SafeAreaView style={styles.safe} edges={['bottom']}>
+        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+        <ActivityIndicator size="large" color="#333" style={{ flex: 1 }} />
       </SafeAreaView>
     );
   }
 
   if (error || !event) {
     return (
-      <SafeAreaView style={[styles.safe, { justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 }]}>
-        <Text style={{ color: '#ef4444', textAlign: 'center' }}>{error ?? 'Event not found.'}</Text>
+      <SafeAreaView style={styles.safe} edges={['bottom']}>
+        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
+          <Text style={{ color: '#ef4444', textAlign: 'center' }}>{error ?? 'Event not found.'}</Text>
+        </View>
       </SafeAreaView>
     );
   }
@@ -138,38 +159,63 @@ export default function ViewEvent() {
   const dateTimeLine = [dateStr, timeStr].filter(Boolean).join(', ');
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f5f5f5" />
-      <ScrollView showsVerticalScrollIndicator={false}>
+    <SafeAreaView style={styles.safe} edges={['bottom']}>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
-        {/* ── Cover Image ── */}
+      <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
+
+        {/* ── Cover photo — stretches to top of screen ── */}
         <View style={styles.cover}>
-          <View style={styles.coverActions}>
-            <TouchableOpacity style={styles.coverBtn} onPress={() => router.back()}>
-              <Text style={styles.coverBtnText}>←</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.coverBtn} onPress={() => setSaved(s => !s)}>
-              <Text style={styles.coverBtnText}>{saved ? '🔖' : '📌'}</Text>
-            </TouchableOpacity>
-          </View>
+          {event.cover_url ? (
+            <Image source={{ uri: event.cover_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+          ) : null}
+          {/* Dark gradient so white buttons are readable */}
+          <View style={styles.coverGradient} />
+          {/* Floating back + save buttons */}
+          <SafeAreaView style={styles.coverOverlay} edges={['top']}>
+            <View style={styles.coverActions}>
+              <TouchableOpacity style={styles.coverBtn} onPress={() => router.navigate('/(tabs)/explore')}>
+                <Text style={styles.coverBtnText}>←</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.coverBtn}
+                onPress={() => {
+                  if (!event) return;
+                  if (saved) {
+                    unsaveEvent(event.id);
+                    setSaved(false);
+                  } else {
+                    saveEvent({
+                      id: event.id,
+                      event_name: event.event_name,
+                      event_date: event.event_date,
+                      location: event.location,
+                      cover_url: event.cover_url,
+                      business_name: business?.business_name ?? 'Business',
+                    });
+                    setSaved(true);
+                  }
+                }}
+              >
+                <Text style={[styles.heartIcon, saved && styles.heartIconSaved]}>♥</Text>
+              </TouchableOpacity>
+            </View>
+          </SafeAreaView>
         </View>
 
-        <View style={styles.body}>
-
-          {/* ── Title / Date / Location ── */}
+        {/* ── Yellow section: title → action buttons ── */}
+        <View style={styles.yellowSection}>
           <Text style={styles.eventTitle}>{event.event_name}</Text>
           {dateTimeLine ? <Text style={styles.metaLine}>{dateTimeLine}</Text> : null}
           {event.location ? <Text style={styles.metaLine}>{event.location}</Text> : null}
 
-          {/* ── Business Name ── */}
           <TouchableOpacity
-            onPress={() => router.push({ pathname: '/(tabs)/user_business_profile', params: { businessUid: event.host_uid } })}
+            onPress={() => router.push({ pathname: '/(tabs)/user_business_profile', params: { businessUid: event.host_uid, fromEventId: String(event.id) } })}
             activeOpacity={0.7}
           >
             <Text style={styles.businessName}>{business?.business_name ?? 'Business'}</Text>
           </TouchableOpacity>
 
-          {/* ── Vibe Tags ── */}
           {event.description ? (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tagsScroll} contentContainerStyle={styles.tagsRow}>
               {event.description.split(',').map((tag, i) => (
@@ -180,8 +226,16 @@ export default function ViewEvent() {
             </ScrollView>
           ) : null}
 
-          {/* ── Action Buttons ── */}
+          {/* ── Action buttons ── */}
           <View style={styles.actionRow}>
+            <TouchableOpacity
+              style={[styles.actionBtn, rsvped && styles.actionBtnActive]}
+              onPress={() => setRsvped(r => !r)}
+            >
+              <Text style={[styles.actionBtnText, rsvped && styles.actionBtnTextActive]}>
+                {rsvped ? 'RSVPed ✓' : 'RSVP'}
+              </Text>
+            </TouchableOpacity>
             <TouchableOpacity
               style={styles.actionBtn}
               onPress={() => router.push({ pathname: '/(tabs)/add_review', params: { businessUid: event.host_uid, eventId: String(event.id) } })}
@@ -192,24 +246,36 @@ export default function ViewEvent() {
               <Text style={styles.actionBtnText}>Share</Text>
             </TouchableOpacity>
           </View>
+        </View>
 
-          {/* ── Event Overview ── */}
+        {/* ── Grey content section ── */}
+        <View style={styles.body}>
+
           {event.story ? (
             <>
-              <Text style={styles.sectionTitle}>Event Overview from business</Text>
+              <Text style={styles.sectionTitle}>Event Overview</Text>
               <Text style={styles.overviewText}>{event.story}</Text>
             </>
           ) : null}
 
-          {/* ── Notification Banner ── */}
           <View style={styles.notifBanner}>
-            <Text style={styles.notifText}>pushed notifications from business</Text>
+            <Text style={styles.notifText}>Notifications from business</Text>
           </View>
 
-          {/* ── Menu / Products ── */}
           {inventory.length > 0 ? (
             <>
-              <Text style={styles.sectionTitle}>Menu</Text>
+              <View style={styles.sectionTitleRow}>
+                <Text style={styles.sectionTitle}>Menu</Text>
+                <TouchableOpacity
+                  style={styles.preOrderBtn}
+                  onPress={() => router.navigate({
+                    pathname: '/(tabs)/customer_preorder',
+                    params: { eventId: String(event.id), eventName: event.event_name, businessUid: event.host_uid },
+                  })}
+                >
+                  <Text style={styles.preOrderBtnText}>Pre Order</Text>
+                </TouchableOpacity>
+              </View>
               <View style={styles.card}>
                 {inventory.map((item, index) => (
                   <View key={item.id} style={[styles.menuRow, index < inventory.length - 1 && styles.menuRowBorder]}>
@@ -228,7 +294,6 @@ export default function ViewEvent() {
             </>
           ) : null}
 
-          {/* ── What Customers Are Saying ── */}
           {sentiment.length > 0 ? (
             <>
               <Text style={styles.sectionTitle}>What customers are saying</Text>
@@ -239,7 +304,6 @@ export default function ViewEvent() {
                     <Text style={styles.sentimentPct}>{s.pct}%</Text>
                   </View>
                 ))}
-                <Text style={styles.updatedText}>Updated [time]</Text>
               </View>
             </>
           ) : null}
@@ -257,48 +321,68 @@ const RADIUS = 12;
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#f5f5f5' },
 
+  // Cover — full width, stretches to absolute top
   cover: {
     width: SCREEN_WIDTH,
-    height: 200,
-    backgroundColor: '#d0d0d0',
+    height: 260,
+    backgroundColor: '#c8c8c8',
+  },
+  coverGradient: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+  },
+  coverOverlay: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0,
   },
   coverActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    padding: 16,
-    paddingTop: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
   },
   coverBtn: {
     width: 36, height: 36, borderRadius: 18,
     backgroundColor: 'rgba(255,255,255,0.85)',
     alignItems: 'center', justifyContent: 'center',
   },
-  coverBtnText: { fontSize: 16 },
+  coverBtnText: { fontSize: 18, color: '#111' },
+  heartIcon: { fontSize: 20, color: '#ccc' },
+  heartIconSaved: { color: '#e03d3d' },
 
-  body: { paddingHorizontal: 16, paddingTop: 16 },
-
+  // Yellow section
+  yellowSection: {
+    backgroundColor: '#FFF1AD',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 20,
+  },
   eventTitle: { fontSize: 26, fontWeight: '900', color: '#111', marginBottom: 4 },
   metaLine: { fontSize: 13, color: '#555', marginBottom: 2 },
-  businessName: { fontSize: 15, fontWeight: '700', color: '#111', marginTop: 10, marginBottom: 10 },
+  businessName: { fontSize: 15, fontWeight: '700', color: '#2E4A7A', marginTop: 8, marginBottom: 10 },
 
   tagsScroll: { marginBottom: 14 },
   tagsRow: { gap: 8, paddingRight: 8 },
   tag: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#fff', borderRadius: 20,
-    borderWidth: 1.5, borderColor: '#ccc',
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    borderRadius: 20, borderWidth: 1.5, borderColor: 'rgba(0,0,0,0.1)',
     paddingHorizontal: 12, paddingVertical: 5,
   },
   tagText: { fontSize: 12, color: '#333' },
 
-  actionRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
+  actionRow: { flexDirection: 'row', gap: 10 },
   actionBtn: {
-    flex: 1, borderWidth: 1.5, borderColor: '#bbb',
-    borderRadius: 10, paddingVertical: 10,
-    alignItems: 'center', backgroundColor: '#f0f0f0',
+    flex: 1, borderRadius: 10, paddingVertical: 10,
+    alignItems: 'center', backgroundColor: '#7AAED6',
   },
-  actionBtnText: { fontSize: 14, fontWeight: '700', color: '#333' },
+  actionBtnActive: { backgroundColor: '#2E4A7A' },
+  actionBtnText: { fontSize: 13, fontWeight: '700', color: '#2E4A7A' },
+  actionBtnTextActive: { color: '#fff' },
 
+  // Grey content
+  body: { paddingHorizontal: 16, paddingTop: 20 },
+
+  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
   sectionTitle: { fontSize: 16, fontWeight: '800', color: '#111', marginBottom: 10 },
   overviewText: { fontSize: 13, color: '#444', lineHeight: 19, marginBottom: 20 },
 
@@ -308,8 +392,10 @@ const styles = StyleSheet.create({
   },
   notifText: { fontSize: 13, color: '#666' },
 
-  card: { backgroundColor: CARD_BG, borderRadius: RADIUS, padding: 14, marginBottom: 20 },
+  preOrderBtn: { backgroundColor: '#2E4A7A', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 6 },
+  preOrderBtnText: { color: '#fff', fontWeight: '700', fontSize: 12 },
 
+  card: { backgroundColor: CARD_BG, borderRadius: RADIUS, padding: 14, marginBottom: 20 },
   menuRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12 },
   menuRowBorder: { borderBottomWidth: 1, borderBottomColor: '#d5d5d5' },
   menuName: { fontSize: 13, color: '#333', fontWeight: '500' },

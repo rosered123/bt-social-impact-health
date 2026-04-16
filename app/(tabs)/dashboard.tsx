@@ -29,6 +29,8 @@ import {
 } from '@/services/api';
 import { onEventsChanged, onProfileChanged } from '@/services/refresh-bus';
 
+const BLUE = '#2E4A7A';
+
 function formatTime(dbTime: string | null | undefined): string {
   if (!dbTime) return '—';
   const [hStr, mStr] = dbTime.split(':');
@@ -120,7 +122,7 @@ export default function BusinessDashboard() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFF1AD" />
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
 
         {/* ── Header (golden gradient) ── */}
@@ -136,20 +138,22 @@ export default function BusinessDashboard() {
             <Feather name="settings" size={26} color="#000" />
           </TouchableOpacity>
 
-          {/* Stat pills */}
-          <View style={styles.statPillRow}>
-            <View style={styles.statPill}>
-              <Text style={styles.statPillValue}>{String(followerCount)}</Text>
-              <Text style={styles.statPillLabel}>Followers</Text>
+          {/* Stat boxes */}
+          <View style={styles.statBoxRow}>
+            <View style={styles.statBox}>
+              <Text style={styles.statBoxValue}>{String(followerCount)}</Text>
+              <Text style={styles.statBoxLabel}>Followers</Text>
             </View>
-            <View style={styles.statPill}>
-              <Text style={styles.statPillValue}>—</Text>
-              <Text style={styles.statPillLabel}>Views Today</Text>
+            <View style={styles.statBox}>
+              <Text style={styles.statBoxValue}>—</Text>
+              <Text style={styles.statBoxLabel}>Views Today</Text>
             </View>
-            <View style={styles.statPill}>
-              <Text style={styles.statPillValue}>{avgRating}</Text>
-              <Text style={styles.statPillLabel}>Rating</Text>
-              <Feather name="star" size={17} color="#f5c518" style={styles.statPillStar} />
+            <View style={styles.statBox}>
+              <View style={styles.statBoxValueRow}>
+                <Text style={styles.statBoxValue}>{avgRating}</Text>
+                <Feather name="star" size={16} color="#f5c518" />
+              </View>
+              <Text style={styles.statBoxLabel}>Rating</Text>
             </View>
           </View>
         </View>
@@ -313,7 +317,7 @@ export default function BusinessDashboard() {
             style={styles.viewAllBtn}
           >
             <Text style={styles.viewAllText}>View all</Text>
-            <Feather name="chevron-right" size={18} color="#4169e1" />
+            <Feather name="chevron-right" size={18} color={BLUE} />
           </TouchableOpacity>
         </View>
 
@@ -347,81 +351,50 @@ export default function BusinessDashboard() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#ffffff' },
-  scroll: { flex: 1 },
+const RADIUS = 14;
 
-  // ── Header ──
+const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: '#f5f5f5' },
+  scroll: { flex: 1, paddingHorizontal: 16 },
+
+  // Header
   header: {
-    paddingHorizontal: 30,
-    paddingTop: 24,
-    paddingBottom: 30,
+    flexDirection: 'row', flexWrap: 'wrap',
+    justifyContent: 'space-between', alignItems: 'flex-start',
+    paddingTop: 48, paddingBottom: 16,
+    marginHorizontal: -16, paddingHorizontal: 16,
     backgroundColor: '#FFF1AD',
     borderBottomWidth: 1,
     borderBottomColor: '#B4B4B4',
   },
   headerTextWrap: { flex: 1 },
-  headerWelcome: { fontSize: 18, color: '#000', fontWeight: '400' },
-  headerTitle: { fontSize: 26, fontWeight: '800', color: '#000', marginTop: 2 },
+  headerWelcome: { fontSize: 14, color: '#555', fontWeight: '500' },
+  headerTitle: { fontSize: 22, fontWeight: '800', color: '#111', marginTop: 2, marginBottom: 12 },
   gearBtn: {
-    position: 'absolute',
-    top: 24,
-    right: 30,
+    width: 40, height: 40, borderRadius: 20,
+    alignItems: 'center', justifyContent: 'center',
   },
+  statBoxRow: {
+    flexDirection: 'row', gap: 8,
+    width: '100%', marginTop: 14,
+  },
+  statBox: {
+    flex: 1, alignItems: 'flex-start', justifyContent: 'center',
+    backgroundColor: BLUE, borderRadius: 12,
+    paddingVertical: 12, paddingHorizontal: 14,
+  },
+  statBoxValue: { fontSize: 20, fontWeight: '900', color: '#fff' },
+  statBoxValueRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  statBoxLabel: { fontSize: 12, fontWeight: '500', color: 'rgba(255,255,255,0.75)', marginTop: 2 },
 
-  // ── Stat pills ──
-  statPillRow: {
-    flexDirection: 'row',
-    gap: 15,
-    marginTop: 16,
-  },
-  statPill: {
-    backgroundColor: '#2E4A7A',
-    borderRadius: 7,
-    paddingHorizontal: 16,
-    paddingVertical: 13,
-    minWidth: 93,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12.5,
-    elevation: 6,
-  },
-  statPillValue: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  statPillLabel: {
-    fontSize: 14,
-    fontWeight: '400',
-    color: '#fff',
-    marginTop: 4,
-  },
-  statPillStar: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    fontSize: 17,
-  },
+  errorText: { color: '#ef4444', marginBottom: 12, fontSize: 13, marginTop: 8 },
 
-  // ── Error ──
-  errorText: { color: '#ef4444', marginHorizontal: 16, marginBottom: 8, fontSize: 13 },
-
-  // ── Live Now Card ──
+  // Live Now card
   liveCard: {
-    marginHorizontal: 16,
-    marginTop: 20,
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#d8d8d8',
-    padding: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.25,
-    shadowRadius: 5,
-    elevation: 4,
+    backgroundColor: '#fff', borderRadius: RADIUS,
+    padding: 16, marginTop: 16, marginBottom: 16,
+    shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 8, shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
   liveTopRow: {
     flexDirection: 'row',
@@ -476,27 +449,14 @@ const styles = StyleSheet.create({
     gap: 11,
     marginTop: 14,
   },
+  updateBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  subCardRow: { flexDirection: 'row', gap: 8 },
   subCard: {
-    flex: 1,
-    backgroundColor: '#e5e5e5',
-    borderRadius: 13,
-    borderWidth: 1,
-    borderColor: '#d8d8d8',
-    padding: 10,
-    height: 70,
-    justifyContent: 'center',
+    flex: 1, backgroundColor: '#f5f5f5', borderRadius: 10,
+    padding: 10, alignItems: 'center',
   },
-  subCardLabel: {
-    fontSize: 16,
-    fontWeight: '400',
-    color: '#000',
-  },
-  subCardValue: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#000',
-    marginTop: 4,
-  },
+  subCardLabel: { fontSize: 11, fontWeight: '600', color: '#888', marginBottom: 3 },
+  subCardValue: { fontSize: 13, fontWeight: '700', color: '#333' },
 
   // ── Pre-Order Banner ──
   preOrderBannerWrap: {
@@ -546,76 +506,31 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '500',
   },
+  preOrderBadgeText: { color: '#fff', fontSize: 14, fontWeight: '800' },
 
-  // ── Section Title ──
-  sectionTitle: {
-    fontSize: 19,
-    fontWeight: '600',
-    color: '#000',
-    marginHorizontal: 16,
-    marginTop: 22,
-    marginBottom: 8,
-  },
+  // Section title
+  sectionTitle: { fontSize: 17, fontWeight: '800', color: '#111', marginBottom: 10 },
 
-  // ── Today's Activity ──
+  // Today's Activity grid
   activityGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginHorizontal: 16,
+    flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20,
   },
   activityCard: {
-    width: '48%',
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    borderWidth: 0.8,
-    borderColor: '#d8d8d8',
-    padding: 18,
-    height: 82,
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.25,
-    shadowRadius: 2.5,
-    elevation: 2,
+    width: '47.5%' as any, backgroundColor: '#fff',
+    borderRadius: RADIUS, borderWidth: 1, borderColor: '#e5e7eb',
+    padding: 14, gap: 3,
   },
-  activityLabel: {
-    fontSize: 16,
-    fontWeight: '400',
-    color: '#000',
-  },
-  activityValue: {
-    fontSize: 22,
-    fontWeight: '500',
-    color: '#000',
-    marginTop: 2,
-  },
-  activitySub: {
-    fontSize: 14,
-    color: '#696969',
-    marginTop: 2,
-  },
-  trendRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    marginTop: 2,
-  },
-  trendText: {
-    fontSize: 14,
-    color: '#55be53',
-  },
+  activityLabel: { fontSize: 13, fontWeight: '600', color: '#555' },
+  activityValue: { fontSize: 24, fontWeight: '900', color: '#111', marginTop: 4 },
+  activitySub: { fontSize: 11, color: '#888' },
+  trendRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+  trendText: { fontSize: 12, fontWeight: '600', color: '#22c55e' },
 
-  // ── Quick Actions ──
+  // Quick Actions
   quickActionRow: {
-    flexDirection: 'row',
-    gap: 18,
-    marginHorizontal: 26,
-    marginBottom: 8,
+    flexDirection: 'row', gap: 12, marginBottom: 24,
   },
-  quickActionItem: {
-    alignItems: 'center',
-  },
+  quickActionItem: { alignItems: 'center', gap: 8 },
   quickActionIcon: {
     width: 60,
     height: 60,
@@ -636,53 +551,32 @@ const styles = StyleSheet.create({
     color: '#000',
     marginTop: 5,
   },
+  quickActionLabel: { fontSize: 12, fontWeight: '600', color: '#333' },
 
-  // ── Upcoming Events ──
+  // Upcoming Events
   eventsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  viewAllBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-  },
-  viewAllText: {
-    fontSize: 16,
-    fontWeight: '300',
-    color: '#4169e1',
-  },
-  eventCard: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#d8d8d8',
-    padding: 15,
-    marginHorizontal: 16,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     marginBottom: 10,
-    gap: 16,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.25,
-    shadowRadius: 5,
-    elevation: 4,
+  },
+  viewAllBtn: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  viewAllText: { fontSize: 13, fontWeight: '600', color: BLUE },
+  eventCard: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: '#fff', borderRadius: RADIUS,
+    padding: 12, marginBottom: 12,
+    shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
   },
   eventThumb: {
-    width: 71,
-    height: 71,
-    borderRadius: 10,
-    backgroundColor: '#d8d8d8',
-    overflow: 'hidden',
+    width: 56, height: 56, borderRadius: 28,
+    backgroundColor: '#ddd', overflow: 'hidden', marginRight: 12,
   },
-  eventInfo: { flex: 1, gap: 3 },
-  eventName: { fontSize: 19, fontWeight: '500', color: '#000' },
-  eventMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  eventDate: { fontSize: 16, color: '#696969' },
-  eventRsvps: { fontSize: 16, color: '#000' },
-  eventRsvpsLabel: { color: '#696969' },
-  emptyText: { color: '#888', fontSize: 13, marginHorizontal: 16, marginBottom: 16 },
+  eventInfo: { flex: 1 },
+  eventName: { fontSize: 15, fontWeight: '700', color: '#111', marginBottom: 3 },
+  eventMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 2 },
+  eventDate: { fontSize: 12, color: '#696969' },
+  eventRsvps: { fontSize: 13, fontWeight: '700', color: BLUE },
+  eventRsvpsLabel: { fontWeight: '400', color: '#888' },
+
+  emptyText: { color: '#888', fontSize: 13, marginBottom: 16 },
 });
