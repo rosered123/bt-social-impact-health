@@ -7,6 +7,8 @@ export type SavedEvent = {
   id: number;
   event_name: string;
   event_date: string;
+  start_time: string | null;
+  end_time: string | null;
   location: string | null;
   cover_url: string | null;
   business_name: string;

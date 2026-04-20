@@ -2,9 +2,13 @@ import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
+  Clipboard,
   Image,
+  Modal,
   SafeAreaView,
   ScrollView,
+  Share,
   StatusBar,
   StyleSheet,
   Text,
@@ -83,6 +87,7 @@ export default function UserBusinessProfile() {
   const [loading, setLoading] = useState(true);
   const [followLoading, setFollowLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showProfileCard, setShowProfileCard] = useState(false);
 
   useEffect(() => {
     if (!businessUid) {
@@ -173,13 +178,15 @@ export default function UserBusinessProfile() {
             ) : null}
           </View>
           <View style={styles.avatarWrapper}>
-            <View style={styles.avatar}>
-              {business.logo_url ? (
-                <Image source={{ uri: business.logo_url }} style={styles.avatarImage} resizeMode="cover" />
-              ) : (
-                <Text style={styles.avatarIcon}>🖼</Text>
-              )}
-            </View>
+            <TouchableOpacity onPress={() => setShowProfileCard(true)} activeOpacity={0.85}>
+              <View style={styles.avatar}>
+                {business.logo_url ? (
+                  <Image source={{ uri: business.logo_url }} style={styles.avatarImage} resizeMode="cover" />
+                ) : (
+                  <Text style={styles.avatarIcon}>🖼</Text>
+                )}
+              </View>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -204,7 +211,7 @@ export default function UserBusinessProfile() {
                 {following ? 'Following' : 'Follow'}
               </Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.shareBtn} activeOpacity={0.8}>
+            <TouchableOpacity style={styles.shareBtn} activeOpacity={0.8} onPress={() => Share.share({ message: `Check out ${business.business_name} on the app!` })}>
               <Text style={styles.shareBtnText}>Share Profile</Text>
             </TouchableOpacity>
           </View>
@@ -278,6 +285,48 @@ export default function UserBusinessProfile() {
         <View style={{ height: 32 }} />
       </ScrollView>
       </View>
+
+      {/* ── Profile card modal ── */}
+      <Modal visible={showProfileCard} transparent animationType="fade" onRequestClose={() => setShowProfileCard(false)}>
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowProfileCard(false)}>
+          <TouchableOpacity activeOpacity={1} style={styles.profileCard} onPress={() => {}}>
+            {/* Share button */}
+            <TouchableOpacity style={styles.shareIconBtn} onPress={() => Share.share({ message: `Check out ${business.business_name} on the app!` })} activeOpacity={0.7}>
+              <Text style={styles.shareIconText}>⎋</Text>
+            </TouchableOpacity>
+
+            {/* Large pfp */}
+            <View style={styles.cardPfp}>
+              {business.logo_url ? (
+                <Image source={{ uri: business.logo_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+              ) : (
+                <Text style={{ fontSize: 48 }}>🖼</Text>
+              )}
+            </View>
+
+            {/* Info */}
+            <View style={styles.cardInfo}>
+              <Text style={styles.cardBizName}>{business.business_name}</Text>
+              {business.short_description ? (
+                <Text style={styles.cardBizDesc}>{business.short_description}</Text>
+              ) : null}
+              <View style={styles.cardStats}>
+                <Text style={styles.cardStatText}>👤 {business.follower_count ?? 0}</Text>
+                <Text style={styles.cardStatText}>⭐ {avgRating}</Text>
+                <TouchableOpacity
+                  style={styles.copyLinkBtn}
+                  onPress={() => {
+                    Alert.alert('Link copied!', `bt-app://business/${businessUid}`);
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.copyLinkText}>🔗 Copy Link</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -350,4 +399,38 @@ const styles = StyleSheet.create({
   tagsRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 14 },
   tag: { borderWidth: 1.5, borderColor: '#bbb', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5, backgroundColor: '#f0f0f0' },
   tagText: { fontSize: 12, color: '#444' },
+
+  // Profile card modal
+  modalOverlay: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.55)',
+    alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32,
+  },
+  profileCard: {
+    width: '100%', backgroundColor: '#1a1a1a',
+    borderRadius: 22, overflow: 'hidden',
+  },
+  shareIconBtn: {
+    position: 'absolute', top: 14, right: 14, zIndex: 10,
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  shareIconText: { fontSize: 18, color: '#fff' },
+  cardPfp: {
+    width: '100%', height: 260,
+    backgroundColor: '#333',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  cardInfo: { padding: 18 },
+  cardBizName: { fontSize: 22, fontWeight: '900', color: '#fff', marginBottom: 4 },
+  cardBizDesc: { fontSize: 14, color: 'rgba(255,255,255,0.75)', lineHeight: 19, marginBottom: 14 },
+  cardStats: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  cardStatText: { fontSize: 14, color: '#fff', fontWeight: '600' },
+  copyLinkBtn: {
+    marginLeft: 'auto' as any,
+    backgroundColor: '#fff', borderRadius: 22,
+    paddingHorizontal: 16, paddingVertical: 8,
+    flexDirection: 'row', alignItems: 'center',
+  },
+  copyLinkText: { fontSize: 13, fontWeight: '700', color: '#111' },
 });

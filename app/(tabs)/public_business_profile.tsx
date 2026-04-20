@@ -5,6 +5,7 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
+  Share,
   StyleSheet,
   SafeAreaView,
   StatusBar,
@@ -256,7 +257,7 @@ export default function PublicBusinessProfile() {
             <TouchableOpacity style={styles.followBtn} activeOpacity={0.8}>
               <Text style={styles.followBtnText}>Follow</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.shareBtn} activeOpacity={0.8}>
+            <TouchableOpacity style={styles.shareBtn} activeOpacity={0.8} onPress={() => Share.share({ message: `Check out ${business.business_name} on the app!` })}>
               <Text style={styles.shareBtnText}>Share Profile</Text>
             </TouchableOpacity>
           </View>

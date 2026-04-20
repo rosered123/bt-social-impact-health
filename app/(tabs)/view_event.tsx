@@ -5,6 +5,7 @@ import {
   Dimensions,
   Image,
   ScrollView,
+  Share,
   StatusBar,
   StyleSheet,
   Text,
@@ -45,6 +46,26 @@ const AVAIL_COLOR: Record<string, string> = {
   closing_early: '#ef4444',
   closed_today: '#ef4444',
 };
+
+const TAG_ICONS: Record<string, string> = {
+  matcha: '🍵', coffee: '☕', tea: '🫖', latte: '☕', espresso: '☕',
+  food: '🍽️', pizza: '🍕', tacos: '🌮', noodles: '🍜', burger: '🍔', pastry: '🥐', bakery: '🥖', dessert: '🍰', ice: '🍦', vegan: '🌱',
+  organic: '🌿', local: '📍', handmade: '🤲', artisan: '✨',
+  market: '🛍️', pop: '🎪', outdoor: '🌤️', indoor: '🏠', live: '🎵', music: '🎶',
+  drinks: '🥤', juice: '🍊', smoothie: '🥤', wine: '🍷', beer: '🍺',
+  family: '👨‍👩‍👧', dog: '🐶', pet: '🐾', kids: '🧒',
+  wellness: '🧘', yoga: '🧘', fitness: '💪', health: '💚',
+  art: '🎨', craft: '🎨', vintage: '🕰️', thrift: '👗',
+  grab: '🛒', quick: '⚡', fast: '⚡', free: '🎁',
+};
+
+function tagIcon(tag: string): string {
+  const lower = tag.toLowerCase();
+  for (const [key, icon] of Object.entries(TAG_ICONS)) {
+    if (lower.includes(key)) return icon;
+  }
+  return '✦';
+}
 
 const SENTIMENT_KEYWORDS = [
   { label: 'Quick Service', words: ['quick', 'fast', 'speedy', 'efficient'] },
@@ -189,6 +210,8 @@ export default function ViewEvent() {
                       id: event.id,
                       event_name: event.event_name,
                       event_date: event.event_date,
+                      start_time: event.start_time,
+                      end_time: event.end_time,
                       location: event.location,
                       cover_url: event.cover_url,
                       business_name: business?.business_name ?? 'Business',
@@ -220,7 +243,7 @@ export default function ViewEvent() {
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tagsScroll} contentContainerStyle={styles.tagsRow}>
               {event.description.split(',').map((tag, i) => (
                 <View key={i} style={styles.tag}>
-                  <Text style={styles.tagText}>{tag.trim()}</Text>
+                  <Text style={styles.tagText}>{tagIcon(tag.trim())} {tag.trim()}</Text>
                 </View>
               ))}
             </ScrollView>
@@ -242,7 +265,7 @@ export default function ViewEvent() {
             >
               <Text style={styles.actionBtnText}>Add Review</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.actionBtn}>
+            <TouchableOpacity style={styles.actionBtn} onPress={() => Share.share({ message: `Check out ${event.event_name} by ${business?.business_name ?? 'a pop-up business'}!` })}>
               <Text style={styles.actionBtnText}>Share</Text>
             </TouchableOpacity>
           </View>
@@ -253,46 +276,16 @@ export default function ViewEvent() {
 
           {event.story ? (
             <>
-              <Text style={styles.sectionTitle}>Event Overview</Text>
+              {/* <Text style={styles.sectionTitle}>Event Overview</Text> */}
               <Text style={styles.overviewText}>{event.story}</Text>
             </>
           ) : null}
 
+          <Text style={styles.announcementText}>Announcements</Text>
           <View style={styles.notifBanner}>
+            
             <Text style={styles.notifText}>Notifications from business</Text>
           </View>
-
-          {inventory.length > 0 ? (
-            <>
-              <View style={styles.sectionTitleRow}>
-                <Text style={styles.sectionTitle}>Menu</Text>
-                <TouchableOpacity
-                  style={styles.preOrderBtn}
-                  onPress={() => router.navigate({
-                    pathname: '/(tabs)/customer_preorder',
-                    params: { eventId: String(event.id), eventName: event.event_name, businessUid: event.host_uid },
-                  })}
-                >
-                  <Text style={styles.preOrderBtnText}>Pre Order</Text>
-                </TouchableOpacity>
-              </View>
-              <View style={styles.card}>
-                {inventory.map((item, index) => (
-                  <View key={item.id} style={[styles.menuRow, index < inventory.length - 1 && styles.menuRowBorder]}>
-                    <Text style={styles.menuName}>{item.product_name}</Text>
-                    <Text style={[styles.menuStock, { color: AVAIL_COLOR[item.availability] ?? '#888' }]}>
-                      {AVAIL_LABEL[item.availability] ?? item.availability}
-                    </Text>
-                  </View>
-                ))}
-                {inventory[0]?.updated_at ? (
-                  <Text style={styles.updatedText}>
-                    Updated {new Date(inventory[0].updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </Text>
-                ) : null}
-              </View>
-            </>
-          ) : null}
 
           {sentiment.length > 0 ? (
             <>
@@ -307,6 +300,76 @@ export default function ViewEvent() {
               </View>
             </>
           ) : null}
+          
+          {inventory.length > 0 ? (
+            <>
+              <View style={styles.sectionTitleRow}>
+                <Text style={styles.sectionTitle}>Menu</Text>
+                <TouchableOpacity
+                  style={styles.preOrderBtn}
+                  onPress={() => router.navigate({
+                    pathname: '/(tabs)/customer_preorder',
+                    params: { eventId: String(event.id), eventName: event.event_name, businessUid: event.host_uid, eventLocation: event.location ?? '', startTime: event.start_time ?? '', endTime: event.end_time ?? '' },
+                  })}
+                >
+                  <Text style={styles.preOrderBtnText}>Pre Order</Text>
+                </TouchableOpacity>
+              </View>
+
+              {(() => {
+                const available = inventory.filter(i => i.availability === 'full_stock');
+                const lowStock = inventory.filter(i => ['low_stock', 'limited_menu', 'closing_early'].includes(i.availability));
+                const soldOut = inventory.filter(i => i.availability === 'closed_today');
+                const updatedAt = inventory[0]?.updated_at;
+
+                const renderGroup = (items: typeof inventory, label: string, dotColor: string) => {
+                  if (items.length === 0) return null;
+                  return (
+                    <View style={styles.menuGroup}>
+                      <View style={styles.menuGroupHeader}>
+                        <View style={[styles.menuGroupDot, { backgroundColor: dotColor }]} />
+                        <Text style={styles.menuGroupLabel}>{label}</Text>
+                      </View>
+                      <View style={styles.card}>
+                        {items.map((item, index) => (
+                          <View key={item.id} style={[styles.menuRow, index < items.length - 1 && styles.menuRowBorder]}>
+                            <Text style={styles.menuName}>{item.product_name}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                  );
+                };
+
+                return (
+                  <>
+                    {renderGroup(available, 'Available', '#22c55e')}
+                    {renderGroup(lowStock, 'Low Stock', '#f59e0b')}
+                    {renderGroup(soldOut, 'Sold Out', '#ef4444')}
+                    {updatedAt ? (
+                      <Text style={styles.updatedText}>
+                        Updated {new Date(updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </Text>
+                    ) : null}
+                  </>
+                );
+              })()}
+            </>
+          ) : null}
+
+          {/* {sentiment.length > 0 ? (
+            <>
+              <Text style={styles.sectionTitle}>What customers are saying</Text>
+              <View style={styles.card}>
+                {sentiment.map((s, index) => (
+                  <View key={s.label} style={[styles.sentimentRow, index < sentiment.length - 1 && styles.menuRowBorder]}>
+                    <Text style={styles.sentimentLabel}>{s.label}</Text>
+                    <Text style={styles.sentimentPct}>{s.pct}%</Text>
+                  </View>
+                ))}
+              </View>
+            </>
+          ) : null} */}
 
         </View>
         <View style={{ height: 32 }} />
@@ -326,6 +389,9 @@ const styles = StyleSheet.create({
     width: SCREEN_WIDTH,
     height: 260,
     backgroundColor: '#c8c8c8',
+  },
+  announcementText: {
+    fontSize: 20,
   },
   coverGradient: {
     ...StyleSheet.absoluteFillObject,
@@ -364,9 +430,14 @@ const styles = StyleSheet.create({
   tagsScroll: { marginBottom: 14 },
   tagsRow: { gap: 8, paddingRight: 8 },
   tag: {
-    backgroundColor: 'rgba(255,255,255,0.7)',
-    borderRadius: 20, borderWidth: 1.5, borderColor: 'rgba(0,0,0,0.1)',
+    backgroundColor: '#fff',
+    borderRadius: 20,
     paddingHorizontal: 12, paddingVertical: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 3,
   },
   tagText: { fontSize: 12, color: '#333' },
 
@@ -395,11 +466,16 @@ const styles = StyleSheet.create({
   preOrderBtn: { backgroundColor: '#2E4A7A', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 6 },
   preOrderBtnText: { color: '#fff', fontWeight: '700', fontSize: 12 },
 
-  card: { backgroundColor: CARD_BG, borderRadius: RADIUS, padding: 14, marginBottom: 20 },
+  card: { backgroundColor: CARD_BG, borderRadius: RADIUS, padding: 14, marginBottom: 8 },
   menuRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12 },
   menuRowBorder: { borderBottomWidth: 1, borderBottomColor: '#d5d5d5' },
   menuName: { fontSize: 13, color: '#333', fontWeight: '500' },
   menuStock: { fontSize: 12, fontWeight: '700' },
+
+  menuGroup: { marginBottom: 12 },
+  menuGroupHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
+  menuGroupDot: { width: 10, height: 10, borderRadius: 5 },
+  menuGroupLabel: { fontSize: 13, fontWeight: '800', color: '#333' },
 
   sentimentRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12 },
   sentimentLabel: { fontSize: 13, color: '#333', fontWeight: '500' },

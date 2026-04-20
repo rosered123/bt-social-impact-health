@@ -17,6 +17,7 @@ import {
 
 import { useAuth } from '@/providers/auth-provider';
 import {
+  getBusinessTags,
   getFollowedBusinesses,
   getMyProfile,
   getMyReviews,
@@ -24,12 +25,31 @@ import {
   type Business,
   type Profile,
   type ReviewRow,
+  type VibeTag,
 } from '@/services/api';
 import {
   getSavedEvents,
   onSavedEventsChanged,
   type SavedEvent,
 } from '@/services/saved-events';
+
+function formatSavedDate(dateStr: string, startTime: string | null, endTime: string | null): string {
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr;
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const yyyy = d.getFullYear();
+  const datePart = `${mm}-${dd}-${yyyy}`;
+  if (!startTime) return datePart;
+  const fmt = (t: string) => {
+    const [h] = t.split(':').map(Number);
+    const period = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 || 12;
+    return `${h12} ${period}`;
+  };
+  const end = endTime ? ` – ${fmt(endTime)}` : '';
+  return `${datePart} | ${fmt(startTime)}${end}`;
+}
 
 function SavedEventCard({ event }: { event: SavedEvent }) {
   return (
@@ -42,29 +62,51 @@ function SavedEventCard({ event }: { event: SavedEvent }) {
         {event.cover_url ? (
           <Image source={{ uri: event.cover_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
         ) : null}
-        <Text style={[styles.heart, { color: '#e03d3d' }]}>♥</Text>
       </View>
       <View style={styles.savedBody}>
-        <Text style={styles.savedTitle} numberOfLines={1}>{event.event_name}</Text>
-        <Text style={styles.savedMeta} numberOfLines={1}>{event.business_name}</Text>
-        <Text style={styles.savedMeta} numberOfLines={1}>{event.event_date}</Text>
+        <View style={styles.savedTitleRow}>
+          <Text style={styles.savedTitle} numberOfLines={1}>{event.event_name}</Text>
+          <Text style={styles.savedHeart}>♥</Text>
+        </View>
+        <Text style={styles.savedMeta} numberOfLines={1}>
+          {formatSavedDate(event.event_date, event.start_time, event.end_time)}
+        </Text>
+        {event.location ? <Text style={styles.savedMeta} numberOfLines={1}>{event.location}</Text> : null}
       </View>
     </TouchableOpacity>
   );
 }
 
-function FollowedBusinessCard({ biz }: { biz: Business }) {
+type BusinessWithTags = Business & { tags: VibeTag[] };
+
+function FollowedVendorRow({ biz }: { biz: BusinessWithTags }) {
   return (
-    <TouchableOpacity activeOpacity={0.85} style={styles.savedCard}>
-      <View style={styles.savedImageWrap}>
+    <TouchableOpacity
+      activeOpacity={0.85}
+      style={styles.vendorRow}
+      onPress={() => router.push({ pathname: '/(tabs)/user_business_profile', params: { businessUid: biz.uid } })}
+    >
+      <View style={styles.vendorLogo}>
         {biz.logo_url ? (
           <Image source={{ uri: biz.logo_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
         ) : null}
-        <Text style={styles.heart}>♥</Text>
       </View>
-      <View style={styles.savedBody}>
-        <Text style={styles.savedTitle}>{biz.business_name}</Text>
-        {biz.short_description ? <Text style={styles.savedMeta}>{biz.short_description}</Text> : null}
+      <View style={styles.vendorInfo}>
+        <Text style={styles.vendorName}>{biz.business_name}</Text>
+        <View style={styles.tagsWrap}>
+          {biz.tags.map(tag => (
+            <View key={tag.id} style={styles.tagChip}>
+              <Text style={styles.tagChipText}>{tag.name}</Text>
+            </View>
+          ))}
+          {biz.tags.length === 0 && biz.short_description ? (
+            biz.short_description.split(',').map((s, i) => (
+              <View key={i} style={styles.tagChip}>
+                <Text style={styles.tagChipText}>{s.trim()}</Text>
+              </View>
+            ))
+          ) : null}
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -74,14 +116,19 @@ function Stars({ rating }: { rating: number }) {
   return (
     <View style={styles.starsRow}>
       {[1, 2, 3, 4, 5].map(star => (
-        <Text key={star} style={[styles.starText, { color: star <= rating ? '#f59e0b' : '#ddd' }]}>★</Text>
+        <Text key={star} style={[styles.starText, { color: star <= rating ? '#111' : '#ccc' }]}>★</Text>
       ))}
     </View>
   );
 }
 
 function ReviewCard({ review, avatarUrl }: { review: ReviewRow; avatarUrl?: string | null }) {
-  const date = new Date(review.created_at).toLocaleDateString();
+  const date = new Date(review.created_at);
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  const yyyy = date.getFullYear();
+  const dateStr = `${mm}-${dd}-${yyyy}`;
+
   return (
     <View style={styles.reviewCard}>
       <View style={styles.reviewTop}>
@@ -90,20 +137,17 @@ function ReviewCard({ review, avatarUrl }: { review: ReviewRow; avatarUrl?: stri
             <Image source={{ uri: avatarUrl }} style={StyleSheet.absoluteFill} resizeMode="cover" />
           ) : null}
         </View>
-        <View style={styles.reviewMetaWrap}>
-          <Text style={styles.reviewName}>Your review</Text>
+        <View style={styles.reviewMeta}>
+          <Text style={styles.reviewBizName}>{review.reviewer_display_name ?? 'You'}</Text>
           <Stars rating={review.rating} />
         </View>
-        <Text style={styles.reviewDate}>{date}</Text>
+        <Text style={styles.reviewDate}>{dateStr}</Text>
       </View>
-      {review.body ? (
-        <Text style={styles.reviewBodyText}>{review.body}</Text>
-      ) : (
-        <>
-          <View style={styles.reviewLineOne} />
-          <View style={styles.reviewLineTwo} />
-        </>
-      )}
+      {review.body ? <Text style={styles.reviewBody}>{review.body}</Text> : null}
+      <TouchableOpacity style={styles.replyRow} activeOpacity={0.7}>
+        <Text style={styles.replyIcon}>↩</Text>
+        <Text style={styles.replyText}>Reply</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -111,7 +155,7 @@ function ReviewCard({ review, avatarUrl }: { review: ReviewRow; avatarUrl?: stri
 export default function Profile() {
   const { } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [followed, setFollowed] = useState<Business[]>([]);
+  const [followed, setFollowed] = useState<BusinessWithTags[]>([]);
   const [reviews, setReviews] = useState<ReviewRow[]>([]);
   const [savedEvents, setSavedEvents] = useState<SavedEvent[]>(getSavedEvents);
   const [loading, setLoading] = useState(true);
@@ -130,10 +174,12 @@ export default function Profile() {
         setProfile(p);
         const [bizList, revList] = await Promise.all([getFollowedBusinesses(), getMyReviews()]);
         if (cancelled) return;
-        setFollowed(bizList);
+        const tagArrays = await Promise.all(bizList.map((b: Business) => getBusinessTags(b.uid)));
+        if (cancelled) return;
+        setFollowed(bizList.map((b: Business, i: number) => ({ ...b, tags: tagArrays[i] })));
         setReviews(revList);
       } catch {
-        // ignore — show whatever loaded
+        // ignore
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -161,8 +207,8 @@ export default function Profile() {
 
   if (loading) {
     return (
-      <SafeAreaView style={[styles.safe, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color="#333" />
+      <SafeAreaView style={styles.safe}>
+        <ActivityIndicator size="large" color="#333" style={{ flex: 1, backgroundColor: '#FFF1AD' }} />
       </SafeAreaView>
     );
   }
@@ -171,7 +217,6 @@ export default function Profile() {
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFF1AD" />
 
-      {/* Location edit modal */}
       <Modal visible={locationModal} transparent animationType="fade" onRequestClose={() => setLocationModal(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
@@ -200,103 +245,156 @@ export default function Profile() {
         </View>
       </Modal>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} style={styles.scroll}>
+      <ScrollView showsVerticalScrollIndicator={false} style={styles.scroll}>
 
-        <View style={styles.headerRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.greeting}>Hello, {profile?.display_name ?? 'there'}!</Text>
-            <TouchableOpacity style={styles.locationRow} onPress={openLocationModal} activeOpacity={0.7}>
-              <Text style={styles.location}>{profile?.location ?? 'Set location'}</Text>
-              <Text style={styles.editIcon}>✎</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.headerRight}>
-            <TouchableOpacity style={styles.settingsBtn} onPress={() => router.navigate('/(tabs)/settings')} activeOpacity={0.7}>
-              <Text style={styles.settingsIcon}>⚙</Text>
-            </TouchableOpacity>
-            {profile?.avatar_url ? (
-              <Image source={{ uri: profile.avatar_url }} style={styles.headerAvatar} resizeMode="cover" />
-            ) : (
-              <View style={styles.headerAvatar} />
-            )}
+        {/* Yellow header */}
+        <View style={styles.yellowHeader}>
+          <View style={styles.headerRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.greeting}>Hello, {profile?.display_name ?? 'there'}!</Text>
+              <TouchableOpacity style={styles.locationRow} onPress={openLocationModal} activeOpacity={0.7}>
+                <Text style={styles.locationText}>{profile?.location ?? 'Set location'}</Text>
+                <Text style={styles.editIcon}> ✎</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.headerRight}>
+              {profile?.avatar_url ? (
+                <Image source={{ uri: profile.avatar_url }} style={styles.headerAvatar} resizeMode="cover" />
+              ) : (
+                <View style={styles.headerAvatar} />
+              )}
+            </View>
           </View>
         </View>
 
-        <Text style={styles.sectionTitle}>Saved Events</Text>
-        {savedEvents.length === 0 ? (
-          <Text style={styles.emptyText}>No saved events yet. Tap ♥ on any event to save it.</Text>
-        ) : (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.savedEventsRow}>
-            {savedEvents.map(e => <SavedEventCard key={e.id} event={e} />)}
-          </ScrollView>
-        )}
+        {/* White content area */}
+        <View style={styles.contentArea}>
 
-        <Text style={styles.sectionTitle}>Following</Text>
-        {followed.length === 0 ? (
-          <Text style={styles.emptyText}>You're not following any businesses yet.</Text>
-        ) : (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.savedEventsRow}>
-            {followed.map(biz => <FollowedBusinessCard key={biz.uid} biz={biz} />)}
-          </ScrollView>
-        )}
+          <Text style={styles.sectionTitle}>Saved Events</Text>
+          {savedEvents.length === 0 ? (
+            <Text style={styles.emptyText}>No saved events yet. Tap ♥ on any event to save it.</Text>
+          ) : (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.savedRow}>
+              {savedEvents.map(e => <SavedEventCard key={e.id} event={e} />)}
+            </ScrollView>
+          )}
 
-        <View style={styles.reviewsHeader}>
+          <Text style={styles.sectionTitle}>Vendors you follow</Text>
+          {followed.length === 0 ? (
+            <Text style={styles.emptyText}>You're not following any businesses yet.</Text>
+          ) : (
+            <View style={styles.vendorList}>
+              {followed.map(biz => <FollowedVendorRow key={biz.uid} biz={biz} />)}
+            </View>
+          )}
+
           <Text style={styles.sectionTitle}>Your Reviews</Text>
-        </View>
+          {reviews.length === 0 ? (
+            <Text style={styles.emptyText}>You haven't written any reviews yet.</Text>
+          ) : (
+            reviews.map(r => <ReviewCard key={r.id} review={r} avatarUrl={profile?.avatar_url} />)
+          )}
 
-        {reviews.length === 0 ? (
-          <Text style={styles.emptyText}>You haven't written any reviews yet.</Text>
-        ) : (
-          reviews.map(r => <ReviewCard key={r.id} review={r} avatarUrl={profile?.avatar_url} />)
-        )}
+          <View style={{ height: 32 }} />
+        </View>
 
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const CARD = '#f8f8f8';
-const MID = '#d9d9d9';
-
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#FFF1AD' },
   scroll: { flex: 1 },
-  scrollContent: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 24 },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingBottom: 22, marginHorizontal: -16, paddingHorizontal: 16, backgroundColor: '#FFF1AD' },
-  greeting: { fontSize: 22, fontWeight: '800', color: '#111', marginBottom: 4 },
-  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  location: { fontSize: 20, color: '#222' },
-  editIcon: { fontSize: 16, color: '#222', padding: 4 },
-  headerAvatar: { width: 84, height: 84, borderRadius: 42, backgroundColor: MID, marginTop: 2 },
-  sectionTitle: { fontSize: 22, fontWeight: '800', color: '#111', marginBottom: 12 },
-  emptyText: { fontSize: 13, color: '#888', marginBottom: 16 },
-  savedEventsRow: { gap: 14, paddingBottom: 18, paddingRight: 4 },
-  savedCard: { width: 260, backgroundColor: MID, borderRadius: 12, overflow: 'hidden' },
-  savedImageWrap: { height: 138, backgroundColor: '#adadad', justifyContent: 'flex-start', alignItems: 'flex-end', paddingRight: 12, paddingTop: 10 },
-  savedImage: { ...StyleSheet.absoluteFillObject, backgroundColor: '#adadad' },
-  heart: { fontSize: 24, color: '#111', zIndex: 1 },
-  savedBody: { paddingHorizontal: 14, paddingTop: 10, paddingBottom: 12, gap: 3 },
-  savedTitle: { fontSize: 18, fontWeight: '700', color: '#111', marginBottom: 2 },
-  savedMeta: { fontSize: 13, color: '#1f1f1f' },
-  reviewsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
-  reviewCard: { backgroundColor: CARD, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 13, marginBottom: 12 },
-  reviewTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  reviewAvatar: { width: 35, height: 35, borderRadius: 18, backgroundColor: MID, marginRight: 10, overflow: 'hidden' },
-  reviewMetaWrap: { flex: 1 },
-  reviewName: { fontSize: 13, fontWeight: '700', color: '#444', marginBottom: 1 },
-  reviewDate: { fontSize: 10, color: '#666' },
-  starsRow: { flexDirection: 'row', gap: 1 },
-  starText: { fontSize: 11 },
-  reviewBodyText: { fontSize: 13, color: '#444', lineHeight: 18 },
-  reviewLineOne: { height: 10, width: '82%', backgroundColor: '#6b6b6b', marginBottom: 5 },
-  reviewLineTwo: { height: 10, width: '98%', backgroundColor: '#6b6b6b', marginBottom: 9 },
-  signOutButton: { marginTop: 12, alignSelf: 'flex-start', borderWidth: 1, borderColor: '#111', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, backgroundColor: '#fff' },
-  signOutButtonText: { color: '#111', fontWeight: '700', fontSize: 14 },
 
+  yellowHeader: {
+    backgroundColor: '#FFF1AD',
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 20,
+  },
+  headerRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
+  greeting: { fontSize: 28, fontWeight: '900', color: '#111', marginBottom: 4 },
+  locationRow: { flexDirection: 'row', alignItems: 'center' },
+  locationText: { fontSize: 16, color: '#333' },
+  editIcon: { fontSize: 14, color: '#333' },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   settingsBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(0,0,0,0.08)', alignItems: 'center', justifyContent: 'center' },
   settingsIcon: { fontSize: 18, color: '#111' },
+  headerAvatar: { width: 84, height: 84, borderRadius: 42, backgroundColor: '#d9d9d9', overflow: 'hidden' },
 
+  contentArea: {
+    backgroundColor: '#f5f5f5',
+    paddingHorizontal: 16,
+    paddingTop: 22,
+    flex: 1,
+  },
+
+  sectionTitle: { fontSize: 22, fontWeight: '800', color: '#111', marginBottom: 14 },
+  emptyText: { fontSize: 13, color: '#888', marginBottom: 20 },
+
+  // Saved Events
+  savedRow: { gap: 14, paddingBottom: 20, paddingRight: 4 },
+  savedCard: {
+    width: 260,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  savedImageWrap: { width: '100%', height: 150, backgroundColor: '#d9d9d9' },
+  savedBody: { paddingHorizontal: 12, paddingTop: 10, paddingBottom: 12 },
+  savedTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
+  savedTitle: { fontSize: 15, fontWeight: '700', color: '#111', flex: 1, marginRight: 6 },
+  savedHeart: { fontSize: 20, color: '#111' },
+  savedMeta: { fontSize: 12, color: '#555', marginBottom: 1 },
+
+  // Vendors you follow
+  vendorList: { marginBottom: 22 },
+  vendorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  vendorLogo: { width: 64, height: 64, borderRadius: 32, backgroundColor: '#d9d9d9', overflow: 'hidden', marginRight: 14 },
+  vendorInfo: { flex: 1 },
+  vendorName: { fontSize: 17, fontWeight: '800', color: '#111', marginBottom: 8 },
+  tagsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  tagChip: { backgroundColor: '#dce9f5', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5 },
+  tagChipText: { fontSize: 12, color: '#2E4A7A', fontWeight: '600' },
+
+  // Reviews
+  reviewCard: {
+    backgroundColor: '#ebebeb',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 12,
+  },
+  reviewTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  reviewAvatar: { width: 38, height: 38, borderRadius: 19, backgroundColor: '#d9d9d9', overflow: 'hidden', marginRight: 10 },
+  reviewMeta: { flex: 1 },
+  reviewBizName: { fontSize: 13, fontWeight: '700', color: '#111', marginBottom: 2 },
+  reviewDate: { fontSize: 11, color: '#888' },
+  starsRow: { flexDirection: 'row', gap: 2 },
+  starText: { fontSize: 13 },
+  reviewBody: { fontSize: 13, color: '#333', lineHeight: 18, marginBottom: 10 },
+  replyRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  replyIcon: { fontSize: 13, color: '#555' },
+  replyText: { fontSize: 13, color: '#555', fontWeight: '600' },
+
+  // Modal
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 },
   modalCard: { width: '100%', backgroundColor: '#fff', borderRadius: 16, padding: 20 },
   modalTitle: { fontSize: 17, fontWeight: '800', color: '#111', marginBottom: 14 },

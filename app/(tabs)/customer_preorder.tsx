@@ -7,6 +7,7 @@ import {
   SafeAreaView,
   ScrollView,
   StatusBar,
+  Share,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -16,11 +17,29 @@ import {
 import {
   followBusiness,
   getBusinessByUid,
+  getBusinessTags,
   isFollowing,
   listReviewsForBusiness,
   unfollowBusiness,
   type Business,
+  type VibeTag,
 } from '@/services/api';
+
+function generateTimeSlots(start: string, end: string): string[] {
+  const parse = (t: string) => { const [h, m] = t.split(':').map(Number); return h * 60 + (m || 0); };
+  const fmt = (mins: number) => {
+    const h = Math.floor(mins / 60) % 24;
+    const period = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 || 12;
+    return `${h12}:00 ${period}`;
+  };
+  const startMins = parse(start);
+  const endMins = parse(end);
+  if (!start || !end || endMins <= startMins) return [];
+  const slots: string[] = [];
+  for (let m = startMins; m < endMins; m += 60) slots.push(fmt(m));
+  return slots;
+}
 
 // ─── Fake menu data ───────────────────────────────────────────────────────────
 type MenuItem = {
@@ -42,33 +61,41 @@ const MENU_ITEMS: MenuItem[] = [
 ];
 
 export default function CustomerPreorder() {
-  const { eventId, eventName, businessUid } = useLocalSearchParams<{
+  const { eventId, eventName, businessUid, eventLocation, startTime, endTime } = useLocalSearchParams<{
     eventId?: string;
     eventName?: string;
     businessUid?: string;
+    eventLocation?: string;
+    startTime?: string;
+    endTime?: string;
   }>();
 
   const [business, setBusiness] = useState<Business | null>(null);
+  const [tags, setTags] = useState<VibeTag[]>([]);
   const [reviewCount, setReviewCount] = useState(0);
   const [following, setFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [cart, setCart] = useState<Record<string, number>>({});
+  const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const timeSlots = generateTimeSlots(startTime ?? '', endTime ?? '');
 
   useEffect(() => {
     if (!businessUid) { setLoading(false); return; }
     let cancelled = false;
     (async () => {
       try {
-        const [biz, revs, followStatus] = await Promise.all([
+        const [biz, revs, followStatus, bizTags] = await Promise.all([
           getBusinessByUid(businessUid),
           listReviewsForBusiness(businessUid, 1),
           isFollowing(businessUid),
+          getBusinessTags(businessUid),
         ]);
         if (cancelled) return;
         setBusiness(biz);
         setReviewCount(revs.length);
         setFollowing(followStatus);
+        setTags(bizTags);
       } catch {
         // silently fail
       } finally {
@@ -175,6 +202,16 @@ export default function CustomerPreorder() {
               <Text style={styles.followersText}>{business?.follower_count ?? 0} followers</Text>
             </View>
 
+            {tags.length > 0 && (
+              <View style={styles.tagsRow}>
+                {tags.map(tag => (
+                  <View key={tag.id} style={styles.tagChip}>
+                    <Text style={styles.tagChipText}>{tag.name}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+
             <View style={styles.actionRow}>
               <TouchableOpacity
                 style={[styles.followBtn, following && styles.followingBtn]}
@@ -186,7 +223,7 @@ export default function CustomerPreorder() {
                   {following ? 'Following' : 'Follow'}
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.shareBtn} activeOpacity={0.8}>
+              <TouchableOpacity style={styles.shareBtn} activeOpacity={0.8} onPress={() => Share.share({ message: `Check out ${business?.business_name ?? 'this business'} on the app!` })}>
                 <Text style={styles.shareBtnText}>Share Profile</Text>
               </TouchableOpacity>
             </View>
@@ -195,10 +232,40 @@ export default function CustomerPreorder() {
           {/* ── Divider ── */}
           <View style={styles.divider} />
 
+          {/* ── Pickup ── */}
+          {eventLocation ? (
+            <View style={styles.pickupSection}>
+              <Text style={styles.pickupTitle}>Pickup</Text>
+              <View style={styles.pickupCard}>
+                <Text style={styles.pickupIcon}>📍</Text>
+                <Text style={styles.pickupAddress}>{eventLocation}</Text>
+              </View>
+              {timeSlots.length > 0 && (
+                <>
+                  <Text style={styles.pickupTimesLabel}>Select a pickup time</Text>
+                  <View style={styles.timeSlotsRow}>
+                    {timeSlots.map(slot => (
+                      <TouchableOpacity
+                        key={slot}
+                        style={[styles.timeSlotBtn, selectedTime === slot && styles.timeSlotBtnActive]}
+                        onPress={() => setSelectedTime(slot)}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={[styles.timeSlotText, selectedTime === slot && styles.timeSlotTextActive]}>
+                          {slot}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </>
+              )}
+            </View>
+          ) : null}
+
           {/* ── Menu items ── */}
           <View style={styles.menuSection}>
             <View style={styles.menuHeaderRow}>
-              <Text style={styles.menuTitle}>Menu</Text>
+              <Text style={styles.menuTitle}>In Stock</Text>
               {totalQty > 0 ? (
                 <View style={styles.cartBadge}>
                   <Text style={styles.cartBadgeText}>{totalQty} in cart</Text>
@@ -352,4 +419,24 @@ const styles = StyleSheet.create({
   orderBarTotal: { fontSize: 18, fontWeight: '900', color: '#111' },
   placeOrderBtn: { backgroundColor: '#2E4A7A', borderRadius: RADIUS, paddingHorizontal: 24, paddingVertical: 14 },
   placeOrderBtnText: { color: '#fff', fontWeight: '800', fontSize: 15 },
+
+  tagsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 },
+  tagChip: { backgroundColor: '#dce9f5', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5 },
+  tagChipText: { fontSize: 12, color: '#2E4A7A', fontWeight: '600' },
+
+  pickupSection: { paddingHorizontal: 16, marginBottom: 16 },
+  pickupTitle: { fontSize: 18, fontWeight: '900', color: '#111', marginBottom: 10 },
+  pickupCard: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    backgroundColor: CARD_BG, borderRadius: RADIUS, padding: 14,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1,
+  },
+  pickupIcon: { fontSize: 18 },
+  pickupAddress: { fontSize: 14, color: '#333', fontWeight: '500', flex: 1 },
+  pickupTimesLabel: { fontSize: 13, fontWeight: '700', color: '#555', marginTop: 14, marginBottom: 10 },
+  timeSlotsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  timeSlotBtn: { borderRadius: 10, borderWidth: 1.5, borderColor: '#2E4A7A', paddingHorizontal: 18, paddingVertical: 10, backgroundColor: '#fff' },
+  timeSlotBtnActive: { backgroundColor: '#2E4A7A' },
+  timeSlotText: { fontSize: 13, fontWeight: '700', color: '#2E4A7A' },
+  timeSlotTextActive: { color: '#fff' },
 });
