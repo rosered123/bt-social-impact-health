@@ -265,11 +265,11 @@ export default function BusinessDashboard() {
             <Text style={styles.activityValue}>—</Text>
             <Text style={styles.activitySub}>Profile Saves</Text>
           </View>
-          {/* Rating */}
+          {/* RSVPs */}
           <View style={styles.activityCard}>
-            <Text style={styles.activityLabel}>Rating</Text>
-            <Text style={styles.activityValue}>{avgRating}</Text>
-            <Text style={styles.activitySub}>{reviews.length} reviews</Text>
+            <Text style={styles.activityLabel}>RSVPs</Text>
+            <Text style={styles.activityValue}>—</Text>
+            <Text style={styles.activitySub}>for today</Text>
           </View>
         </View>
 
@@ -507,7 +507,7 @@ const styles = StyleSheet.create({
   },
 
   // Section title
-  sectionTitle: { fontSize: 17, fontWeight: '800', color: '#111', marginBottom: 10 },
+  sectionTitle: { fontSize: 18, fontWeight: '800', color: '#111', marginBottom: 10 },
 
   // Today's Activity grid
   activityGrid: {
@@ -516,21 +516,21 @@ const styles = StyleSheet.create({
   activityCard: {
     width: '48%',
     backgroundColor: '#fff',
-    borderRadius: 10,
+    borderRadius: 12,
     borderWidth: 0.8,
     borderColor: '#d8d8d8',
-    padding: 18,
-    height: 82,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     justifyContent: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.25,
-    shadowRadius: 2.5,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.12,
+    shadowRadius: 3,
     elevation: 2,
   },
-  activityLabel: { fontSize: 13, fontWeight: '600', color: '#555' },
-  activityValue: { fontSize: 24, fontWeight: '900', color: '#111', marginTop: 4 },
-  activitySub: { fontSize: 11, color: '#888' },
+  activityLabel: { fontSize: 12, fontWeight: '500', color: '#666', marginBottom: 2 },
+  activityValue: { fontSize: 26, fontWeight: '800', color: '#111', marginTop: 2 },
+  activitySub: { fontSize: 11, fontWeight: '400', color: '#999', marginTop: 1 },
   trendRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
   trendText: { fontSize: 12, fontWeight: '600', color: '#22c55e' },
 
@@ -554,7 +554,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   quickActionLabel: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '400',
     color: '#000',
     marginTop: 5,
@@ -575,7 +575,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.25,
     shadowRadius: 5,
-    elevation: 4,
   },
   eventThumb: {
     width: 56, height: 56, borderRadius: 28,
