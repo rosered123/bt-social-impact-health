@@ -1,3 +1,4 @@
+import { imageSource } from "@/utils/imageSource";
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
@@ -114,7 +115,7 @@ export default function AddReview() {
         <View style={styles.businessCard}>
           <View style={styles.businessAvatar}>
             {business?.logo_url
-              ? <Image source={{ uri: business.logo_url }} style={styles.avatarImage} resizeMode="cover" />
+              ? <Image source={imageSource(business.logo_url)} style={styles.avatarImage} resizeMode="cover" />
               : <Text style={styles.businessAvatarIcon}>🖼</Text>
             }
           </View>

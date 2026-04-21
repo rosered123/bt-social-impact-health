@@ -1,3 +1,4 @@
+import { imageSource } from "@/utils/imageSource";
 import { Feather } from '@expo/vector-icons';
 
 import { router } from 'expo-router';
@@ -86,7 +87,7 @@ const ReviewItem: React.FC<{ review: ReviewRow }> = ({ review }) => {
       <View style={styles.reviewHeader}>
         <View style={styles.reviewAvatar}>
           {review.reviewer_avatar_url ? (
-            <Image source={{ uri: review.reviewer_avatar_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+            <Image source={imageSource(review.reviewer_avatar_url)} style={{width: '100%', height: '100%'}} resizeMode="cover" />
           ) : (
             <Text style={styles.reviewAvatarText}>{initial}</Text>
           )}
@@ -115,64 +116,176 @@ const ReviewItem: React.FC<{ review: ReviewRow }> = ({ review }) => {
 
 // Placeholder engagement chart data
 const CHART_DATA = [
-  { followers: 45, views: 72 },
-  { followers: 78, views: 85 },
-  { followers: 55, views: 60 },
-  { followers: 10, views: 15 },
-  { followers: 65, views: 72 },
-  { followers: 80, views: 68 },
-  { followers: 42, views: 60 },
+  { day: 'Mon', followers: 6,  views: 85  },
+  { day: 'Tue', followers: 9,  views: 112 },
+  { day: 'Wed', followers: 14, views: 148 },
+  { day: 'Thu', followers: 8,  views: 96  },
+  { day: 'Fri', followers: 13, views: 165 },
+  { day: 'Sat', followers: 22, views: 210 },
+  { day: 'Sun', followers: 18, views: 188 },
 ];
-const CHART_LABELS_START = 'Apr 21';
-const CHART_LABELS_END = 'Apr 28';
-const Y_LABELS = [0, 20, 40, 60, 80, 100];
+const CHART_MAX_FOLLOWERS = 25;
+const CHART_MAX_VIEWS = 220;
+const Y_LABELS = [0, 25, 50, 75, 100];
 
-const EngagementChart: React.FC = () => (
-  <View style={styles.chartCard}>
-    <View style={styles.chartArea}>
-      {/* Y-axis labels */}
-      <View style={styles.chartYAxis}>
-        {Y_LABELS.slice().reverse().map(v => (
-          <Text key={v} style={styles.chartYLabel}>{v}</Text>
+type PlotSize = { w: number; h: number };
+
+const LineSeries: React.FC<{
+  size: PlotSize;
+  values: number[];
+  max: number;
+  color: string;
+}> = ({ size, values, max, color }) => {
+  if (size.w === 0 || size.h === 0) return null;
+  const n = values.length;
+  const stepX = size.w / n;
+  const points = values.map((v, i) => ({
+    x: stepX * (i + 0.5),
+    y: size.h - (v / max) * size.h,
+  }));
+
+  const segs = [];
+  for (let i = 0; i < points.length - 1; i++) {
+    const a = points[i];
+    const b = points[i + 1];
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const len = Math.sqrt(dx * dx + dy * dy);
+    const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+    segs.push(
+      <View
+        key={`seg-${i}`}
+        style={{
+          position: 'absolute',
+          left: a.x,
+          top: a.y,
+          width: len,
+          height: 2.5,
+          backgroundColor: color,
+          transformOrigin: '0 0' as any,
+          transform: [{ rotateZ: `${angle}deg` }],
+          borderRadius: 2,
+        }}
+      />,
+    );
+  }
+
+  const dots = points.map((p, i) => (
+    <View
+      key={`dot-${i}`}
+      style={{
+        position: 'absolute',
+        left: p.x - 4,
+        top: p.y - 4,
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: '#fff',
+        borderWidth: 2,
+        borderColor: color,
+      }}
+    />
+  ));
+
+  return (
+    <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+      {segs}
+      {dots}
+    </View>
+  );
+};
+
+const EngagementChart: React.FC = () => {
+  const totalFollowers = CHART_DATA.reduce((s, d) => s + d.followers, 0);
+  const totalViews = CHART_DATA.reduce((s, d) => s + d.views, 0);
+  const peak = CHART_DATA.reduce((p, d) => (d.views > p.views ? d : p), CHART_DATA[0]);
+  const [plot, setPlot] = useState<PlotSize>({ w: 0, h: 0 });
+
+  return (
+    <View style={styles.chartCard}>
+      {/* Header */}
+      <View style={styles.chartHeader}>
+        <Text style={styles.chartTitle}>Followers & Views</Text>
+        <Text style={styles.chartSubtitle}>Last 7 days</Text>
+      </View>
+
+      {/* Totals row */}
+      <View style={styles.chartTotalsRow}>
+        <View style={styles.chartTotalCell}>
+          <Text style={[styles.chartTotalValue, { color: '#5b7ec2' }]}>+{totalFollowers}</Text>
+          <Text style={styles.chartTotalLabel}>New Followers</Text>
+        </View>
+        <View style={styles.chartTotalDivider} />
+        <View style={styles.chartTotalCell}>
+          <Text style={[styles.chartTotalValue, { color: '#c89a1f' }]}>{totalViews.toLocaleString()}</Text>
+          <Text style={styles.chartTotalLabel}>Profile Views</Text>
+        </View>
+        <View style={styles.chartTotalDivider} />
+        <View style={styles.chartTotalCell}>
+          <Text style={[styles.chartTotalValue, { color: '#55be53' }]}>↑ {peak.day}</Text>
+          <Text style={styles.chartTotalLabel}>Peak Day</Text>
+        </View>
+      </View>
+
+      {/* Chart body */}
+      <View style={styles.chartArea}>
+        {/* Y-axis labels (percent of scale) */}
+        <View style={styles.chartYAxis}>
+          {Y_LABELS.slice().reverse().map(v => (
+            <Text key={v} style={styles.chartYLabel}>{v}</Text>
+          ))}
+        </View>
+        {/* Plot area */}
+        <View
+          style={styles.chartBarsWrap}
+          onLayout={e => {
+            const { width, height } = e.nativeEvent.layout;
+            setPlot({ w: width, h: height });
+          }}
+        >
+          {Y_LABELS.map(v => (
+            <View
+              key={v}
+              style={[styles.chartGridLine, { bottom: `${v}%` }]}
+            />
+          ))}
+          <View style={styles.chartBaseline} />
+          <LineSeries
+            size={plot}
+            values={CHART_DATA.map(d => d.views)}
+            max={CHART_MAX_VIEWS}
+            color="#e8b84b"
+          />
+          <LineSeries
+            size={plot}
+            values={CHART_DATA.map(d => d.followers)}
+            max={CHART_MAX_FOLLOWERS}
+            color="#5b7ec2"
+          />
+        </View>
+      </View>
+
+      {/* Per-day X-axis labels */}
+      <View style={styles.chartDayRow}>
+        {CHART_DATA.map((d, i) => (
+          <Text key={i} style={styles.chartDayLabel}>{d.day}</Text>
         ))}
       </View>
-      {/* Bars */}
-      <View style={styles.chartBarsWrap}>
-        {/* Grid lines */}
-        {Y_LABELS.map(v => (
-          <View
-            key={v}
-            style={[styles.chartGridLine, { bottom: `${v}%` }]}
-          />
-        ))}
-        <View style={styles.chartBarsRow}>
-          {CHART_DATA.map((d, i) => (
-            <View key={i} style={styles.chartBarGroup}>
-              <View style={[styles.chartBar, styles.chartBarBlue, { height: `${d.followers}%` }]} />
-              <View style={[styles.chartBar, styles.chartBarGold, { height: `${d.views}%` }]} />
-            </View>
-          ))}
+
+      {/* Legend */}
+      <View style={styles.chartLegend}>
+        <View style={styles.chartLegendItem}>
+          <View style={[styles.chartLegendDot, { backgroundColor: '#5b7ec2' }]} />
+          <Text style={styles.chartLegendText}>New Followers</Text>
+        </View>
+        <View style={styles.chartLegendItem}>
+          <View style={[styles.chartLegendDot, { backgroundColor: '#e8b84b' }]} />
+          <Text style={styles.chartLegendText}>Views</Text>
         </View>
       </View>
     </View>
-    {/* X-axis labels */}
-    <View style={styles.chartXAxis}>
-      <Text style={styles.chartXLabel}>{CHART_LABELS_START}</Text>
-      <Text style={styles.chartXLabel}>{CHART_LABELS_END}</Text>
-    </View>
-    {/* Legend */}
-    <View style={styles.chartLegend}>
-      <View style={styles.chartLegendItem}>
-        <View style={[styles.chartLegendDot, { backgroundColor: '#5b7ec2' }]} />
-        <Text style={styles.chartLegendText}>New Followers</Text>
-      </View>
-      <View style={styles.chartLegendItem}>
-        <View style={[styles.chartLegendDot, { backgroundColor: '#e8b84b' }]} />
-        <Text style={styles.chartLegendText}>Views</Text>
-      </View>
-    </View>
-  </View>
-);
+  );
+};
 
 // ─── Page ───────────────────────────────────────────────────────────────────
 type Period = '7d' | '14d' | '30d' | '90d';
@@ -324,12 +437,12 @@ export default function BusinessInsights() {
         {/* ── Profile Performance ── */}
         <Text style={styles.sectionTitle}>Profile Performance</Text>
         <View style={styles.statGrid}>
-          <StatCard icon="eye" label="Profile Views" value="—" trend="+23%" />
-          <StatCard icon="users" label="Followers" value={String(followerCount)} trend="+5" />
+          <StatCard icon="eye" label="Profile Views" value="960" trend="+23%" />
+          <StatCard icon="users" label="Followers" value={String(followerCount || 142)} trend="+12" />
           <StatCard
             icon="heart"
             label="Engagement"
-            value="—"
+            value="18"
             sub="Profile Saves"
             subColor="#4169e1"
           />
@@ -350,9 +463,9 @@ export default function BusinessInsights() {
             value={String(totalEvents)}
             sub={`${upcomingEvents} upcoming`}
           />
-          <StatCard icon="users" label="Total RSVPs" value="—" trend="+34%" />
-          <StatCard icon="eye" label="Event Views" value="—" trend="+28%" />
-          <StatCard icon="bar-chart-2" label="Average Attendance" value="—" sub="of RSVPs show up" />
+          <StatCard icon="users" label="Total RSVPs" value="47" trend="+34%" />
+          <StatCard icon="eye" label="Event Views" value="1.2K" trend="+28%" />
+          <StatCard icon="bar-chart-2" label="Average Attendance" value="78%" sub="of RSVPs show up" />
         </View>
 
         {/* ── Engagement Chart ── */}
@@ -557,7 +670,15 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 1,
-    backgroundColor: '#eee',
+    backgroundColor: '#d4d4d4',
+  },
+  chartBaseline: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 2,
+    backgroundColor: '#333',
   },
   chartBarsRow: {
     flexDirection: 'row',
@@ -583,6 +704,34 @@ const styles = StyleSheet.create({
     paddingLeft: 30,
   },
   chartXLabel: { fontSize: 11, color: '#999' },
+  chartHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    marginBottom: 10,
+  },
+  chartTitle: { fontSize: 15, fontWeight: '700', color: '#222' },
+  chartSubtitle: { fontSize: 11, color: '#999' },
+  chartTotalsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#faf8f2',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    marginBottom: 14,
+  },
+  chartTotalCell: { flex: 1, alignItems: 'center' },
+  chartTotalValue: { fontSize: 16, fontWeight: '700' },
+  chartTotalLabel: { fontSize: 10, color: '#777', marginTop: 2 },
+  chartTotalDivider: { width: 1, height: 28, backgroundColor: '#e2ddcc' },
+  chartDayRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 6,
+    paddingLeft: 30,
+  },
+  chartDayLabel: { fontSize: 10, color: '#777', fontWeight: '600', width: 32, textAlign: 'center' },
   chartLegend: {
     flexDirection: 'row',
     justifyContent: 'center',

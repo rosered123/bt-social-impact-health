@@ -1,3 +1,4 @@
+import { imageSource } from "@/utils/imageSource";
 import { router } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
@@ -90,7 +91,7 @@ const FollowedCard: React.FC<{ event: PopUpEvent; onToggleSave: () => void; onPr
   <TouchableOpacity style={styles.followedCard} onPress={onPress} activeOpacity={0.85}>
     <View style={styles.followedCardImage}>
       {event.cover_url ? (
-        <Image source={{ uri: event.cover_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+        <Image source={imageSource(event.cover_url)} style={{width: '100%', height: '100%'}} resizeMode="cover" />
       ) : null}
     </View>
     <View style={styles.followedCardBody}>
@@ -111,7 +112,7 @@ const GridCard: React.FC<{ event: PopUpEvent; onToggleSave: () => void; onPress:
   <TouchableOpacity style={styles.gridCard} onPress={onPress} activeOpacity={0.85}>
     <View style={styles.gridCardImage}>
       {event.cover_url ? (
-        <Image source={{ uri: event.cover_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+        <Image source={imageSource(event.cover_url)} style={{width: '100%', height: '100%'}} resizeMode="cover" />
       ) : null}
     </View>
     <View style={styles.gridCardBody}>
@@ -132,7 +133,7 @@ const FeatureCard: React.FC<{ event: PopUpEvent; onToggleSave: () => void; onPre
   <TouchableOpacity style={styles.featureCard} onPress={onPress} activeOpacity={0.85}>
     <View style={styles.featureCardImage}>
       {event.cover_url ? (
-        <Image source={{ uri: event.cover_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+        <Image source={imageSource(event.cover_url)} style={{width: '100%', height: '100%'}} resizeMode="cover" />
       ) : null}
     </View>
     <View style={styles.featureCardBody}>
@@ -153,7 +154,7 @@ const ListCard: React.FC<{ event: PopUpEvent; onToggleSave: () => void; onPress:
   <TouchableOpacity style={styles.listCard} onPress={onPress} activeOpacity={0.85}>
     <View style={styles.listCardImage}>
       {event.cover_url ? (
-        <Image source={{ uri: event.cover_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+        <Image source={imageSource(event.cover_url)} style={{width: '100%', height: '100%'}} resizeMode="cover" />
       ) : null}
     </View>
     <View style={styles.listCardBody}>

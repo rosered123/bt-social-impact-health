@@ -1,3 +1,4 @@
+import { imageSource } from "@/utils/imageSource";
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -84,7 +85,7 @@ const VendorCard: React.FC<{
       <View style={styles.vendorTop}>
         <View style={styles.vendorAvatar}>
           {business.logo_url ? (
-            <Image source={{ uri: business.logo_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+            <Image source={imageSource(business.logo_url)} style={{width: '100%', height: '100%'}} resizeMode="cover" />
           ) : (
             <Text style={styles.vendorAvatarText}>
               {(business.business_name ?? 'V').slice(0, 1).toUpperCase()}
@@ -145,7 +146,7 @@ const IncomingRequestCard: React.FC<{
       <View style={styles.requestHeader}>
         <View style={styles.vendorAvatar}>
           {from.logo_url ? (
-            <Image source={{ uri: from.logo_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+            <Image source={imageSource(from.logo_url)} style={{width: '100%', height: '100%'}} resizeMode="cover" />
           ) : (
             <Text style={styles.vendorAvatarText}>
               {(from.business_name ?? 'V').slice(0, 1).toUpperCase()}

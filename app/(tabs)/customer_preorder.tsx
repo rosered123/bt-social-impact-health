@@ -1,3 +1,4 @@
+import { imageSource } from "@/utils/imageSource";
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
@@ -174,14 +175,14 @@ export default function CustomerPreorder() {
           {/* ── Cover + Avatar ── */}
           <View style={styles.coverSection}>
             <View style={styles.coverPhoto}>
-              {business?.logo_url ? (
-                <Image source={{ uri: business.logo_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+              {(business?.background_url || business?.logo_url) ? (
+                <Image source={imageSource(business?.background_url || business?.logo_url)} style={{width: '100%', height: '100%'}} resizeMode="cover" />
               ) : null}
             </View>
             <View style={styles.avatarWrapper}>
               <View style={styles.avatar}>
                 {business?.logo_url ? (
-                  <Image source={{ uri: business.logo_url }} style={styles.avatarImage} resizeMode="cover" />
+                  <Image source={imageSource(business.logo_url)} style={styles.avatarImage} resizeMode="cover" />
                 ) : (
                   <Text style={styles.avatarIcon}>🖼</Text>
                 )}

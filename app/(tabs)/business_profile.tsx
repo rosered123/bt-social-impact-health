@@ -1,3 +1,4 @@
+import { imageSource } from "@/utils/imageSource";
 import { Feather } from '@expo/vector-icons';
 
 import { router } from 'expo-router';
@@ -51,7 +52,7 @@ const ReviewItem: React.FC<{ review: ReviewRow }> = ({ review }) => {
       <View style={styles.reviewHeader}>
         <View style={styles.reviewAvatar}>
           {review.reviewer_avatar_url ? (
-            <Image source={{ uri: review.reviewer_avatar_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+            <Image source={imageSource(review.reviewer_avatar_url)} style={{width: '100%', height: '100%'}} resizeMode="cover" />
           ) : (
             <Text style={styles.reviewAvatarText}>{initial}</Text>
           )}
@@ -158,8 +159,8 @@ export default function MyProfile() {
         {/* ── Cover + Avatar ── */}
         <View style={styles.coverSection}>
           <View style={styles.coverPhoto}>
-            {business?.logo_url ? (
-              <Image source={{ uri: business.logo_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+            {(business?.background_url || business?.logo_url) ? (
+              <Image source={imageSource(business?.background_url || business?.logo_url)} style={{width: '100%', height: '100%'}} resizeMode="cover" />
             ) : (
               <Text style={styles.coverPhotoIcon}>🖼</Text>
             )}
@@ -167,7 +168,7 @@ export default function MyProfile() {
           <View style={styles.avatarWrapper}>
             <View style={styles.avatar}>
               {business?.logo_url ? (
-                <Image source={{ uri: business.logo_url }} style={styles.avatarImage} resizeMode="cover" />
+                <Image source={imageSource(business.logo_url)} style={styles.avatarImage} resizeMode="cover" />
               ) : (
                 <Text style={styles.avatarIcon}>🖼</Text>
               )}
@@ -261,7 +262,7 @@ export default function MyProfile() {
             <TouchableOpacity key={event.id} style={styles.eventCard} activeOpacity={0.8}>
               <View style={styles.eventThumb}>
                 {event.cover_url ? (
-                  <Image source={{ uri: event.cover_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+                  <Image source={imageSource(event.cover_url)} style={{width: '100%', height: '100%'}} resizeMode="cover" />
                 ) : null}
               </View>
               <View style={styles.eventInfo}>
@@ -307,8 +308,8 @@ export default function MyProfile() {
           <TouchableOpacity activeOpacity={1} style={ms.card}>
             {/* Cover photo background */}
             <View style={ms.coverBg}>
-              {business?.logo_url ? (
-                <Image source={{ uri: business.logo_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+              {(business?.background_url || business?.logo_url) ? (
+                <Image source={imageSource(business?.background_url || business?.logo_url)} style={{width: '100%', height: '100%'}} resizeMode="cover" />
               ) : null}
               <View style={ms.coverDarken} />
 
@@ -324,7 +325,7 @@ export default function MyProfile() {
               {/* Avatar */}
               <View style={ms.avatarWrap}>
                 {business?.logo_url ? (
-                  <Image source={{ uri: business.logo_url }} style={ms.avatarImg} resizeMode="cover" />
+                  <Image source={imageSource(business.logo_url)} style={ms.avatarImg} resizeMode="cover" />
                 ) : (
                   <View style={ms.avatarPlaceholder}>
                     <Text style={{ fontSize: 28, opacity: 0.5 }}>🖼</Text>

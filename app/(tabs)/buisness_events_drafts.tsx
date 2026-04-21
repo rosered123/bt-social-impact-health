@@ -1,3 +1,4 @@
+import { imageSource } from "@/utils/imageSource";
 import { Feather } from '@expo/vector-icons';
 
 import React, { useCallback, useEffect, useState } from 'react';
@@ -23,7 +24,7 @@ const DraftCard: React.FC<{ event: EventRow; onEdit: () => void }> = ({ event, o
       {/* Cover image */}
       <View style={styles.cardCover}>
         {event.cover_url ? (
-          <Image source={{ uri: event.cover_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+          <Image source={imageSource(event.cover_url)} style={{width: '100%', height: '100%'}} resizeMode="cover" />
         ) : null}
       </View>
 

@@ -1,3 +1,4 @@
+import { imageSource } from "@/utils/imageSource";
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
@@ -60,7 +61,7 @@ function SavedEventCard({ event }: { event: SavedEvent }) {
     >
       <View style={styles.savedImageWrap}>
         {event.cover_url ? (
-          <Image source={{ uri: event.cover_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+          <Image source={imageSource(event.cover_url)} style={{width: '100%', height: '100%'}} resizeMode="cover" />
         ) : null}
       </View>
       <View style={styles.savedBody}>
@@ -88,7 +89,7 @@ function FollowedVendorRow({ biz }: { biz: BusinessWithTags }) {
     >
       <View style={styles.vendorLogo}>
         {biz.logo_url ? (
-          <Image source={{ uri: biz.logo_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+          <Image source={imageSource(biz.logo_url)} style={{width: '100%', height: '100%'}} resizeMode="cover" />
         ) : null}
       </View>
       <View style={styles.vendorInfo}>
@@ -134,7 +135,7 @@ function ReviewCard({ review, avatarUrl }: { review: ReviewRow; avatarUrl?: stri
       <View style={styles.reviewTop}>
         <View style={styles.reviewAvatar}>
           {avatarUrl ? (
-            <Image source={{ uri: avatarUrl }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+            <Image source={imageSource(avatarUrl)} style={{width: '100%', height: '100%'}} resizeMode="cover" />
           ) : null}
         </View>
         <View style={styles.reviewMeta}>
@@ -259,7 +260,7 @@ export default function Profile() {
             </View>
             <View style={styles.headerRight}>
               {profile?.avatar_url ? (
-                <Image source={{ uri: profile.avatar_url }} style={styles.headerAvatar} resizeMode="cover" />
+                <Image source={imageSource(profile.avatar_url)} style={styles.headerAvatar} resizeMode="cover" />
               ) : (
                 <View style={styles.headerAvatar} />
               )}

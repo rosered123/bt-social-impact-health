@@ -1,3 +1,4 @@
+import { imageSource } from "@/utils/imageSource";
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -182,7 +183,7 @@ export default function EditProfile() {
         <View style={styles.coverSection}>
           <View style={styles.coverPhoto}>
             {logoUrl ? (
-              <Image source={{ uri: logoUrl }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+              <Image source={imageSource(logoUrl)} style={{width: '100%', height: '100%'}} resizeMode="cover" />
             ) : null}
             <TouchableOpacity style={styles.coverBtn} activeOpacity={0.8}>
               <Feather name="camera" size={14} color="#fff" />
@@ -192,7 +193,7 @@ export default function EditProfile() {
           <View style={styles.avatarWrapper}>
             <View style={styles.avatar}>
               {logoUrl ? (
-                <Image source={{ uri: logoUrl }} style={styles.avatarImg} resizeMode="cover" />
+                <Image source={imageSource(logoUrl)} style={styles.avatarImg} resizeMode="cover" />
               ) : (
                 <Text style={{ fontSize: 22, opacity: 0.5 }}>🖼</Text>
               )}

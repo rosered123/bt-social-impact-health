@@ -19,6 +19,7 @@ export type Business = {
 	short_description: string | null;
 	story: string | null;
 	logo_url: string | null;
+	background_url: string | null;
 	email: string | null;
 	phone: string | null;
 	website: string | null;

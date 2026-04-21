@@ -1,3 +1,4 @@
+import { imageSource } from "@/utils/imageSource";
 import { router, useFocusEffect, useGlobalSearchParams } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import {
@@ -188,7 +189,7 @@ export default function ViewEvent() {
         {/* ── Cover photo — stretches to top of screen ── */}
         <View style={styles.cover}>
           {event.cover_url ? (
-            <Image source={{ uri: event.cover_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+            <Image source={imageSource(event.cover_url)} style={{width: '100%', height: '100%'}} resizeMode="cover" />
           ) : null}
           {/* Dark gradient so white buttons are readable */}
           <View style={styles.coverGradient} />

@@ -1,3 +1,4 @@
+import { imageSource } from "@/utils/imageSource";
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
@@ -77,7 +78,7 @@ const ReviewItem: React.FC<{ review: ReviewRow }> = ({ review }) => {
       <View style={styles.reviewHeader}>
         <View style={styles.reviewAvatar}>
           {review.reviewer_avatar_url ? (
-            <Image source={{ uri: review.reviewer_avatar_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+            <Image source={imageSource(review.reviewer_avatar_url)} style={{width: '100%', height: '100%'}} resizeMode="cover" />
           ) : (
             <Text style={styles.reviewAvatarText}>{initial}</Text>
           )}
@@ -207,10 +208,10 @@ export default function PublicBusinessProfile() {
         {/* ── Cover + Avatar ── */}
         <View style={styles.coverSection}>
           <View style={styles.coverPhoto}>
-            {business.logo_url ? (
+            {(business.background_url || business.logo_url) ? (
               <Image
-                source={{ uri: business.logo_url }}
-                style={StyleSheet.absoluteFill}
+                source={imageSource(business.background_url || business.logo_url)}
+                style={{width: '100%', height: '100%'}}
                 resizeMode="cover"
               />
             ) : (
@@ -221,7 +222,7 @@ export default function PublicBusinessProfile() {
             <View style={styles.avatar}>
               {business.logo_url ? (
                 <Image
-                  source={{ uri: business.logo_url }}
+                  source={imageSource(business.logo_url)}
                   style={styles.avatarImage}
                   resizeMode="cover"
                 />
@@ -302,9 +303,9 @@ export default function PublicBusinessProfile() {
                 <View style={styles.eventThumb}>
                   {event.cover_url ? (
                     <Image
-                      source={{ uri: event.cover_url }}
-                      style={StyleSheet.absoluteFill}
-                      resizeMode="cover"
+                      source={imageSource(event.cover_url)}
+                      style={{width: '100%', height: '100%'}}
+                resizeMode="cover"
                     />
                   ) : (
                     <Text style={styles.eventThumbIcon}>🖼</Text>

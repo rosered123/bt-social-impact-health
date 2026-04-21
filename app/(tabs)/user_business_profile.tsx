@@ -1,3 +1,4 @@
+import { imageSource } from "@/utils/imageSource";
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
@@ -44,7 +45,7 @@ const ReviewItem: React.FC<{ review: ReviewRow }> = ({ review }) => {
       <View style={styles.reviewHeader}>
         <View style={styles.reviewAvatar}>
           {review.reviewer_avatar_url ? (
-            <Image source={{ uri: review.reviewer_avatar_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+            <Image source={imageSource(review.reviewer_avatar_url)} style={{width: '100%', height: '100%'}} resizeMode="cover" />
           ) : (
             <Text style={styles.reviewAvatarText}>{initial}</Text>
           )}
@@ -173,15 +174,15 @@ export default function UserBusinessProfile() {
 
         <View style={styles.coverSection}>
           <View style={styles.coverPhoto}>
-            {business.logo_url ? (
-              <Image source={{ uri: business.logo_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+            {(business.background_url || business.logo_url) ? (
+              <Image source={imageSource(business.background_url || business.logo_url)} style={{width: '100%', height: '100%'}} resizeMode="cover" />
             ) : null}
           </View>
           <View style={styles.avatarWrapper}>
             <TouchableOpacity onPress={() => setShowProfileCard(true)} activeOpacity={0.85}>
               <View style={styles.avatar}>
                 {business.logo_url ? (
-                  <Image source={{ uri: business.logo_url }} style={styles.avatarImage} resizeMode="cover" />
+                  <Image source={imageSource(business.logo_url)} style={styles.avatarImage} resizeMode="cover" />
                 ) : (
                   <Text style={styles.avatarIcon}>🖼</Text>
                 )}
@@ -247,7 +248,7 @@ export default function UserBusinessProfile() {
                 onPress={() => router.navigate({ pathname: '/(tabs)/view_event', params: { eventId: String(event.id) } })}>
                 <View style={styles.eventThumb}>
                   {event.cover_url ? (
-                    <Image source={{ uri: event.cover_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+                    <Image source={imageSource(event.cover_url)} style={{width: '100%', height: '100%'}} resizeMode="cover" />
                   ) : null}
                 </View>
                 <View style={styles.eventInfo}>
@@ -298,7 +299,7 @@ export default function UserBusinessProfile() {
             {/* Large pfp */}
             <View style={styles.cardPfp}>
               {business.logo_url ? (
-                <Image source={{ uri: business.logo_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+                <Image source={imageSource(business.logo_url)} style={{width: '100%', height: '100%'}} resizeMode="cover" />
               ) : (
                 <Text style={{ fontSize: 48 }}>🖼</Text>
               )}

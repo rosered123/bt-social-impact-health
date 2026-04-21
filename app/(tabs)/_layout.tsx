@@ -70,23 +70,6 @@ export default function TabLayout() {
         }
       />
       <Tabs.Screen
-        name="business_profile"
-        options={
-          isBusiness
-            ? {
-                title: 'Profile',
-                tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.fill" color={color} />,
-              }
-            : { href: null }
-        }
-      />
-      <Tabs.Screen name="edit_profile" options={{ href: null }} />
-      <Tabs.Screen name="public_business_profile" options={{ href: null }} />
-      <Tabs.Screen name="business_insights" options={{ href: null }} />
-      <Tabs.Screen name="settings" options={{ href: null }} />
-      <Tabs.Screen name="edit_interests" options={{ href: null }} />
-
-      <Tabs.Screen
         name="explore"
         options={
           isBusiness
@@ -104,6 +87,22 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="map.fill" color={color} />,
         }}
       />
+      <Tabs.Screen
+        name="business_profile"
+        options={
+          isBusiness
+            ? {
+                title: 'Profile',
+                tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.fill" color={color} />,
+              }
+            : { href: null }
+        }
+      />
+      <Tabs.Screen name="edit_profile" options={{ href: null }} />
+      <Tabs.Screen name="public_business_profile" options={{ href: null }} />
+      <Tabs.Screen name="business_insights" options={{ href: null }} />
+      <Tabs.Screen name="settings" options={{ href: null }} />
+      <Tabs.Screen name="edit_interests" options={{ href: null }} />
       <Tabs.Screen name="add_review" options={{ href: null }} />
       <Tabs.Screen name="view_event" options={{ href: null }} />
       <Tabs.Screen name="user_business_profile" options={{ href: null }} />

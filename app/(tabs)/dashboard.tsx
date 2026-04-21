@@ -1,3 +1,4 @@
+import { imageSource } from "@/utils/imageSource";
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -145,7 +146,7 @@ export default function BusinessDashboard() {
               <Text style={styles.statBoxLabel}>Followers</Text>
             </View>
             <View style={styles.statBox}>
-              <Text style={styles.statBoxValue}>—</Text>
+              <Text style={styles.statBoxValue}>960</Text>
               <Text style={styles.statBoxLabel}>Views Today</Text>
             </View>
             <View style={styles.statBox}>
@@ -213,7 +214,7 @@ export default function BusinessDashboard() {
                 </View>
                 <View style={styles.subCard}>
                   <Text style={styles.subCardLabel}>Stock</Text>
-                  <Text style={styles.subCardValue}>—</Text>
+                  <Text style={styles.subCardValue}>45 left</Text>
                 </View>
               </View>
             </>
@@ -247,7 +248,7 @@ export default function BusinessDashboard() {
           {/* Profile Views */}
           <View style={styles.activityCard}>
             <Text style={styles.activityLabel}>Profile Views</Text>
-            <Text style={styles.activityValue}>—</Text>
+            <Text style={styles.activityValue}>960</Text>
             <View style={styles.trendRow}>
               <Feather name="trending-up" size={14} color="#55be53" />
               <Text style={styles.trendText}>+23%</Text>
@@ -256,19 +257,19 @@ export default function BusinessDashboard() {
           {/* Pre-Orders */}
           <View style={styles.activityCard}>
             <Text style={styles.activityLabel}>Pre-Orders</Text>
-            <Text style={styles.activityValue}>—</Text>
+            <Text style={styles.activityValue}>12</Text>
             <Text style={styles.activitySub}>for today</Text>
           </View>
           {/* Engagement */}
           <View style={styles.activityCard}>
             <Text style={styles.activityLabel}>Engagement</Text>
-            <Text style={styles.activityValue}>—</Text>
+            <Text style={styles.activityValue}>18</Text>
             <Text style={styles.activitySub}>Profile Saves</Text>
           </View>
           {/* RSVPs */}
           <View style={styles.activityCard}>
             <Text style={styles.activityLabel}>RSVPs</Text>
-            <Text style={styles.activityValue}>—</Text>
+            <Text style={styles.activityValue}>7</Text>
             <Text style={styles.activitySub}>for today</Text>
           </View>
         </View>
@@ -328,7 +329,7 @@ export default function BusinessDashboard() {
             <View key={event.id} style={styles.eventCard}>
               <View style={styles.eventThumb}>
                 {event.cover_url ? (
-                  <Image source={{ uri: event.cover_url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+                  <Image source={imageSource(event.cover_url)} style={{width: '100%', height: '100%'}} resizeMode="cover" />
                 ) : null}
               </View>
               <View style={styles.eventInfo}>

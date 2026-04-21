@@ -1,3 +1,4 @@
+import { imageSource } from "@/utils/imageSource";
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -86,7 +87,7 @@ const EventCard: React.FC<{ event: EventRow; index: number; isPast?: boolean }> 
       {/* Cover image */}
       <View style={styles.eventCover}>
         {event.cover_url ? (
-          <Image source={{ uri: event.cover_url }} style={[StyleSheet.absoluteFill, isPast && { opacity: 0.5 }]} resizeMode="cover" />
+          <Image source={imageSource(event.cover_url)} style={[{width: '100%', height: '100%'}, isPast && { opacity: 0.5 }]} resizeMode="cover" />
         ) : null}
         {isPast && <View style={styles.pastOverlay} />}
         {isLive && (
