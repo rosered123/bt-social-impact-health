@@ -1,5 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import * as Location from 'expo-location';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -8,7 +9,6 @@ import {
   TouchableOpacity,
   TextInput,
   StyleSheet,
-  SafeAreaView,
   StatusBar,
   Alert,
   ActivityIndicator,
@@ -282,14 +282,14 @@ export default function CreateEvent() {
 
   if (loadingEvent) {
     return (
-      <SafeAreaView style={[styles.safe, { justifyContent: 'center', alignItems: 'center' }]}>
+      <SafeAreaView style={[styles.safe, { justifyContent: 'center', alignItems: 'center' }]} edges={['left', 'right', 'bottom']}>
         <ActivityIndicator size="large" color="#333" />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} edges={['left', 'right', 'bottom']}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFF1AD" />
 
       <View style={styles.navbar}>
@@ -413,7 +413,7 @@ const RADIUS = 12;
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#f5f5f5' },
   scroll: { flex: 1, paddingHorizontal: 16 },
-  navbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#FFF1AD' },
+  navbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 68, paddingBottom: 12, backgroundColor: '#FFF1AD' },
   backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#e0e0e0', alignItems: 'center', justifyContent: 'center' },
   backIcon: { fontSize: 18, color: '#333' },
   navTitle: { fontSize: 18, fontWeight: '800', color: '#111' },

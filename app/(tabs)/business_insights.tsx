@@ -1,12 +1,12 @@
 import { imageSource } from "@/utils/imageSource";
 import { Feather } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { router } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -372,14 +372,14 @@ export default function BusinessInsights() {
 
   if (loading) {
     return (
-      <SafeAreaView style={[styles.safe, styles.centered]}>
+      <SafeAreaView style={[styles.safe, styles.centered]} edges={['left', 'right', 'bottom']}>
         <ActivityIndicator size="large" color="#333" />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} edges={['left', 'right', 'bottom']}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFF1AD" />
 
       {/* ── Header (golden gradient) ── */}
@@ -534,7 +534,7 @@ const styles = StyleSheet.create({
   // ── Header ──
   headerGradient: {
     paddingHorizontal: 16,
-    paddingTop: 48,
+    paddingTop: 68,
     paddingBottom: 14,
     backgroundColor: '#FFF1AD',
     borderBottomWidth: 1,

@@ -1,6 +1,7 @@
 import { imageSource } from "@/utils/imageSource";
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
@@ -11,7 +12,6 @@ import {
   TouchableOpacity,
   Image,
   StyleSheet,
-  SafeAreaView,
   StatusBar,
   ActivityIndicator,
 } from 'react-native';
@@ -107,7 +107,7 @@ export default function BusinessDashboard() {
 
   if (loading) {
     return (
-      <SafeAreaView style={[styles.safe, { justifyContent: 'center', alignItems: 'center' }]}>
+      <SafeAreaView style={[styles.safe, { justifyContent: 'center', alignItems: 'center' }]} edges={['left', 'right', 'bottom']}>
         <ActivityIndicator size="large" color="#333" />
       </SafeAreaView>
     );
@@ -122,7 +122,7 @@ export default function BusinessDashboard() {
     : '—';
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} edges={['left', 'right', 'bottom']}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFF1AD" />
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
 
