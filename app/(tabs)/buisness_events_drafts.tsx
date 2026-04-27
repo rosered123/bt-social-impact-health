@@ -8,11 +8,11 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   StatusBar,
   ActivityIndicator,
   Image,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { listMyEvents, type EventRow } from '@/services/api';
 import { onEventsChanged } from '@/services/refresh-bus';
@@ -89,8 +89,8 @@ export default function BusinessEventsDrafts() {
   }, [fetchDrafts]);
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f5f5f5" />
+    <SafeAreaView style={styles.safe} edges={['left', 'right', 'bottom']}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFF1AD" />
 
       {/* ── Header (golden gradient) ── */}
       <View style={styles.header}>

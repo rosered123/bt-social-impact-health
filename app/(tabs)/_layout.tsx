@@ -82,7 +82,10 @@ export default function TabLayout() {
       />
       <Tabs.Screen
         name="map"
-        options={{
+        options={
+          isBusiness
+            ? { href: null }
+            : {
           title: 'Map',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="map.fill" color={color} />,
         }}

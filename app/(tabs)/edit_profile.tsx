@@ -10,12 +10,12 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   StatusBar,
   ActivityIndicator,
   Alert,
   Image,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 
 import {
@@ -49,6 +49,7 @@ export default function EditProfile() {
   const [website, setWebsite] = useState('');
   const [story, setStory] = useState('');
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [backgroundUrl, setBackgroundUrl] = useState<string | null>(null);
   const [vibeTags, setVibeTags] = useState<string[]>([]);
   const [customTag, setCustomTag] = useState('');
   const [popularTags, setPopularTags] = useState<VibeTag[]>([]);
@@ -76,6 +77,7 @@ export default function EditProfile() {
           setWebsite(biz.website ?? '');
           setStory(biz.story ?? '');
           setLogoUrl(biz.logo_url ?? null);
+          setBackgroundUrl(biz.background_url ?? null);
         }
         setPopularTags(tags);
         setVibeTags(bizTags.map(t => t.name));
@@ -142,15 +144,15 @@ export default function EditProfile() {
 
   if (loading) {
     return (
-      <SafeAreaView style={[styles.safe, { justifyContent: 'center', alignItems: 'center' }]}>
+      <SafeAreaView style={[styles.safe, { justifyContent: 'center', alignItems: 'center' }]} edges={['left', 'right', 'bottom']}>
         <ActivityIndicator size="large" color="#333" />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f5f5f5" />
+    <SafeAreaView style={styles.safe} edges={['left', 'right', 'bottom']}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFF1AD" />
 
       {/* ── Header (golden gradient) ── */}
       <View style={styles.header}>
@@ -182,11 +184,12 @@ export default function EditProfile() {
         {/* ── Cover Photo + Avatar ── */}
         <View style={styles.coverSection}>
           <View style={styles.coverPhoto}>
-            {logoUrl ? (
-              <Image source={imageSource(logoUrl)} style={{width: '100%', height: '100%'}} resizeMode="cover" />
+            {(backgroundUrl || logoUrl) ? (
+              <Image source={imageSource(backgroundUrl || logoUrl)} style={styles.coverImage} resizeMode="cover" />
             ) : null}
+            <View style={styles.coverOverlay} />
             <TouchableOpacity style={styles.coverBtn} activeOpacity={0.8}>
-              <Feather name="camera" size={14} color="#fff" />
+              <Feather name="camera" size={16} color="#fff" />
               <Text style={styles.coverBtnText}>Change Cover Photo</Text>
             </TouchableOpacity>
           </View>
@@ -195,11 +198,11 @@ export default function EditProfile() {
               {logoUrl ? (
                 <Image source={imageSource(logoUrl)} style={styles.avatarImg} resizeMode="cover" />
               ) : (
-                <Text style={{ fontSize: 22, opacity: 0.5 }}>🖼</Text>
+                <Text style={{ fontSize: 26, opacity: 0.5 }}>🖼</Text>
               )}
-              <View style={styles.avatarCameraBadge}>
-                <Feather name="camera" size={10} color="#fff" />
-              </View>
+            </View>
+            <View style={styles.avatarCameraBadge}>
+              <Feather name="camera" size={14} color="#fff" />
             </View>
           </View>
         </View>
@@ -322,28 +325,34 @@ const styles = StyleSheet.create({
   // Cover photo + avatar
   coverSection: { marginTop: 16, marginBottom: 16 },
   coverPhoto: {
-    height: 140, backgroundColor: '#FFFFFF', borderRadius: RADIUS,
+    height: 160, backgroundColor: '#e0e0e0', borderRadius: RADIUS,
     overflow: 'hidden', alignItems: 'center', justifyContent: 'center',
   },
+  coverImage: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
+  coverOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+  },
   coverBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: 'rgba(46,74,122,0.75)', borderRadius: 20,
-    paddingHorizontal: 16, paddingVertical: 8,
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: 'rgba(46,74,122,0.7)', borderRadius: 24,
+    paddingHorizontal: 20, paddingVertical: 10,
+    zIndex: 1,
   },
-  coverBtnText: { color: '#fff', fontSize: 13, fontWeight: '600' },
-  avatarWrapper: { marginTop: -30, marginLeft: 12 },
+  coverBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  avatarWrapper: { marginTop: -40, marginLeft: 12 },
   avatar: {
-    width: 60, height: 60, borderRadius: 30, backgroundColor: '#d0d0d0',
-    borderWidth: 3, borderColor: '#f5f5f5',
+    width: 76, height: 76, borderRadius: 38, backgroundColor: '#d0d0d0',
+    borderWidth: 3, borderColor: '#fff',
     alignItems: 'center', justifyContent: 'center',
-    overflow: 'visible',
+    overflow: 'hidden',
   },
-  avatarImg: { width: '100%', height: '100%', borderRadius: 30 },
+  avatarImg: { width: '100%', height: '100%', borderRadius: 38 },
   avatarCameraBadge: {
-    position: 'absolute', bottom: -2, right: -6,
-    width: 24, height: 24, borderRadius: 12,
+    position: 'absolute', bottom: 0, left: 64,
+    width: 28, height: 28, borderRadius: 14,
     backgroundColor: BLUE, alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderColor: '#f5f5f5',
+    borderWidth: 2, borderColor: '#fff',
   },
 
   // Cards

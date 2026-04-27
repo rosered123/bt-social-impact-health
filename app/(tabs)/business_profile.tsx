@@ -1,5 +1,6 @@
 import { imageSource } from "@/utils/imageSource";
 import { Feather } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
@@ -8,7 +9,6 @@ import {
   Clipboard,
   Image,
   Modal,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -16,6 +16,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   getBusinessByUid,
@@ -137,7 +138,7 @@ export default function MyProfile() {
 
   if (loading) {
     return (
-      <SafeAreaView style={[styles.safe, { justifyContent: 'center', alignItems: 'center' }]}>
+      <SafeAreaView style={[styles.safe, { justifyContent: 'center', alignItems: 'center' }]} edges={['left', 'right', 'bottom']}>
         <ActivityIndicator size="large" color="#333" />
       </SafeAreaView>
     );
@@ -147,8 +148,8 @@ export default function MyProfile() {
   const avgRating = business?.avg_rating ?? 0;
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f5f5f5" />
+    <SafeAreaView style={styles.safe} edges={['left', 'right', 'bottom']}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFF1AD" />
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
 
         {/* ── Golden Gradient Header ── */}
@@ -306,43 +307,42 @@ export default function MyProfile() {
       <Modal visible={shareVisible} transparent animationType="fade" onRequestClose={() => setShareVisible(false)}>
         <TouchableOpacity style={ms.overlay} activeOpacity={1} onPress={() => setShareVisible(false)}>
           <TouchableOpacity activeOpacity={1} style={ms.card}>
-            {/* Cover photo background */}
-            <View style={ms.coverBg}>
-              {(business?.background_url || business?.logo_url) ? (
-                <Image source={imageSource(business?.background_url || business?.logo_url)} style={{width: '100%', height: '100%'}} resizeMode="cover" />
-              ) : null}
-              <View style={ms.coverDarken} />
+            {/* Profile photo as full background */}
+            {(business?.logo_url || business?.background_url) ? (
+              <Image source={imageSource(business?.logo_url || business?.background_url)} style={ms.bgImage} resizeMode="cover" />
+            ) : null}
 
-              {/* Close button top-right */}
-              <TouchableOpacity
-                style={ms.shareIcon}
-                activeOpacity={0.7}
-                onPress={() => setShareVisible(false)}
-              >
-                <Feather name="x" size={20} color="#fff" />
-              </TouchableOpacity>
+            {/* Share icon top-right */}
+            <TouchableOpacity
+              style={ms.shareIcon}
+              activeOpacity={0.7}
+              onPress={() => {
+                Clipboard.setString(business?.website ?? '');
+                setLinkCopied(true);
+                setTimeout(() => setLinkCopied(false), 2000);
+              }}
+            >
+              <Feather name="share" size={18} color="#fff" />
+            </TouchableOpacity>
 
-              {/* Avatar */}
-              <View style={ms.avatarWrap}>
-                {business?.logo_url ? (
-                  <Image source={imageSource(business.logo_url)} style={ms.avatarImg} resizeMode="cover" />
-                ) : (
-                  <View style={ms.avatarPlaceholder}>
-                    <Text style={{ fontSize: 28, opacity: 0.5 }}>🖼</Text>
-                  </View>
-                )}
-              </View>
-            </View>
+            {/* Spacer to push info to bottom */}
+            <View style={ms.spacer} />
 
-            {/* Info section */}
+            {/* Gradient fade above info */}
+            <LinearGradient
+              colors={['transparent', 'rgba(0,0,0,0.3)', 'rgba(0,0,0,0.6)', 'rgba(0,0,0,0.85)']}
+              locations={[0, 0.25, 0.55, 1]}
+              style={ms.gradient}
+            />
+
+            {/* Info section at bottom */}
             <View style={ms.infoSection}>
               <Text style={ms.name}>{business?.business_name ?? 'My Business'}</Text>
               <Text style={ms.description}>{business?.short_description ?? 'No description yet.'}</Text>
 
-              {/* Bottom row: followers, rating, copy link */}
               <View style={ms.bottomRow}>
                 <View style={ms.statItem}>
-                  <Feather name="users" size={14} color="#555" />
+                  <Feather name="users" size={14} color="#ccc" />
                   <Text style={ms.statValue}>{business?.follower_count ?? 0}</Text>
                 </View>
                 <View style={ms.statItem}>
@@ -514,60 +514,54 @@ const styles = StyleSheet.create({
 // ─── Share Modal Styles ───────────────────────────────────────────────────────
 const ms = StyleSheet.create({
   overlay: {
-    flex: 1, backgroundColor: 'rgba(0,0,0,0.5)',
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.45)',
     justifyContent: 'center', alignItems: 'center',
   },
   card: {
-    width: '80%', borderRadius: 20, overflow: 'hidden',
-    backgroundColor: '#fff',
-    shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 20, shadowOffset: { width: 0, height: 10 },
+    width: '72%', height: 480, borderRadius: 20, overflow: 'hidden',
+    shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 20, shadowOffset: { width: 0, height: 10 },
     elevation: 10,
+    backgroundColor: '#222',
   },
 
-  coverBg: {
-    height: 260, justifyContent: 'flex-end', alignItems: 'center',
-  },
-  coverDarken: {
+  bgImage: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.35)',
+    width: '100%', height: '100%',
   },
   shareIcon: {
     position: 'absolute', top: 14, right: 14,
     width: 36, height: 36, borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: 'rgba(255,255,255,0.15)',
     alignItems: 'center', justifyContent: 'center',
+    zIndex: 2,
   },
-  avatarWrap: {
-    width: 100, height: 100, borderRadius: 50,
-    borderWidth: 3, borderColor: 'rgba(255,255,255,0.6)',
-    overflow: 'hidden', marginBottom: -50,
-    backgroundColor: '#d0d0d0',
-  },
-  avatarImg: { width: '100%', height: '100%' },
-  avatarPlaceholder: {
-    width: '100%', height: '100%',
-    alignItems: 'center', justifyContent: 'center', backgroundColor: '#d0d0d0',
+
+  spacer: { flex: 1 },
+
+  gradient: {
+    height: 120,
   },
 
   infoSection: {
-    paddingTop: 58, paddingBottom: 20, paddingHorizontal: 16,
-    alignItems: 'center',
+    paddingTop: 0, paddingBottom: 20, paddingHorizontal: 16,
+    alignItems: 'flex-start',
+    backgroundColor: 'rgba(0,0,0,0.85)',
   },
-  name: { fontSize: 20, fontWeight: '900', color: '#111', marginBottom: 4, textAlign: 'center' },
-  description: { fontSize: 13, color: '#555', lineHeight: 19, textAlign: 'center', marginBottom: 14 },
+  name: { fontSize: 20, fontWeight: '900', color: '#fff', marginBottom: 4 },
+  description: { fontSize: 13, color: 'rgba(255,255,255,0.85)', lineHeight: 19, marginBottom: 14 },
 
   bottomRow: {
     flexDirection: 'row', alignItems: 'center', gap: 16,
   },
   statItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  statValue: { fontSize: 14, fontWeight: '700', color: '#333' },
+  statValue: { fontSize: 14, fontWeight: '700', color: '#fff' },
 
   copyBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: '#f5f5f5', borderRadius: 20, borderWidth: 1, borderColor: '#ddd',
+    backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: 20,
     paddingHorizontal: 14, paddingVertical: 6,
   },
   copyBtnText: { fontSize: 13, fontWeight: '600', color: '#333' },
-  copyBtnDone: { backgroundColor: '#FFF1AD', borderColor: '#FFF1AD' },
+  copyBtnDone: { backgroundColor: '#FFF1AD' },
   copyBtnTextDone: { color: '#333' },
 });

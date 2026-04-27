@@ -9,12 +9,12 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   StatusBar,
   ActivityIndicator,
   Alert,
   Image,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { listMyEvents, updateMyEvent, isActiveEventStatus, type EventRow, type EventStatus } from '@/services/api';
 import { notifyEventsChanged, onEventsChanged } from '@/services/refresh-bus';
@@ -200,8 +200,8 @@ export default function BusinessEventsUpcoming() {
   const pastEvents = allEvents.filter(e => e.status === 'closed' || e.status === 'cancelled');
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f5f5f5" />
+    <SafeAreaView style={styles.safe} edges={['left', 'right', 'bottom']}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFF1AD" />
 
       {/* ── Header + Tabs (golden gradient) ── */}
       <View style={styles.header}>

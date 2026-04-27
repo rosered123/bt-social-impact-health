@@ -2,7 +2,6 @@ import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
   Alert,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -11,6 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/providers/auth-provider';
 
@@ -71,7 +71,7 @@ export default function Settings() {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} edges={['left', 'right', 'bottom']}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFF1AD" />
 
       <View style={styles.navbar}>
@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
   content: { flex: 1, backgroundColor: '#f0f0f0' },
   navbar: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 12,
+    paddingHorizontal: 16, paddingTop: 48, paddingBottom: 12,
     backgroundColor: '#FFF1AD',
   },
   navBtn: {
